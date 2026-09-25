@@ -78,22 +78,51 @@ was already running. Run `npm run test:stations` to check failure handling.
 The lookup is keyed by line and station code, preferring region 0 for collisions.
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the source license.
 
-## Refund quote preview
+## Refund quotes, confirmation and demo ledger
 
-After scanning a card with a positive balance, tap **Preview refund**. Enter a
-whole-yen amount from ¥1 up to the scanned balance, choose Sui, Ethereum or
-Mizuhiki (Awaji Testnet), and enter a recipient address. **Review demo quote**
-shows the amount, 2% demo service fee, net conversion amount, recipient and
-estimated crypto payout. **Edit quote** preserves inputs; **Done** returns to
-the card without changing its balance. Switching networks clears the recipient.
+After scanning a card with a positive **available demo balance**, tap **Preview
+refund**. Enter a whole-yen amount from ¥1 up to that allowance, choose Sui,
+Ethereum or Mizuhiki (Awaji Testnet), and enter a recipient address. Review the
+amount, 2% demo fee, net conversion, recipient and estimated crypto payout.
+**Edit quote** preserves inputs; switching networks clears the recipient.
+
+**Re-scan & confirm demo refund** reads the newest balance block from the original
+card. A different card or changed physical balance is rejected. Confirmation
+can be cancelled and times out after 25 seconds. A cancelled or late scan cannot
+create a receipt. While the receipt is being saved, navigation is held until the
+write succeeds or fails. Failed saves can be retried with the same request ID;
+even an ambiguous persisted write is recovered without a duplicate debit.
+
+After a successful save, the receipt is explicitly marked **Simulated** and shows
+the yen amount, fee, crypto estimate, recipient, network and remaining demo
+balance. No funds are sent, no physical card balance changes and no transaction
+hash is created. **Demo receipts** reopens saved receipts, including after app
+restart. Card history remains the physical card's NFC records; it is separate
+from the local demo ledger.
+
+The ledger uses AsyncStorage 3.1.1 in the `unsui-demo` database, under
+`unsui.demo-refunds.v1`. Rebuild the native app after installing dependencies;
+on iOS, run `bundle exec pod install --project-directory=ios` before rebuilding.
+The ledger stores card IDs, recipient addresses and receipts locally. It is not
+encrypted or synced to a server, and must never authorize real payouts.
+
+The first demo refund establishes that card's allowance from its scanned balance.
+Subsequent refunds share the remaining allowance across all networks; it never
+exceeds the newly scanned physical balance. Re-scanning or physically topping up
+the card does not replenish the original demo allowance. There is deliberately
+no in-app reset in this step. Clearing app data removes this local protection;
+a trusted backend must enforce balances before real payouts are enabled.
+
+Each refund is one serialized read/validate/write of the complete ledger. Storage
+errors or invalid saved data block further refunds rather than silently clearing
+previous records. The app shows success only after the receipt is persisted.
 
 Illustrative rates: 1 SUI = ¥10,000, 1 ETH = ¥500,000, 1 MIZU = ¥10,000.
-The fee is deducted before conversion, not charged separately. Estimates use
-integer calculation at eight decimal places and round down. Rates and fees are
-local demo constants, not current market data; network fees are not included.
+The 2% fee is deducted before conversion, not charged separately. Estimates use
+integer calculation at eight decimal places and round down. These are local
+demo constants, not market data; network fees are not included.
 
 Address checks cover hexadecimal shape, chain-specific length and the zero
 address. They do not prove ownership, EVM checksum validity, account existence,
-or network compatibility. This step creates no transaction, card debit, ledger
-entry or backend request. Live quotes, payouts and human verification will be
-separate integrations.
+or network compatibility. Live quotes, human verification, merchant charges and
+blockchain payouts are not connected in this step.

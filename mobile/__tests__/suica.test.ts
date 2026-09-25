@@ -91,3 +91,12 @@ test('stops at an empty history block and never requests beyond block 19', async
   expect(readCommand(idm, true, 19).at(-1)).toBe(19);
   expect(() => readCommand(idm, true, 20)).toThrow();
 });
+
+test('confirmation mode reads only the newest balance block', async () => {
+  ready();
+  (NfcManager.transceive as jest.Mock).mockResolvedValue(response(575));
+  expect((await readCard(() => false, { history: false })).balanceJpy).toBe(
+    575,
+  );
+  expect(NfcManager.transceive).toHaveBeenCalledTimes(1);
+});

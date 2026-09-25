@@ -33,7 +33,8 @@ export function amountError(value: string, balance: number): string | null {
   if (!/^\d+$/.test(value.trim())) return 'Enter a whole-yen amount.';
   const amount = Number(value.trim());
   if (!Number.isSafeInteger(amount) || amount < 1) return 'Enter at least ¥1.';
-  if (amount > balance) return 'The amount cannot exceed your scanned balance.';
+  if (amount > balance)
+    return 'The amount cannot exceed your available balance.';
   return null;
 }
 

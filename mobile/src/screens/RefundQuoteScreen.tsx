@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   BackHandler,
   Keyboard,
   KeyboardAvoidingView,
@@ -20,20 +21,126 @@ import {
   RefundQuote,
 } from '../lib/refundQuote';
 
-type Props = { balanceJpy: number; onClose: () => void };
+import { readCard, cancelScan } from '../lib/suica';
+import { demoLedger } from '../lib/localDemoLedger';
+import { DemoReceipt } from '../lib/demoLedger';
+type Props = {
+  balanceJpy: number;
+  scannedBalanceJpy: number;
+  cardId: string;
+  onClose: () => void;
+  onRecorded: (receipt: DemoReceipt) => void;
+};
 const yen = (value: number) =>
   `¥${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 
-export default function RefundQuoteScreen({ balanceJpy, onClose }: Props) {
+export default function RefundQuoteScreen({
+  balanceJpy,
+  scannedBalanceJpy,
+  cardId,
+  onClose,
+  onRecorded,
+}: Props) {
   const [amount, setAmount] = useState(String(balanceJpy));
   const [network, setNetwork] = useState<PayoutNetwork>('sui');
   const [recipient, setRecipient] = useState('');
   const [attempted, setAttempted] = useState(false);
   const [quote, setQuote] = useState<RefundQuote | null>(null);
   const scroll = useRef<ScrollView>(null);
+  const [phase, setPhase] = useState<
+    'idle' | 'confirming' | 'cancelling' | 'saving'
+  >('idle');
+  const [confirmationError, setConfirmationError] = useState('');
+  const active = useRef(false);
+  const mounted = useRef(true);
+  const saving = useRef(false);
+  const cancelled = useRef(false);
+  const request = useRef<{ fingerprint: string; id: string } | null>(null);
+  const cancelConfirmation = (
+    reason = 'Confirmation cancelled. No new refund was recorded.',
+  ) => {
+    if (!active.current || saving.current) return;
+    cancelled.current = true;
+    setConfirmationError(reason);
+    setPhase('cancelling');
+    cancelScan().catch(() => {});
+  };
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      cancelled.current = true;
+      if (active.current && !saving.current) cancelScan().catch(() => {});
+    };
+  }, []);
+  const confirm = async () => {
+    if (!quote || active.current) return;
+    active.current = true;
+    cancelled.current = false;
+    saving.current = false;
+    setConfirmationError('');
+    setPhase('confirming');
+    const fingerprint = JSON.stringify(quote);
+    if (request.current?.fingerprint !== fingerprint) {
+      request.current = {
+        fingerprint,
+        id: `demo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
+    }
+    const requestId = request.current.id;
+    const timeout = setTimeout(
+      () =>
+        cancelConfirmation(
+          'Confirmation timed out. Hold the same card still and retry.',
+        ),
+      25000,
+    );
+    try {
+      const confirmed = await readCard(
+        () => cancelled.current || !mounted.current,
+        { history: false },
+      );
+      clearTimeout(timeout);
+      if (cancelled.current || !mounted.current) return;
+      if (confirmed.idm.toLowerCase() !== cardId.toLowerCase())
+        throw Error('That is a different card. Re-scan the original card.');
+      if (confirmed.balanceJpy !== scannedBalanceJpy)
+        throw Error(
+          'The card balance changed. Go back to the card screen and scan it again.',
+        );
+      saving.current = true;
+      setPhase('saving');
+      const receipt = await demoLedger.record({
+        requestId,
+        quote,
+        cardId,
+        scannedBalanceJpy,
+        confirmedCardId: confirmed.idm,
+        confirmedBalanceJpy: confirmed.balanceJpy,
+      });
+      if (mounted.current) onRecorded(receipt);
+    } catch (error) {
+      if (mounted.current && !cancelled.current)
+        setConfirmationError(
+          error instanceof Error
+            ? error.message
+            : 'Could not record the demo refund. Please retry.',
+        );
+    } finally {
+      clearTimeout(timeout);
+      active.current = false;
+      saving.current = false;
+      if (mounted.current) setPhase('idle');
+    }
+  };
   const amountIssue = amountError(amount, balanceJpy);
   const recipientIssue = recipientError(recipient, network);
   const back = () => {
+    if (active.current) {
+      cancelConfirmation();
+      return;
+    }
+    setConfirmationError('');
     Keyboard.dismiss();
     if (quote) setQuote(null);
     else onClose();
@@ -43,6 +150,11 @@ export default function RefundQuoteScreen({ balanceJpy, onClose }: Props) {
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
+        if (active.current) {
+          cancelConfirmation();
+          return true;
+        }
+        setConfirmationError('');
         Keyboard.dismiss();
         scroll.current?.scrollTo({ y: 0, animated: false });
         if (quote) setQuote(null);
@@ -74,6 +186,8 @@ export default function RefundQuoteScreen({ balanceJpy, onClose }: Props) {
           accessibilityRole="button"
           accessibilityLabel={quote ? 'Edit quote' : 'Back to card'}
           onPress={back}
+          disabled={phase !== 'idle'}
+          accessibilityState={{ disabled: phase !== 'idle' }}
           style={styles.back}
         >
           <Text style={styles.backText}>
@@ -132,13 +246,58 @@ export default function RefundQuoteScreen({ balanceJpy, onClose }: Props) {
               verification or blockchain transaction has taken place. Network
               fees are not included.
             </Text>
+            <Text style={styles.note}>
+              Re-scan the same card to save a simulated refund on this phone.
+              This reduces only your remaining demo allowance, across all
+              networks.
+            </Text>
+            {!!confirmationError && (
+              <Text accessibilityRole="alert" style={styles.error}>
+                {confirmationError}
+              </Text>
+            )}
+            {phase !== 'idle' && (
+              <View style={styles.field}>
+                <ActivityIndicator
+                  color="#214A37"
+                  accessibilityLabel={
+                    phase === 'saving'
+                      ? 'Saving demo receipt'
+                      : 'Confirming transit card'
+                  }
+                />
+                <Text accessibilityLiveRegion="polite" style={styles.note}>
+                  {phase === 'saving'
+                    ? 'Saving the receipt on this phone…'
+                    : phase === 'cancelling'
+                    ? 'Closing the NFC session…'
+                    : 'Hold the original card near your phone. Its balance must be unchanged.'}
+                </Text>
+                {phase === 'confirming' && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel confirmation"
+                    style={styles.back}
+                    onPress={() => cancelConfirmation()}
+                  >
+                    <Text style={styles.backText}>Cancel confirmation</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Done, back to card"
+              accessibilityLabel="Confirm simulated refund"
               style={styles.primary}
-              onPress={onClose}
+              disabled={phase !== 'idle'}
+              accessibilityState={{ disabled: phase !== 'idle' }}
+              onPress={confirm}
             >
-              <Text style={styles.primaryText}>Done · back to card</Text>
+              <Text style={styles.primaryText}>
+                {confirmationError
+                  ? 'Retry confirmation'
+                  : 'Re-scan & confirm demo refund'}
+              </Text>
             </Pressable>
           </>
         ) : (
@@ -146,7 +305,8 @@ export default function RefundQuoteScreen({ balanceJpy, onClose }: Props) {
             <View style={styles.panel}>
               <Text style={styles.label}>Amount to refund · JPY</Text>
               <Text style={styles.note}>
-                Scanned card balance: {yen(balanceJpy)}
+                Available demo balance: {yen(balanceJpy)} · Card reads{' '}
+                {yen(scannedBalanceJpy)}
               </Text>
               <TextInput
                 testID="refund-amount"
@@ -162,7 +322,7 @@ export default function RefundQuoteScreen({ balanceJpy, onClose }: Props) {
                 onPress={() => setAmount(String(balanceJpy))}
                 style={styles.back}
               >
-                <Text style={styles.backText}>Use full balance</Text>
+                <Text style={styles.backText}>Use available balance</Text>
               </Pressable>
               {attempted && amountIssue && (
                 <Text accessibilityRole="alert" style={styles.error}>

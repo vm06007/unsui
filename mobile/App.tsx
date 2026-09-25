@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
@@ -12,12 +12,51 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { cancelScan, CardBalance, readCard } from './src/lib/suica';
 import RefundQuoteScreen from './src/screens/RefundQuoteScreen';
+import DemoReceiptScreen from './src/screens/DemoReceiptScreen';
+import DemoLedgerScreen from './src/screens/DemoLedgerScreen';
+import { availableDemoBalance, DemoReceipt } from './src/lib/demoLedger';
+import { demoLedger } from './src/lib/localDemoLedger';
 
 export default function App() {
   const [scanning, setScanning] = useState(false);
   const [card, setCard] = useState<CardBalance | null>(null);
   const [message, setMessage] = useState('');
   const [refundOpen, setRefundOpen] = useState(false);
+  const [receipts, setReceipts] = useState<DemoReceipt[] | null>(null);
+  const [ledgerError, setLedgerError] = useState('');
+  const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<DemoReceipt | null>(
+    null,
+  );
+  const alive = useRef(true);
+  const loadLedger = useCallback(async () => {
+    setLedgerError('');
+    try {
+      const saved = await demoLedger.list();
+      if (alive.current) setReceipts(saved);
+    } catch (error) {
+      if (alive.current) {
+        setReceipts(null);
+        setLedgerError(
+          error instanceof Error
+            ? error.message
+            : 'Could not load the demo ledger.',
+        );
+      }
+    }
+  }, []);
+  useEffect(() => {
+    alive.current = true;
+    loadLedger();
+    return () => {
+      alive.current = false;
+    };
+  }, [loadLedger]);
+  const available =
+    card && receipts
+      ? availableDemoBalance(receipts, card.idm, card.balanceJpy)
+      : 0;
+  const refundDisabled = receipts === null || available === 0;
   const [tab, setTab] = useState<'card' | 'history'>('card');
   const scroll = useRef<ScrollView>(null);
   const generation = useRef(0);
@@ -86,10 +125,51 @@ export default function App() {
           <Text style={styles.name}>UnSui</Text>
           <Text style={styles.japanese}>雲水</Text>
         </View>
-        {card && refundOpen ? (
+        {!!receipts?.length &&
+          !refundOpen &&
+          !selectedReceipt &&
+          !ledgerOpen && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open demo ledger"
+              disabled={scanning}
+              onPress={() => setLedgerOpen(true)}
+              style={styles.ledgerButton}
+            >
+              <Text style={styles.tabText}>
+                Demo receipts · {receipts.length}
+              </Text>
+            </Pressable>
+          )}
+        {selectedReceipt ? (
+          <DemoReceiptScreen
+            receipt={selectedReceipt}
+            onClose={() => setSelectedReceipt(null)}
+          />
+        ) : ledgerOpen ? (
+          <DemoLedgerScreen
+            receipts={receipts ?? []}
+            onSelect={setSelectedReceipt}
+            onClose={() => setLedgerOpen(false)}
+          />
+        ) : card && refundOpen ? (
           <RefundQuoteScreen
-            balanceJpy={card.balanceJpy}
-            onClose={() => setRefundOpen(false)}
+            balanceJpy={available}
+            scannedBalanceJpy={card.balanceJpy}
+            cardId={card.idm}
+            onRecorded={receipt => {
+              setReceipts(current =>
+                current?.some(r => r.id === receipt.id)
+                  ? current
+                  : [...(current ?? []), receipt],
+              );
+              setRefundOpen(false);
+              setSelectedReceipt(receipt);
+            }}
+            onClose={() => {
+              setRefundOpen(false);
+              loadLedger();
+            }}
           />
         ) : (
           <>
@@ -156,23 +236,30 @@ export default function App() {
                         ¥{card.balanceJpy.toLocaleString('en-US')}
                       </Text>
                       <Text style={styles.note}>
-                        Read from your card · no balance changes
+                        Physical card balance · unchanged by demo refunds
+                      </Text>
+                      <Text style={styles.description}>
+                        {receipts === null
+                          ? 'Demo ledger unavailable'
+                          : `Available for demo refunds: ¥${available.toLocaleString(
+                              'en-US',
+                            )}`}
                       </Text>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel="Preview refund"
-                        accessibilityState={{ disabled: card.balanceJpy === 0 }}
-                        disabled={card.balanceJpy === 0}
+                        accessibilityState={{ disabled: refundDisabled }}
+                        disabled={refundDisabled}
                         onPress={() => setRefundOpen(true)}
                         style={[
                           styles.button,
-                          card.balanceJpy === 0 && styles.disabledButton,
+                          refundDisabled && styles.disabledButton,
                         ]}
                       >
                         <Text style={styles.buttonText}>Preview refund →</Text>
                       </Pressable>
                       <Text style={styles.note}>
-                        {card.balanceJpy === 0
+                        {available === 0
                           ? 'No balance available for a refund quote.'
                           : 'Demo estimate · no funds sent'}
                       </Text>
@@ -248,6 +335,24 @@ export default function App() {
                   </Text>
                 </>
               )}
+              {receipts === null && !ledgerError && (
+                <Text style={styles.note}>Loading saved demo refunds…</Text>
+              )}
+              {!!ledgerError && (
+                <View style={styles.balance}>
+                  <Text accessibilityRole="alert" style={styles.message}>
+                    {ledgerError}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Reload demo ledger"
+                    onPress={loadLedger}
+                    style={styles.button}
+                  >
+                    <Text style={styles.buttonText}>Reload demo ledger</Text>
+                  </Pressable>
+                </View>
+              )}
               {!!message && (
                 <Text accessibilityRole="alert" style={styles.message}>
                   {message}
@@ -277,6 +382,7 @@ export default function App() {
   );
 }
 const styles = StyleSheet.create({
+  ledgerButton: { paddingVertical: 14, alignSelf: 'flex-start' },
   disabledButton: { opacity: 0.45 },
   tabs: { flexDirection: 'row', gap: 8, marginTop: 20 },
   tab: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },

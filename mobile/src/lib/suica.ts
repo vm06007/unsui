@@ -61,7 +61,10 @@ export function parseBalance(response: number[], idm: string): number {
 export async function cancelScan() {
   await NfcManager.cancelTechnologyRequest().catch(() => {});
 }
-export async function readCard(cancelled: () => boolean): Promise<CardBalance> {
+export async function readCard(
+  cancelled: () => boolean,
+  options: { history?: boolean } = {},
+): Promise<CardBalance> {
   const check = () => {
     if (cancelled()) throw new Error('Scan cancelled.');
   };
@@ -92,7 +95,7 @@ export async function readCard(cancelled: () => boolean): Promise<CardBalance> {
     const idm = (tag?.idm || tag?.id || '').toLowerCase();
     const blocks: number[][] = [];
     let historyLimited = false;
-    for (let block = 0; block < 20; block++) {
+    for (let block = 0; block < (options.history === false ? 1 : 20); block++) {
       check();
       try {
         const command = readCommand(idm, Platform.OS !== 'ios', block);
