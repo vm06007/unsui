@@ -19,7 +19,7 @@ npm run android
 
 Use a physical NFC-F-capable Android phone with NFC enabled. Tap **Scan transit
 card** and hold one physical Suica card at the NFC antenna. You can cancel, retry,
-or scan another card. A scan times out after 25 seconds. NFC support varies by
+or scan another card. A scan times out after 20 seconds. NFC support varies by
 phone; simulators and emulators cannot validate card reading.
 
 For iOS on macOS, install Xcode and CocoaPods, run `bundle install` and
@@ -166,8 +166,9 @@ npm start
 
 It listens on `http://localhost:4100` and persists to `server/data/ledger.json`.
 For Android over USB, run `adb reverse tcp:4100 tcp:4100`, then start Metro and
-`npm run android` as above. Open **Menu → Ledger connection** to check or change
-the URL. Saving validates the connection. Refunds pause on connection failure;
+`npm run android` as above. Set `BACKEND_URL` in `src/config.ts` for your
+backend before bundling the app. The URL cannot be changed in the app, and old
+saved URL overrides are ignored. Refunds pause on connection failure;
 card scanning and journey history remain available. **Refresh ledger** reloads
 shared balances. See `../server/README.md` for LAN/iPhone setup and feed details.
 

@@ -5,10 +5,10 @@ const os=require('node:os');
 const path=require('node:path');
 const {createServer}=require('../server.cjs');
 const {createDemoQuote}=require('../build/refundQuote');
-async function fixture(t) {
+async function fixture(t, options = {}) {
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'unsui-ledger-'));const file=path.join(dir,'ledger.json');
  let server;
- const start=async()=>{server=createServer({file});await new Promise(r=>server.listen(0,'127.0.0.1',r));return `http://127.0.0.1:${server.address().port}`;};
+ const start=async()=>{server=createServer({file,...options});await new Promise(r=>server.listen(0,'127.0.0.1',r));return `http://127.0.0.1:${server.address().port}`;};
  const stop=()=>new Promise(r=>server.close(r));
  t.after(async()=>{if(server.listening)await stop();await fs.rm(dir,{recursive:true,force:true});});
  return {url:await start(),start,stop,file};
@@ -35,4 +35,20 @@ test('corrupt storage blocks new refunds and unknown origins cannot read records
  assert.equal(await fs.readFile(f.file,'utf8'),'not json');
  assert.equal((await fetch(f.url+'/ledger',{headers:{Origin:'https://example.com'}})).status,403);
  assert.equal((await fetch(f.url+'/ledger',{headers:{Origin:'null'}})).status,403);
+});
+
+test('development reset clears shared receipts and restores allowance durably',async t=>{
+ const f=await fixture(t);await post(f.url,input());
+ const reset=await fetch(f.url+'/ledger/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirm:'reset-demo-ledger'})});
+ assert.equal(reset.status,200);
+ assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,0);
+ assert.equal((await(await fetch(f.url+'/merchant-feed')).json()).records.length,0);
+ await f.stop();f.url=await f.start();assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,0);
+ assert.equal((await post(f.url,input('after-reset',1500))).status,200);
+});
+
+test('reset is unavailable when disabled',async t=>{
+ const f=await fixture(t,{allowReset:false});await post(f.url,input());
+ const response=await fetch(f.url+'/ledger/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirm:'reset-demo-ledger'})});
+ assert.equal(response.status,403);assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,1);
 });

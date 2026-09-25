@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import App from '../App';
+import { showScanError } from '../src/lib/scanFeedback';
+jest.mock('../src/lib/scanFeedback', () => ({ showScanError: jest.fn() }));
 import { demoLedger } from '../src/lib/ledger';
 import { createDemoQuote } from '../src/lib/refundQuote';
 import { readCard, cancelScan } from '../src/lib/suica';
@@ -72,7 +74,7 @@ test('cancel ignores a late card response', async () => {
     });
   });
   expect(JSON.stringify(view.toJSON())).not.toContain('575');
-  expect(JSON.stringify(view.toJSON())).toContain('Scan cancelled');
+  expect(showScanError).not.toHaveBeenCalled();
   expect(cancelScan).toHaveBeenCalled();
 });
 
@@ -106,8 +108,8 @@ test('history tab shows records and a partial-read notice without another scan',
   });
   await act(async () => {
     view.root
-      .findAllByProps({ accessibilityRole: 'tab' })
-      .filter(node => typeof node.props.onPress === 'function')[1]
+      .findAllByProps({ accessibilityLabel: 'Card history' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   const output = JSON.stringify(view.toJSON());
@@ -139,7 +141,9 @@ test('opens and closes the refund flow without changing the scanned card', async
       .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   await act(async () => press('Preview refund'));
-  expect(JSON.stringify(view.toJSON())).toContain('Where next for your yen?');
+  expect(JSON.stringify(view.toJSON())).toContain(
+    'Sui wallet address or .sui name',
+  );
   await act(async () => press('Back to card'));
   expect(JSON.stringify(view.toJSON())).toContain('575');
   expect(JSON.stringify(view.toJSON())).toContain('Scan again');
@@ -211,26 +215,33 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
       .find(n => typeof n.props.onChangeText === 'function')!
       .props.onChangeText(value);
   await act(async () => press('Preview refund'));
+  await act(async () => press('Change refund amount'));
   await act(async () => {
     edit('refund-amount', '575');
     edit('refund-recipient', recipient);
   });
-  await act(async () => press('Review demo quote'));
-  await act(async () => press('Confirm simulated refund'));
-  expect(JSON.stringify(view.toJSON())).toContain('Your demo receipt.');
+  await act(async () => press('Confirm refund'));
+  expect(JSON.stringify(view.toJSON())).toContain('Your receipt.');
   expect(JSON.stringify(view.toJSON())).toContain('DEMO-000001');
-  await act(async () => press('Close demo receipt'));
+  await act(async () => press('Close receipt'));
   expect(JSON.stringify(view.toJSON())).toContain(
-    'Available for demo refunds: ¥425',
+    'Available for refunds: ¥425',
   );
   expect(
     view.root.findAllByProps({ accessibilityLabel: '1000 yen' }).length,
   ).toBeGreaterThan(0);
-  await act(async () => press('Open demo ledger'));
+  await act(async () => press('Card history'));
+  expect(JSON.stringify(view.toJSON())).toContain('UnSui service');
+  expect(JSON.stringify(view.toJSON())).toContain('SUI refund');
+  await act(async () => press('SUI refund DEMO-000001'));
+  expect(JSON.stringify(view.toJSON())).toContain(recipient);
+  expect(JSON.stringify(view.toJSON())).toContain('425');
+  await act(async () => press('Open menu'));
+  await act(async () => press('Open receipts'));
   await act(async () => press('View DEMO-000001'));
-  expect(JSON.stringify(view.toJSON())).toContain('Your demo receipt.');
-  await act(async () => press('Close demo receipt'));
-  expect(JSON.stringify(view.toJSON())).toContain('Demo receipts.');
+  expect(JSON.stringify(view.toJSON())).toContain('Your receipt.');
+  await act(async () => press('Close receipt'));
+  expect(JSON.stringify(view.toJSON())).toContain('Your receipts.');
 });
 test('saved refunds restore the allowance on a new app mount', async () => {
   const receipt = {
@@ -262,7 +273,7 @@ test('saved refunds restore the allowance on a new app mount', async () => {
     .find(n => typeof n.props.onPress === 'function')!;
   expect(preview.props.disabled).toBe(true);
   expect(JSON.stringify(view.toJSON())).toContain(
-    'Available for demo refunds: ¥0',
+    'Available for refunds: ¥0',
   );
 });
 
@@ -275,15 +286,15 @@ test('sample journeys need no NFC and language choice survives remount', async (
       .props.onPress();
   const history = () =>
     view.root
-      .findAllByProps({ accessibilityRole: 'tab' })
-      .filter(n => typeof n.props.onPress === 'function')[1]
+      .findAllByProps({ accessibilityLabel: 'Card history' })
+      .find(n => typeof n.props.onPress === 'function')!
       .props.onPress();
   await act(async () => {
     view = ReactTestRenderer.create(<App />);
   });
+  await act(async () => press('Open menu'));
   await act(async () => press('Try sample card'));
   expect(readCard).not.toHaveBeenCalled();
-  expect(JSON.stringify(view.toJSON())).toContain('SAMPLE CARD');
   await act(async () => history());
   await act(async () => press('English station names'));
   expect(JSON.stringify(view.toJSON())).toContain('Shibuya');
@@ -292,9 +303,27 @@ test('sample journeys need no NFC and language choice survives remount', async (
   await act(async () => {
     view = ReactTestRenderer.create(<App />);
   });
+  await act(async () => press('Open menu'));
   await act(async () => press('Try sample card'));
   await act(async () => history());
   expect(JSON.stringify(view.toJSON())).toContain('Shibuya');
   await act(async () => press('Japanese station names'));
   expect(JSON.stringify(view.toJSON())).toContain('渋谷');
+});
+
+test('scan failures close the sheet and use the original feedback handler', async () => {
+  (readCard as jest.Mock).mockRejectedValueOnce(Error('Tag lost'));
+  await act(async () => {
+    view = ReactTestRenderer.create(<App />);
+  });
+  await act(async () => {
+    await view.root
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(n => typeof n.props.onPress === 'function')!
+      .props.onPress();
+  });
+  expect(showScanError).toHaveBeenCalledWith(
+    expect.objectContaining({ message: 'Tag lost' }),
+  );
+  expect(JSON.stringify(view.toJSON())).not.toContain('Ready to Scan');
 });

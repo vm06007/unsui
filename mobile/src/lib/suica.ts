@@ -105,7 +105,6 @@ export async function readCard(
             : await NfcManager.transceive(command);
         check();
         const data = parseBlock(response, idm);
-        if (block > 0 && data.every(byte => byte === 0)) break;
         blocks.push(data);
       } catch (error) {
         check();

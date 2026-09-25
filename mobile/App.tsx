@@ -1,14 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  BackHandler,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { BackHandler, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { cancelScan, CardBalance, readCard } from './src/lib/suica';
 import RefundQuoteScreen from './src/screens/RefundQuoteScreen';
@@ -18,15 +9,17 @@ import { availableDemoBalance, DemoReceipt } from './src/lib/demoLedger';
 import { demoLedger } from './src/lib/ledger';
 import BrandMark from './src/components/BrandMark';
 import AppMenu from './src/components/AppMenu';
-import LedgerSettings from './src/components/LedgerSettings';
 import HomeScreen from './src/screens/HomeScreen';
+import { cardReceipts } from './src/lib/cardReceipts';
+import CardScreen from './src/screens/CardScreen';
+import type { PayoutNetwork } from './src/lib/refundQuote';
+import { showScanError } from './src/lib/scanFeedback';
 import { sampleCard } from './src/lib/sampleCard';
 import { getStoredLanguage, storeLanguage } from './src/lib/preferences';
-import { DisplayLanguage, translateRoute } from './src/lib/stationTranslations';
+import { DisplayLanguage } from './src/lib/stationTranslations';
 
 export default function App() {
   const [isSample, setIsSample] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [language, setLanguage] = useState<DisplayLanguage>('ja');
   const [preferenceError, setPreferenceError] = useState('');
   useEffect(() => {
@@ -82,7 +75,7 @@ export default function App() {
         setLedgerError(
           error instanceof Error
             ? error.message
-            : 'Could not reach the backend. Open Menu → Ledger connection to check its URL.',
+            : 'Could not connect. Please try again shortly.',
         );
       }
     } finally {
@@ -103,12 +96,12 @@ export default function App() {
       : 0;
   const refundDisabled = ledgerBusy || receipts === null || available === 0;
   const [tab, setTab] = useState<'card' | 'history'>('card');
-  const scroll = useRef<ScrollView>(null);
+  const [payoutNetwork, setPayoutNetwork] = useState<PayoutNetwork>('sui');
   const generation = useRef(0);
   const busy = useRef(false);
   const cancel = () => {
     generation.current++;
-    setMessage('Scan cancelled. Tap Scan transit card to try again.');
+    setScanning(false);
     cancelScan().catch(() => {});
   };
   useEffect(
@@ -142,11 +135,10 @@ export default function App() {
     const timer = setTimeout(() => {
       if (generation.current !== current) return;
       generation.current++;
-      setMessage(
-        'No card detected. Hold your card near the NFC antenna and try again.',
-      );
+      setScanning(false);
+      showScanError('No card detected. Hold your card against the phone');
       cancelScan().catch(() => {});
-    }, 25000);
+    }, 20000);
     try {
       const result = await readCard(() => generation.current !== current);
       if (generation.current === current) {
@@ -154,85 +146,52 @@ export default function App() {
         await loadLedger();
       }
     } catch (error) {
-      if (generation.current === current)
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : 'Unable to scan. Hold a physical Suica card still and try again.',
-        );
+      if (generation.current === current) {
+        setScanning(false);
+        showScanError(error);
+      }
     } finally {
       clearTimeout(timer);
       busy.current = false;
       setScanning(false);
     }
   };
+  const isHome = !card && !ledgerOpen && !selectedReceipt;
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.brand}>
-          <BrandMark />
-          {!refundOpen && (
-            <AppMenu
-              disabled={scanning}
-              onHome={() => {
-                setCard(null);
-                setIsSample(false);
-                setLedgerOpen(false);
-                setSelectedReceipt(null);
-                setMessage('');
-                loadLedger();
-              }}
-              onDemo={() => {
-                setCard(sampleCard());
-                setIsSample(true);
-                setTab('card');
-                setRefundOpen(false);
-                setLedgerOpen(false);
-                setSelectedReceipt(null);
-                setMessage('');
-                loadLedger();
-              }}
-              onSettings={() => setSettingsOpen(true)}
-            />
-          )}
-        </View>
-        {!refundOpen && (
-          <Text style={styles.connection}>
-            Shared development ledger
-            {isSample ? ' · SAMPLE CARD' : ''}
-          </Text>
+      <SafeAreaView style={[styles.screen, isHome && styles.homeScreen]}>
+        {!isHome && (
+          <View style={styles.brand}>
+            <BrandMark />
+            {!refundOpen && (
+              <AppMenu
+                onReceipts={
+                  receipts?.length ? () => setLedgerOpen(true) : undefined
+                }
+                disabled={scanning}
+                onHome={() => {
+                  setCard(null);
+                  setIsSample(false);
+                  setLedgerOpen(false);
+                  setSelectedReceipt(null);
+                  setMessage('');
+                  loadLedger();
+                }}
+                onDemo={() => {
+                  setCard(sampleCard());
+                  setIsSample(true);
+                  setTab('card');
+                  setRefundOpen(false);
+                  setLedgerOpen(false);
+                  setSelectedReceipt(null);
+                  setMessage('');
+                  loadLedger();
+                }}
+              />
+            )}
+          </View>
         )}
-        {settingsOpen && (
-          <LedgerSettings
-            onClose={() => setSettingsOpen(false)}
-            onSaved={() => {
-              setSettingsOpen(false);
-              setCard(null);
-              setIsSample(false);
-              setSelectedReceipt(null);
-              setLedgerOpen(false);
-              setReceipts(null);
-              loadLedger();
-            }}
-          />
-        )}
-        {!!receipts?.length &&
-          !refundOpen &&
-          !selectedReceipt &&
-          !ledgerOpen && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open demo ledger"
-              disabled={scanning}
-              onPress={() => setLedgerOpen(true)}
-              style={styles.ledgerButton}
-            >
-              <Text style={styles.tabText}>
-                Demo receipts · {receipts.length}
-              </Text>
-            </Pressable>
-          )}
         {selectedReceipt ? (
           <DemoReceiptScreen
             receipt={selectedReceipt}
@@ -246,6 +205,15 @@ export default function App() {
           />
         ) : card && refundOpen ? (
           <RefundQuoteScreen
+            onHistory={() => {
+              setRefundOpen(false);
+              setTab('history');
+            }}
+            historyCount={
+              card.history.length +
+              cardReceipts(receipts ?? [], card.idm).length * 2
+            }
+            initialNetwork={payoutNetwork}
             isSample={isSample}
             balanceJpy={available}
             scannedBalanceJpy={card.balanceJpy}
@@ -267,9 +235,18 @@ export default function App() {
           />
         ) : !card ? (
           <HomeScreen
+            onReset={() => {
+              setReceipts([]);
+              setSelectedReceipt(null);
+              setMessage('');
+              loadLedger();
+            }}
             scanning={scanning}
             onScan={scan}
             onCancel={cancel}
+            onReceipts={
+              receipts?.length ? () => setLedgerOpen(true) : undefined
+            }
             onDemo={() => {
               setCard(sampleCard());
               setIsSample(true);
@@ -280,321 +257,43 @@ export default function App() {
             message={[message, ledgerError].filter(Boolean).join(' ')}
           />
         ) : (
-          <>
-            {card && (
-              <View style={styles.tabs}>
-                {(['card', 'history'] as const).map(value => (
-                  <Pressable
-                    key={value}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: tab === value }}
-                    onPress={() => {
-                      setTab(value);
-                      scroll.current?.scrollTo({ y: 0, animated: false });
-                    }}
-                    style={[styles.tab, tab === value && styles.activeTab]}
-                  >
-                    <Text style={styles.tabText}>
-                      {value === 'card'
-                        ? 'Card'
-                        : `History · ${card.history.length}`}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-            <ScrollView
-              ref={scroll}
-              contentContainerStyle={[
-                styles.content,
-                tab === 'history' && styles.historyContent,
-              ]}
-            >
-              {tab === 'card' && (
-                <>
-                  <Text style={styles.eyebrow}>
-                    YOUR TRANSIT CARD, AT A GLANCE
-                  </Text>
-                  <Text accessibilityRole="header" style={styles.title}>
-                    {scanning
-                      ? 'Hold your card close.'
-                      : card
-                      ? 'A little left to explore.'
-                      : 'What’s left on your card?'}
-                  </Text>
-                  <Text style={styles.description}>
-                    {scanning
-                      ? 'Place one physical Suica card against your phone’s NFC antenna. Keep it still while we read the balance and recent history.'
-                      : isSample
-                      ? 'Explore this sample card, its journeys and a simulated refund.'
-                      : 'Tap your physical Suica card to see its balance in yen.'}
-                  </Text>
-                  {scanning && (
-                    <ActivityIndicator
-                      size="large"
-                      color="#214A37"
-                      accessibilityLabel="Waiting for transit card"
-                    />
-                  )}
-                  {card && (
-                    <View style={styles.balance}>
-                      <Text style={styles.description}>Card balance</Text>
-                      <Text
-                        accessibilityLabel={`${card.balanceJpy} yen`}
-                        style={styles.amount}
-                      >
-                        ¥{card.balanceJpy.toLocaleString('en-US')}
-                      </Text>
-                      <Text style={styles.note}>
-                        {isSample
-                          ? 'Sample card · fictional journeys'
-                          : 'Physical card balance · unchanged by demo refunds'}
-                      </Text>
-                      <Text style={styles.description}>
-                        {receipts === null
-                          ? 'Backend ledger unavailable'
-                          : `Available for demo refunds: ¥${available.toLocaleString(
-                              'en-US',
-                            )}`}
-                      </Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Preview refund"
-                        accessibilityState={{ disabled: refundDisabled }}
-                        disabled={refundDisabled}
-                        onPress={() => setRefundOpen(true)}
-                        style={[
-                          styles.button,
-                          refundDisabled && styles.disabledButton,
-                        ]}
-                      >
-                        <Text style={styles.buttonText}>Preview refund →</Text>
-                      </Pressable>
-                      <Text style={styles.note}>
-                        {available === 0
-                          ? 'No balance available for a refund quote.'
-                          : 'Demo estimate · no funds sent'}
-                      </Text>
-                    </View>
-                  )}
-                </>
-              )}
-              {card && tab === 'history' && (
-                <>
-                  <Text accessibilityRole="header" style={styles.historyTitle}>
-                    Recent journeys
-                  </Text>
-                  <View style={styles.tabs}>
-                    {(['ja', 'en'] as const).map(lang => (
-                      <Pressable
-                        key={lang}
-                        accessibilityRole="radio"
-                        accessibilityLabel={
-                          lang === 'ja'
-                            ? 'Japanese station names'
-                            : 'English station names'
-                        }
-                        accessibilityState={{ selected: language === lang }}
-                        onPress={() => changeLanguage(lang)}
-                        style={[
-                          styles.tab,
-                          language === lang && styles.activeTab,
-                        ]}
-                      >
-                        <Text style={styles.tabText}>
-                          {lang === 'ja' ? '日本語' : 'English'}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  {!!preferenceError && (
-                    <Text accessibilityRole="alert" style={styles.message}>
-                      {preferenceError}
-                    </Text>
-                  )}
-                  <Text style={styles.note}>
-                    Newest first · up to 20 records stored on your card.
-                    Activity labels and station names are best-effort.
-                  </Text>
-                  {card.historyLimited && (
-                    <Text style={styles.message}>
-                      Only part of the history could be read. Scan again while
-                      holding the card still.
-                    </Text>
-                  )}
-                  {card.history.length === 0 && (
-                    <Text style={styles.description}>
-                      No recent history is stored on this card.
-                    </Text>
-                  )}
-                  {card.history.map(record => (
-                    <View key={record.index} style={styles.historyRow}>
-                      <View style={styles.rowHeading}>
-                        <Text style={styles.activity}>{record.activity}</Text>
-                        <Text style={styles.note}>
-                          {record.date || 'Date unavailable'}
-                        </Text>
-                      </View>
-                      <Text style={styles.description}>
-                        {record.changeJpy === null
-                          ? 'Change unavailable'
-                          : `${
-                              record.changeJpy > 0
-                                ? '+'
-                                : record.changeJpy < 0
-                                ? '−'
-                                : ''
-                            }¥${Math.abs(record.changeJpy).toLocaleString(
-                              'en-US',
-                            )}`}
-                        <Text style={styles.note}> · balance change</Text>
-                      </Text>
-                      <Text style={styles.note}>
-                        Balance after · ¥
-                        {record.balanceJpy.toLocaleString('en-US')}
-                      </Text>
-                      {record.activity === 'Rail travel' && (
-                        <Text style={styles.note}>
-                          {translateRoute(record.entry, language) ||
-                            'Unknown entry station'}{' '}
-                          →{' '}
-                          {translateRoute(record.exit, language) ||
-                            'Unknown exit station'}
-                        </Text>
-                      )}
-                      {record.activity === 'Other activity' && (
-                        <Text style={styles.note}>
-                          Terminal 0x
-                          {record.terminal.toString(16).padStart(2, '0')} ·
-                          process 0x
-                          {record.process.toString(16).padStart(2, '0')}
-                        </Text>
-                      )}
-                    </View>
-                  ))}
-                  <Text style={styles.note}>
-                    Changes are calculated from adjacent recorded balances. The
-                    oldest entry has no earlier balance to compare.
-                  </Text>
-                </>
-              )}
-              {receipts === null && !ledgerError && (
-                <Text style={styles.note}>
-                  Connecting to the shared ledger…
-                </Text>
-              )}
-              {!!ledgerError && (
-                <View style={styles.balance}>
-                  <Text accessibilityRole="alert" style={styles.message}>
-                    {ledgerError}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Reload demo ledger"
-                    onPress={loadLedger}
-                    style={styles.button}
-                  >
-                    <Text style={styles.buttonText}>Reload demo ledger</Text>
-                  </Pressable>
-                </View>
-              )}
-              {!!message && (
-                <Text accessibilityRole="alert" style={styles.message}>
-                  {message}
-                </Text>
-              )}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Refresh ledger"
-                disabled={ledgerBusy}
-                onPress={loadLedger}
-                style={styles.tab}
-              >
-                <Text style={styles.tabText}>
-                  {ledgerBusy ? 'Refreshing ledger…' : 'Refresh ledger'}
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                style={styles.button}
-                onPress={scanning ? cancel : scan}
-              >
-                <Text style={styles.buttonText}>
-                  {scanning
-                    ? 'Cancel scan'
-                    : card
-                    ? 'Scan again'
-                    : 'Scan transit card'}
-                </Text>
-              </Pressable>
-              <Text style={styles.note}>
-                {isSample
-                  ? 'Sample-card demo · backend connection required'
-                  : 'Read-only NFC · backend connection required for refunds'}
-              </Text>
-            </ScrollView>
-          </>
+          <CardScreen
+            receipts={receipts ?? []}
+            key={card.idm}
+            card={card}
+            available={available}
+            isSample={isSample}
+            tab={tab}
+            onTab={setTab}
+            language={language}
+            onLanguage={changeLanguage}
+            error={[ledgerError, preferenceError, message]
+              .filter(Boolean)
+              .join(' ')}
+            busy={ledgerBusy}
+            refundDisabled={refundDisabled}
+            scanning={scanning}
+            onRefund={network => {
+              setPayoutNetwork(network);
+              setRefundOpen(true);
+            }}
+            onScan={scan}
+            onCancel={cancel}
+            onRefresh={loadLedger}
+          />
         )}
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 const styles = StyleSheet.create({
-  connection: { fontSize: 12, color: '#68776F', marginTop: 10 },
-  ledgerButton: { paddingVertical: 14, alignSelf: 'flex-start' },
-  disabledButton: { opacity: 0.45 },
-  tabs: { flexDirection: 'row', gap: 8, marginTop: 20 },
-  tab: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
-  activeTab: { backgroundColor: '#E9EFDD' },
-  tabText: { fontSize: 17, color: '#214A37', fontWeight: '600' },
-  historyContent: { justifyContent: 'flex-start' },
-  historyTitle: { fontSize: 28, color: '#214A37', fontWeight: '700' },
-  historyRow: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
-    gap: 10,
-  },
-  rowHeading: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  activity: { fontSize: 18, fontWeight: '600', color: '#214A37' },
+  homeScreen: { paddingHorizontal: 0 },
   screen: { flex: 1, backgroundColor: '#F5F6F0', paddingHorizontal: 24 },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     justifyContent: 'space-between',
-    paddingTop: 12,
+    paddingTop: 14,
+    paddingBottom: 12,
   },
-  name: { fontSize: 30, fontWeight: '700', color: '#214A37' },
-  japanese: { fontSize: 20, color: '#78856B' },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    gap: 20,
-    paddingVertical: 32,
-  },
-  eyebrow: { fontSize: 12, letterSpacing: 2, color: '#63765C' },
-  title: { fontSize: 32, fontWeight: '700', color: '#214A37' },
-  description: { fontSize: 18, lineHeight: 28, color: '#5D6B60' },
-  note: { fontSize: 14, lineHeight: 22, color: '#687667' },
-  balance: {
-    backgroundColor: '#E9EFDD',
-    borderRadius: 20,
-    padding: 24,
-    gap: 12,
-  },
-  amount: { fontSize: 48, fontWeight: '700', color: '#214A37' },
-  button: {
-    backgroundColor: '#214A37',
-    borderRadius: 14,
-    padding: 18,
-    alignItems: 'center',
-  },
-  buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
-  message: { color: '#85472F', fontSize: 16, lineHeight: 24 },
 });

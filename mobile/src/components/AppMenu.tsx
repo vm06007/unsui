@@ -15,13 +15,13 @@ type Props = {
   onHome: () => void;
   onDemo: () => void;
   disabled?: boolean;
-  onSettings: () => void;
+  onReceipts?: () => void;
 };
 export default function AppMenu({
   onHome,
   onDemo,
   disabled,
-  onSettings,
+  onReceipts,
 }: Props) {
   const [page, setPage] = useState<'closed' | 'menu' | 'about'>('closed');
   const insets = useSafeAreaInsets();
@@ -80,14 +80,17 @@ export default function AppMenu({
             <ScrollView>
               {page === 'menu' ? (
                 <>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    style={styles.item}
-                    onPress={() => select(onSettings)}
-                  >
-                    <Text style={styles.itemText}>Ledger connection</Text>
-                    <Text style={styles.arrow}>↗</Text>
-                  </TouchableOpacity>
+                  {onReceipts && (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel="Open receipts"
+                      style={styles.item}
+                      onPress={() => select(onReceipts)}
+                    >
+                      <Text style={styles.itemText}>Receipts</Text>
+                      <Text style={styles.arrow}>↗</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     accessibilityRole="button"
                     style={styles.item}
@@ -107,9 +110,10 @@ export default function AppMenu({
                   <TouchableOpacity
                     accessibilityRole="button"
                     style={styles.item}
+                    accessibilityLabel="Try sample card"
                     onPress={() => select(onDemo)}
                   >
-                    <Text style={styles.itemText}>Demo</Text>
+                    <Text style={styles.itemText}>Try a sample card</Text>
                     <Text style={styles.arrow}>↗</Text>
                   </TouchableOpacity>
                 </>
@@ -121,21 +125,12 @@ export default function AppMenu({
                   </Text>
                   <Text style={styles.body}>
                     Read your Suica balance and history, choose Sui, Ethereum or
-                    Mizuhiki, and scan again to confirm a demo refund.
+                    Mizuhiki, and scan again to confirm your refund request.
                   </Text>
                   <Text style={styles.body}>
-                    This development build records simulated refunds locally or
-                    in the connected demo backend. It never debits your card or
-                    sends crypto. Demo uses a sample card and needs no NFC.
+                    Keep track of your refund requests and receipts in one
+                    place. Try a sample card to explore the app without NFC.
                   </Text>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    style={styles.item}
-                    onPress={() => select(onSettings)}
-                  >
-                    <Text style={styles.itemText}>Ledger connection</Text>
-                    <Text style={styles.arrow}>↗</Text>
-                  </TouchableOpacity>
                   <Text style={styles.event}>ETHGlobal Tokyo 2026</Text>
                   <TouchableOpacity
                     accessibilityRole="button"

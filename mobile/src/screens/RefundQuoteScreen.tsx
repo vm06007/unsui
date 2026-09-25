@@ -18,9 +18,10 @@ import {
   PAYOUT_NETWORKS,
   PayoutNetwork,
   recipientError,
-  RefundQuote,
 } from '../lib/refundQuote';
 
+import ScanSheet from '../components/ScanSheet';
+import { showScanError } from '../lib/scanFeedback';
 import { readCard, cancelScan } from '../lib/suica';
 import { demoLedger } from '../lib/ledger';
 import { DemoReceipt } from '../lib/demoLedger';
@@ -30,6 +31,9 @@ import RecipientEditor, {
 } from '../components/RecipientEditor';
 type Props = {
   isSample?: boolean;
+  initialNetwork?: PayoutNetwork;
+  onHistory?: () => void;
+  historyCount?: number;
   balanceJpy: number;
   scannedBalanceJpy: number;
   cardId: string;
@@ -41,6 +45,9 @@ const yen = (value: number) =>
 
 export default function RefundQuoteScreen({
   isSample = false,
+  initialNetwork = 'sui',
+  onHistory,
+  historyCount = 0,
   balanceJpy,
   scannedBalanceJpy,
   cardId,
@@ -48,13 +55,14 @@ export default function RefundQuoteScreen({
   onRecorded,
 }: Props) {
   const [amount, setAmount] = useState(String(balanceJpy));
-  const [network, setNetwork] = useState<PayoutNetwork>('sui');
+  const [network, setNetwork] = useState<PayoutNetwork>(initialNetwork);
   const [destination, setDestination] =
     useState<Destination>(manualDestination);
   const [recipientBusy, setRecipientBusy] = useState(false);
   const recipient = destination.address;
   const [attempted, setAttempted] = useState(false);
-  const [quote, setQuote] = useState<RefundQuote | null>(null);
+  const [networkOpen, setNetworkOpen] = useState(false);
+  const [amountOpen, setAmountOpen] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const [phase, setPhase] = useState<
     'idle' | 'confirming' | 'cancelling' | 'saving'
@@ -83,7 +91,11 @@ export default function RefundQuoteScreen({
     };
   }, []);
   const confirm = async () => {
-    if (!quote || active.current) return;
+    setAttempted(true);
+    if (active.current || recipientBusy || amountIssue || recipientIssue)
+      return;
+    Keyboard.dismiss();
+    const quote = createDemoQuote(amount, balanceJpy, network, recipient);
     active.current = true;
     cancelled.current = false;
     saving.current = false;
@@ -130,12 +142,14 @@ export default function RefundQuoteScreen({
       });
       if (mounted.current) onRecorded(receipt);
     } catch (error) {
-      if (mounted.current && !cancelled.current)
+      if (mounted.current && !cancelled.current) {
+        if (!saving.current && !isSample) showScanError(error);
         setConfirmationError(
           error instanceof Error
             ? error.message
-            : 'Could not record the demo refund. Please retry.',
+            : 'Could not record the refund. Please retry.',
         );
+      }
     } finally {
       clearTimeout(timeout);
       active.current = false;
@@ -154,8 +168,7 @@ export default function RefundQuoteScreen({
     }
     setConfirmationError('');
     Keyboard.dismiss();
-    if (quote) setQuote(null);
-    else onClose();
+    onClose();
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   useEffect(() => {
@@ -169,341 +182,363 @@ export default function RefundQuoteScreen({
         setConfirmationError('');
         Keyboard.dismiss();
         scroll.current?.scrollTo({ y: 0, animated: false });
-        if (quote) setQuote(null);
-        else onClose();
+        onClose();
         return true;
       },
     );
     return () => subscription.remove();
-  }, [quote, onClose]);
-  const review = () => {
-    setAttempted(true);
-    if (amountIssue || recipientIssue || recipientBusy) return;
-    Keyboard.dismiss();
-    setQuote(createDemoQuote(amount, balanceJpy, network, recipient));
-    scroll.current?.scrollTo({ y: 0, animated: false });
-  };
-  const payout = PAYOUT_NETWORKS[quote?.network ?? network];
+  }, [onClose]);
+  const payout = PAYOUT_NETWORKS[network];
+  const estimate = !amountIssue
+    ? createDemoQuote(
+        amount,
+        balanceJpy,
+        network,
+        network === 'sui' ? `0x${'1'.repeat(64)}` : `0x${'1'.repeat(40)}`,
+      )
+    : null;
+  const locked = phase !== 'idle';
   return (
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      {onHistory && (
+        <View style={styles.tabs}>
+          <Pressable
+            style={[styles.tab, styles.tabActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: true }}
+          >
+            <Text style={[styles.tabText, styles.tabTextActive]}>
+              Your card
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            disabled={locked || recipientBusy}
+            onPress={onHistory}
+            style={styles.tab}
+          >
+            <Text style={styles.tabText}>History · {historyCount}</Text>
+          </Pressable>
+        </View>
+      )}
       <ScrollView
         ref={scroll}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
       >
+        <View style={styles.balanceCard}>
+          <View style={styles.row}>
+            <Text style={styles.overline}>AVAILABLE TO REFUND</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Change payout network"
+              disabled={locked || recipientBusy}
+              onPress={() => setNetworkOpen(!networkOpen)}
+            >
+              <Text style={styles.network}>{payout.name} ⌄</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.balance}>
+            ¥{balanceJpy.toLocaleString('en-US')}
+          </Text>
+          <Text style={styles.rate}>
+            ≈{' '}
+            {(balanceJpy / payout.yenPerAsset).toFixed(
+              network === 'sui' ? 4 : 6,
+            )}{' '}
+            {payout.asset}
+          </Text>
+          <Text style={styles.physical}>
+            On your card · {yen(scannedBalanceJpy)}
+          </Text>
+        </View>
+        {networkOpen && (
+          <View style={styles.networkPanel}>
+            {(Object.keys(PAYOUT_NETWORKS) as PayoutNetwork[]).map(key => (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityLabel={PAYOUT_NETWORKS[key].name}
+                style={styles.networkOption}
+                onPress={() => {
+                  setNetwork(key);
+                  setDestination(manualDestination());
+                  setRecipientBusy(false);
+                  setAttempted(false);
+                  setNetworkOpen(false);
+                }}
+              >
+                <Text style={styles.label}>
+                  {PAYOUT_NETWORKS[key].name}
+                  {key === 'mizuhiki' ? ' · Awaji Testnet' : ''}
+                </Text>
+                <Text style={styles.link}>{key === network ? '✓' : '→'}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        <RecipientEditor
+          key={network}
+          network={network}
+          value={destination}
+          onChange={setDestination}
+          onBusy={setRecipientBusy}
+          disabled={locked}
+        />
+        {attempted && recipientIssue && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {recipientIssue}
+          </Text>
+        )}
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={quote ? 'Edit quote' : 'Back to card'}
-          onPress={back}
-          disabled={phase !== 'idle'}
-          accessibilityState={{ disabled: phase !== 'idle' }}
-          style={styles.back}
+          disabled={locked}
+          style={styles.fill}
+          accessibilityLabel="Change refund amount"
+          onPress={() => setAmountOpen(!amountOpen)}
         >
-          <Text style={styles.backText}>
-            ← {quote ? 'Edit quote' : 'Back to card'}
+          <Text style={styles.link}>
+            {amountOpen
+              ? 'Use full balance / edit amount'
+              : 'Change refund amount'}
           </Text>
         </Pressable>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>DEMO QUOTE · NO FUNDS SENT</Text>
-        </View>
-        <Text accessibilityRole="header" style={styles.title}>
-          {quote ? 'Your refund estimate.' : 'Where next for your yen?'}
-        </Text>
-        <Text style={styles.description}>
-          {quote
-            ? 'Review the amount, destination and estimated payout.'
-            : 'Choose an amount and a wallet to preview your crypto payout.'}
-        </Text>
-        {quote ? (
-          <>
-            <View style={styles.estimate}>
-              <Text style={styles.label}>Estimated crypto payout</Text>
-              <Text testID="quote-payout" style={styles.payout}>
-                {quote.estimatedCrypto} {payout.asset}
-              </Text>
-              <Text style={styles.note}>After the 2% demo service fee</Text>
-            </View>
-            <View style={styles.panel}>
-              <Detail label="Refund amount" value={yen(quote.amountJpy)} />
-              <Detail label="Demo service fee · 2%" value={yen(quote.feeJpy)} />
-              <Detail label="Amount converted" value={yen(quote.netJpy)} />
-              <Detail
-                label="Network"
-                value={
-                  quote.network === 'mizuhiki'
-                    ? 'Mizuhiki · Awaji Testnet'
-                    : payout.name
-                }
-              />
-              <Detail
-                label="Illustrative rate"
-                value={`1 ${payout.asset} = ${yen(payout.yenPerAsset)}`}
-              />
-              <View style={styles.field}>
-                <Text style={styles.label}>Recipient wallet</Text>
-                <Text
-                  selectable
-                  testID="quote-recipient"
-                  style={styles.address}
-                >
-                  {quote.recipient}
-                </Text>
-              </View>
-            </View>
-            {destination.resolved && (
-              <Text style={styles.note}>
-                Resolved from {destination.resolved.name} on Sui mainnet. The
-                full destination is shown above.
-              </Text>
-            )}
-            {destination.connection && (
-              <Text style={styles.note}>
-                Recipient supplied by dGen1 · chain{' '}
-                {destination.connection.chainId}.{' '}
-                {destination.signed
-                  ? 'Destination message signed on-device; not server-verified.'
-                  : 'No signed message requested.'}
-              </Text>
-            )}
-            <Text style={styles.note}>
-              This is a local estimate, not a live offer. No card debit, wallet
-              verification or blockchain transaction has taken place. Network
-              fees are not included.
-            </Text>
-            <Text style={styles.note}>
-              {isSample
-                ? 'Confirm this sample-card refund without NFC.'
-                : 'Re-scan the same card to confirm.'}{' '}
-              The simulated receipt is saved in the development backend . This
-              reduces only your remaining demo allowance, across all networks.
-            </Text>
-            {!!confirmationError && (
-              <Text accessibilityRole="alert" style={styles.error}>
-                {confirmationError}
-              </Text>
-            )}
-            {phase !== 'idle' && (
-              <View style={styles.field}>
-                <ActivityIndicator
-                  color="#214A37"
-                  accessibilityLabel={
-                    phase === 'saving'
-                      ? 'Saving demo receipt'
-                      : 'Confirming transit card'
-                  }
-                />
-                <Text accessibilityLiveRegion="polite" style={styles.note}>
-                  {phase === 'saving'
-                    ? 'Saving the receipt to the backend…'
-                    : phase === 'cancelling'
-                    ? 'Closing the NFC session…'
-                    : 'Hold the original card near your phone. Its balance must be unchanged.'}
-                </Text>
-                {phase === 'confirming' && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Cancel confirmation"
-                    style={styles.back}
-                    onPress={() => cancelConfirmation()}
-                  >
-                    <Text style={styles.backText}>Cancel confirmation</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Confirm simulated refund"
-              style={styles.primary}
-              disabled={phase !== 'idle'}
-              accessibilityState={{ disabled: phase !== 'idle' }}
-              onPress={confirm}
-            >
-              <Text style={styles.primaryText}>
-                {confirmationError
-                  ? 'Retry confirmation'
-                  : isSample
-                  ? 'Confirm sample refund'
-                  : 'Re-scan & confirm demo refund'}
-              </Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <View style={styles.panel}>
-              <Text style={styles.label}>Amount to refund · JPY</Text>
-              <Text style={styles.note}>
-                Available demo balance: {yen(balanceJpy)} · Card reads{' '}
-                {yen(scannedBalanceJpy)}
-              </Text>
-              <TextInput
-                testID="refund-amount"
-                accessibilityLabel="Refund amount in yen"
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="number-pad"
-                maxLength={8}
-                style={styles.input}
-              />
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setAmount(String(balanceJpy))}
-                style={styles.back}
-              >
-                <Text style={styles.backText}>Use available balance</Text>
-              </Pressable>
-              {attempted && amountIssue && (
-                <Text accessibilityRole="alert" style={styles.error}>
-                  {amountIssue}
-                </Text>
-              )}
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>Payout network</Text>
-              {(Object.keys(PAYOUT_NETWORKS) as PayoutNetwork[]).map(key => (
-                <Pressable
-                  key={key}
-                  accessibilityRole="radio"
-                  accessibilityLabel={PAYOUT_NETWORKS[key].name}
-                  accessibilityState={{ checked: network === key }}
-                  onPress={() => {
-                    if (key !== network) {
-                      setNetwork(key);
-                      setDestination(manualDestination());
-                      setRecipientBusy(false);
-                      setAttempted(false);
-                    }
-                  }}
-                  style={[styles.network, network === key && styles.selected]}
-                >
-                  <View style={styles.flex}>
-                    <Text style={styles.label}>
-                      {PAYOUT_NETWORKS[key].name}
-                    </Text>
-                    <Text style={styles.note}>
-                      {key === 'mizuhiki'
-                        ? 'Awaji Testnet · MIZU'
-                        : `${PAYOUT_NETWORKS[key].asset} · quote preview`}
-                    </Text>
-                  </View>
-                  <Text style={styles.radio}>
-                    {network === key ? '●' : '○'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <RecipientEditor
-              key={network}
-              network={network}
-              value={destination}
-              onChange={setDestination}
-              onBusy={setRecipientBusy}
-            />
-            {attempted && recipientIssue && (
-              <Text accessibilityRole="alert" style={styles.error}>
-                {recipientIssue}
-              </Text>
-            )}
-            <View style={styles.estimate}>
-              <Text style={styles.label}>Fixed demo rate</Text>
-              <Text style={styles.description}>
-                1 {payout.asset} = {yen(payout.yenPerAsset)}
-              </Text>
-              <Text style={styles.note}>
-                A 2% demo service fee is deducted before conversion, so you
-                receive slightly less crypto. Network fees are not included.
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Review demo quote"
-              disabled={recipientBusy}
-              accessibilityState={{ disabled: recipientBusy }}
-              onPress={review}
-              style={styles.primary}
-            >
-              <Text style={styles.primaryText}>Review demo quote →</Text>
-            </Pressable>
-          </>
+        {amountOpen && (
+          <TextInput
+            testID="refund-amount"
+            accessibilityLabel="Refund amount in yen"
+            value={amount}
+            onChangeText={setAmount}
+            editable={!locked}
+            keyboardType="number-pad"
+            style={styles.input}
+          />
         )}
+        {attempted && amountIssue && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {amountIssue}
+          </Text>
+        )}
+        <Text style={styles.note}>
+          {isSample
+            ? 'Sample card selected. Confirmation uses the sample card without NFC.'
+            : 'Scan this card once more to confirm your refund.'}
+        </Text>
+        {estimate && (
+          <Text testID="quote-payout" style={styles.note}>
+            Receive ≈ {estimate.estimatedCrypto} {payout.asset} · fee{' '}
+            {yen(estimate.feeJpy)} (2%)
+          </Text>
+        )}
+        {!!confirmationError && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {confirmationError}
+          </Text>
+        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Confirm refund"
+          disabled={locked || recipientBusy}
+          onPress={confirm}
+          style={[styles.button, (locked || recipientBusy) && styles.disabled]}
+        >
+          <Text style={styles.buttonText}>
+            {phase === 'saving'
+              ? 'Saving refund…'
+              : phase === 'cancelling'
+              ? 'Closing scanner…'
+              : isSample
+              ? 'Confirm sample refund'
+              : 'Scan card to confirm'}
+          </Text>
+        </Pressable>
+        {locked && <ActivityIndicator color="#173E35" />}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to card"
+          disabled={locked}
+          onPress={back}
+          style={styles.back}
+        >
+          <Text style={styles.muted}>Back to card</Text>
+        </Pressable>
       </ScrollView>
+      <ScanSheet
+        title="Confirm your refund"
+        subtitle="Scan the same card again to continue"
+        visible={phase === 'confirming' && !isSample}
+        onCancel={() => cancelConfirmation()}
+      />
     </KeyboardAvoidingView>
-  );
-}
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detail}>
-      <Text style={styles.note}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-    </View>
   );
 }
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { paddingVertical: 24, gap: 22 },
-  back: { paddingVertical: 12, alignSelf: 'flex-start' },
-  backText: { color: '#214A37', fontSize: 16, fontWeight: '600' },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#E9EFDD',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  badgeText: {
-    color: '#385131',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-  },
-  title: { fontSize: 34, fontWeight: '700', color: '#214A37' },
-  description: { fontSize: 18, lineHeight: 27, color: '#5D6B60' },
-  note: { fontSize: 14, lineHeight: 22, color: '#687667' },
-  label: { fontSize: 17, color: '#214A37', fontWeight: '600' },
-  field: { gap: 12 },
-  panel: { padding: 20, gap: 14, borderRadius: 18, backgroundColor: '#FFFFFF' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#BEC8B7',
-    borderRadius: 12,
+  deviceWallet: { marginTop: 12 },
+  walletButton: {
     padding: 14,
-    color: '#214A37',
-    backgroundColor: '#FFFFFF',
-    fontSize: 18,
-    minHeight: 52,
+    backgroundColor: '#E5EBDD',
+    borderRadius: 14,
+    alignItems: 'center',
   },
-  addressInput: { minHeight: 94, textAlignVertical: 'top', fontSize: 16 },
-  network: {
+  walletButtonText: { color: '#173E35', fontWeight: '700', fontSize: 13 },
+  walletNote: { fontSize: 10, lineHeight: 16, color: '#68776F', marginTop: 8 },
+  root: { flex: 1, backgroundColor: '#F5F6F0' },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 14,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  brand: {
+    fontSize: 23,
+    color: '#173E35',
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  badge: { fontSize: 10, letterSpacing: 1.4, color: '#64766A' },
+  tabs: {
+    marginHorizontal: 0,
+    flexDirection: 'row',
+    backgroundColor: '#E5EBDD',
+    padding: 4,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 12 },
+  tabActive: { backgroundColor: '#fff' },
+  tabText: { fontSize: 13, color: '#68776F' },
+  tabTextActive: { color: '#173E35', fontWeight: '700' },
+  content: { paddingTop: 12, paddingBottom: 32 },
+  balanceCard: {
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: '#173E35',
+    marginBottom: 18,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  overline: { fontSize: 10, letterSpacing: 1.4, color: '#B5CDBB' },
+  network: {
+    color: '#CBEE9F',
+    fontSize: 13,
+    paddingVertical: 8,
+    paddingLeft: 12,
+  },
+  balance: {
+    fontSize: 43,
+    fontWeight: '600',
+    color: '#F5F6F0',
+    letterSpacing: -2,
+  },
+  rate: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#CBEE9F',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  physical: {
+    fontSize: 11,
+    color: '#B5CDBB',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#416354',
+  },
+  button: {
+    backgroundColor: '#173E35',
+    borderRadius: 17,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#D9DECF',
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-  },
-  selected: { backgroundColor: '#E9EFDD', borderColor: '#214A37' },
-  radio: { fontSize: 24, color: '#214A37' },
-  estimate: {
-    padding: 22,
-    borderRadius: 18,
-    backgroundColor: '#E9EFDD',
-    gap: 12,
-  },
-  payout: { fontSize: 34, fontWeight: '700', color: '#214A37' },
-  detail: { gap: 4 },
-  value: { fontSize: 18, color: '#214A37', fontWeight: '600' },
-  address: { fontSize: 16, lineHeight: 25, color: '#214A37' },
-  primary: {
-    borderRadius: 14,
-    padding: 18,
+    minHeight: 54,
     alignItems: 'center',
-    backgroundColor: '#214A37',
+    justifyContent: 'center',
   },
-  primaryText: { fontSize: 18, fontWeight: '600', color: '#FFFFFF' },
-  error: { fontSize: 15, lineHeight: 23, color: '#85472F' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  disabled: { opacity: 0.45 },
+  historyShortcut: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+  },
+  link: { color: '#24856B', fontSize: 13 },
+  disclosure: { fontSize: 10, lineHeight: 16, color: '#68776F', marginTop: 12 },
+  back: { alignItems: 'center', padding: 16 },
+  muted: { color: '#68776F', fontSize: 13 },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#173E35',
+    marginBottom: 10,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#DCE3D7',
+    borderRadius: 14,
+    padding: 14,
+    color: '#173E35',
+    fontSize: 14,
+  },
+  fill: { paddingVertical: 14 },
+  note: { fontSize: 12, lineHeight: 19, color: '#68776F', marginBottom: 10 },
+  error: { color: '#B74136', fontSize: 13, marginTop: 12 },
+  networkPanel: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  networkOption: {
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#173E35',
+    letterSpacing: -0.7,
+  },
+  languages: {
+    flexDirection: 'row',
+    padding: 3,
+    backgroundColor: '#E5EBDD',
+    borderRadius: 12,
+  },
+  language: { padding: 9, borderRadius: 10 },
+  small: { fontSize: 13, color: '#173E35' },
+  activity: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginTop: 10,
+    padding: 14,
+  },
+  refundActivity: { backgroundColor: '#E6EEDD' },
+  activityTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  activityBody: { flex: 1 },
+  refundAmount: { color: '#24856B' },
+  itemTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: '#173E35',
+  },
+  date: { fontSize: 14, lineHeight: 20, color: '#52665A', marginTop: 6 },
+  right: { alignItems: 'flex-end', maxWidth: '32%' },
+  details: {
+    borderTopWidth: 1,
+    borderTopColor: '#DCE3D7',
+    marginTop: 14,
+    paddingTop: 12,
+  },
+  empty: { paddingVertical: 36, alignItems: 'center' },
 });

@@ -52,7 +52,11 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
     for (const r of parsed.receipts) {
       if (
         !r ||
-        r.id !== `DEMO-${String(validated.length + 1).padStart(6, '0')}` ||
+        !['GM', 'DEMO'].some(
+          prefix =>
+            r.id ===
+            `${prefix}-${String(validated.length + 1).padStart(6, '0')}`,
+        ) ||
         typeof r.requestId !== 'string' ||
         !r.requestId ||
         requests.has(r.requestId) ||
@@ -105,14 +109,19 @@ export function createDemoLedger(storage: Storage) {
     try {
       raw = await storage.getItem(LEDGER_KEY);
     } catch {
-      throw Error(
-        'Could not read the demo ledger. Try loading it again.',
-      );
+      throw Error('Could not read the demo ledger. Try loading it again.');
     }
     return decodeDemoReceipts(raw);
   };
   return {
     list: () => serial(load),
+    reset: () =>
+      serial(() =>
+        storage.setItem(
+          LEDGER_KEY,
+          JSON.stringify({ version: 1, receipts: [] }),
+        ),
+      ),
     record: (input: {
       requestId: string;
       quote: RefundQuote;
@@ -154,7 +163,7 @@ export function createDemoLedger(storage: Storage) {
           throw Error('The quote changed. Please review it again.');
         const receipt: DemoReceipt = {
           ...quote,
-          id: `DEMO-${String(receipts.length + 1).padStart(6, '0')}`,
+          id: `GM-${String(receipts.length + 1).padStart(6, '0')}`,
           requestId: input.requestId,
           cardId,
           scannedBalanceJpy: input.scannedBalanceJpy,

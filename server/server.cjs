@@ -3,7 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {createDemoLedger} = require('./build/demoLedger');
 
-function createServer({file = path.join(__dirname, 'data/ledger.json')} = {}) {
+function createServer({file = path.join(__dirname, 'data/ledger.json'), allowReset = process.env.NODE_ENV !== 'production'} = {}) {
   const ledger = createDemoLedger({
     async getItem() {
       try {return await fs.readFile(file, 'utf8');}
@@ -39,6 +39,14 @@ function createServer({file = path.join(__dirname, 'data/ledger.json')} = {}) {
           feeJpy:r.feeJpy,reference:r.id,digest:null,mode:'demo',receiptId:r.id
         })).reverse();
         return reply(200,{source:'mobile-ledger',processorConnected:false,feeBps:200,updatedAt:Date.now(),records});
+      }
+      if(req.method==='POST' && req.url==='/ledger/reset') {
+        if(!allowReset) return reply(403,{error:'Reset is disabled'});
+        let body='';
+        for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>1024)return reply(413,{error:'Request too large'});}
+        if(JSON.parse(body).confirm!=='reset-demo-ledger') return reply(400,{error:'Reset confirmation required'});
+        await ledger.reset();
+        return reply(200,{reset:true});
       }
       if(req.method==='POST' && req.url==='/refunds') {
         let body='';

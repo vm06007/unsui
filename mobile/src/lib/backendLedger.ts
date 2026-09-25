@@ -82,3 +82,8 @@ export async function recordBackend(
   await requests.removeItem(key);
   return receipt;
 }
+
+export async function resetBackend(url: string) {
+  await backendRequest(url, '/ledger/reset', { confirm: 'reset-demo-ledger' });
+  await requests.clear();
+}

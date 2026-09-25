@@ -7,7 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { PayoutNetwork } from '../lib/refundQuote';
+import { PAYOUT_NETWORKS, PayoutNetwork } from '../lib/refundQuote';
 import {
   cancelDeviceWallet,
   connectDeviceWallet,
@@ -38,12 +38,14 @@ export const manualDestination = (value = ''): Destination => ({
   blocked: false,
 });
 type Props = {
+  disabled?: boolean;
   network: PayoutNetwork;
   value: Destination;
   onChange: (value: Destination) => void;
   onBusy: (busy: boolean) => void;
 };
 export default function RecipientEditor({
+  disabled = false,
   network,
   value,
   onChange,
@@ -88,7 +90,7 @@ export default function RecipientEditor({
     action: 'connect' | 'switch' | 'sign' | 'resolve',
     name = value.input,
   ) => {
-    if (running.current) return;
+    if (running.current || disabled) return;
     running.current = true;
     const current = ++epoch.current;
     setBusy(true);
@@ -157,19 +159,18 @@ export default function RecipientEditor({
     <View style={styles.group}>
       <Text style={styles.label}>
         {network === 'sui'
-          ? 'Recipient address or .sui name'
-          : 'Recipient wallet address'}
+          ? 'Sui wallet address or .sui name'
+          : `${PAYOUT_NETWORKS[network].name} wallet address`}
       </Text>
       <TextInput
         testID="refund-recipient"
         accessibilityLabel="Recipient wallet address"
         value={value.input}
         onChangeText={edit}
-        editable={!busy}
+        editable={!busy && !disabled}
         autoCapitalize="none"
         autoCorrect={false}
         spellCheck={false}
-        multiline
         placeholder={network === 'sui' ? '0x… or yourname.sui' : '0x…'}
         placeholderTextColor="#78856B"
         style={styles.input}
@@ -177,21 +178,22 @@ export default function RecipientEditor({
       {network === 'sui' ? (
         <>
           <Text style={styles.note}>
-            SuiNS names resolve on mainnet. Review the full address before using
-            it in this demo. Resolution needs internet; raw addresses work
-            offline.
+            Enter a .sui name or wallet address. Review the resolved address
+            before continuing.
           </Text>
           <View style={styles.actions}>
             <Action
               label="Resolve .sui name"
               disabled={
-                busy || !value.input.trim().toLowerCase().endsWith('.sui')
+                disabled ||
+                busy ||
+                !value.input.trim().toLowerCase().endsWith('.sui')
               }
               onPress={() => run('resolve')}
             />
             <Action
-              label="Use demo name"
-              disabled={busy}
+              label="Use example name"
+              disabled={busy || disabled}
               onPress={() => run('resolve', randomDemoName())}
             />
           </View>
@@ -206,6 +208,7 @@ export default function RecipientEditor({
               {value.blocked ? (
                 <Action
                   label="Use resolved address"
+                  disabled={disabled}
                   onPress={() =>
                     onChange({
                       ...value,
@@ -236,7 +239,7 @@ export default function RecipientEditor({
                 ? 'Reconnect dGen1 wallet'
                 : 'Connect dGen1 wallet'
             }
-            disabled={busy || !available}
+            disabled={disabled || busy || !available}
             onPress={() => run('connect')}
           />
           {value.connection && (
@@ -256,14 +259,14 @@ export default function RecipientEditor({
               {(mismatch || value.blocked) && (
                 <Action
                   label="Switch dGen1 network"
-                  disabled={busy}
+                  disabled={busy || disabled}
                   onPress={() => run('switch')}
                 />
               )}
               {!mismatch && !value.blocked && (
                 <Action
                   label="Sign destination message (optional)"
-                  disabled={busy}
+                  disabled={busy || disabled}
                   onPress={() => run('sign')}
                 />
               )}
@@ -275,7 +278,7 @@ export default function RecipientEditor({
                   </Text>
                   <Action
                     label="Remove signature"
-                    disabled={busy}
+                    disabled={busy || disabled}
                     onPress={() => onChange({ ...value, signed: undefined })}
                   />
                 </>
@@ -287,7 +290,7 @@ export default function RecipientEditor({
               </Text>
               <Action
                 label="Use manual entry"
-                disabled={busy}
+                disabled={busy || disabled}
                 onPress={() => {
                   onChange(manualDestination());
                   setError('');
@@ -337,29 +340,24 @@ function Action({
   );
 }
 const styles = StyleSheet.create({
-  group: { gap: 12 },
-  label: { fontSize: 16, fontWeight: '600', color: '#214A37' },
-  note: { fontSize: 14, lineHeight: 22, color: '#687667' },
+  group: { gap: 10 },
+  label: { fontSize: 13, fontWeight: '600', color: '#173E35' },
+  note: { fontSize: 12, lineHeight: 19, color: '#68776F' },
   error: { fontSize: 15, lineHeight: 23, color: '#85472F' },
   input: {
     borderWidth: 1,
-    borderColor: '#BEC8B7',
-    borderRadius: 12,
+    borderColor: '#DCE3D7',
+    borderRadius: 14,
     padding: 14,
-    color: '#214A37',
+    color: '#173E35',
     backgroundColor: '#FFFFFF',
-    fontSize: 16,
-    minHeight: 94,
-    textAlignVertical: 'top',
+    fontSize: 14,
   },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   panel: { padding: 16, gap: 12, backgroundColor: '#E9EFDD', borderRadius: 12 },
   button: {
     paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#BEC8B7',
+    paddingHorizontal: 0,
     alignSelf: 'flex-start',
   },
   disabled: { opacity: 0.45 },

@@ -20,8 +20,8 @@ The service binds to `127.0.0.1:4100`. Run one process per ledger file.
 and atomic rename; requests are serialized. Back up this file to retain demo data.
 
 Android USB: `adb reverse tcp:4100 tcp:4100`, then use `http://localhost:4100`
-in Menu → Ledger connection. For an iPhone on the same trusted LAN, start with
-`HOST=0.0.0.0 npm start`, use the computer's LAN IP in that menu, and allow the
+for `BACKEND_URL` in `mobile/src/config.ts`. For an iPhone on the same trusted LAN, start with
+`HOST=0.0.0.0 npm start`, set that variable to the computer's LAN origin before bundling, and allow the
 OS's local-network permission. HTTP access depends on the native build's network
 security settings; debug Android permits it. A hosted service should use HTTPS.
 

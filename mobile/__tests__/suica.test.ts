@@ -77,13 +77,13 @@ test('retains balance and marks partial history if a later read fails', async ()
   expect(card.historyLimited).toBe(true);
   expect(NfcManager.cancelTechnologyRequest).toHaveBeenCalled();
 });
-test('stops at an empty history block and never requests beyond block 19', async () => {
+test('reads all history slots including empty ones, never beyond block 19', async () => {
   ready();
   (NfcManager.transceive as jest.Mock)
     .mockResolvedValueOnce(response(575))
-    .mockResolvedValueOnce(response(0));
+    .mockResolvedValue(response(0));
   expect((await readCard(() => false)).historyLimited).toBe(false);
-  expect(NfcManager.transceive).toHaveBeenCalledTimes(2);
+  expect(NfcManager.transceive).toHaveBeenCalledTimes(20);
   jest.clearAllMocks();
   (NfcManager.transceive as jest.Mock).mockResolvedValue(response(575));
   expect((await readCard(() => false)).history).toHaveLength(20);

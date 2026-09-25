@@ -61,7 +61,7 @@ test('demo name resolves but must be selected before it becomes a recipient', as
     network: 'mainnet',
   });
   await mount('sui');
-  await act(async () => button('Use demo name').props.onPress());
+  await act(async () => button('Use example name').props.onPress());
   expect(props().value.input).toBe('kartik.sui');
   expect(props().value.address).toBe('');
   expect(props().value.blocked).toBe(true);
@@ -80,7 +80,7 @@ test('cancelled lookup cannot fill a recipient when its late response arrives', 
   );
   await mount('sui');
   await act(async () => {
-    button('Use demo name').props.onPress();
+    button('Use example name').props.onPress();
   });
   await act(async () => button('Cancel recipient request').props.onPress());
   await act(async () =>

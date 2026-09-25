@@ -29,22 +29,21 @@ export default function DemoLedgerScreen({
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Close demo ledger"
+        accessibilityLabel="Close receipts"
         onPress={onClose}
         style={styles.back}
       >
         <Text style={styles.label}>← Back</Text>
       </Pressable>
       <Text accessibilityRole="header" style={styles.title}>
-        Demo receipts.
+        Your receipts.
       </Text>
       <Text style={styles.note}>
-        Saved in the shared development backend. All refunds below are simulated; no funds were
-        sent.
+        Your recorded refund requests, all in one place.
       </Text>
       {!receipts.length && (
         <Text style={styles.note}>
-          No demo refunds recorded yet. Scan a card to get started.
+          No refunds recorded yet. Scan a card to get started.
         </Text>
       )}
       {[...receipts].reverse().map(receipt => (
@@ -55,7 +54,7 @@ export default function DemoLedgerScreen({
           onPress={() => onSelect(receipt)}
           style={styles.card}
         >
-          <Text style={styles.label}>{receipt.id} · Simulated</Text>
+          <Text style={styles.label}>{receipt.id} · Recorded</Text>
           <Text style={styles.amount}>
             ¥{receipt.amountJpy.toLocaleString('en-US')} →{' '}
             {receipt.estimatedCrypto} {PAYOUT_NETWORKS[receipt.network].asset}

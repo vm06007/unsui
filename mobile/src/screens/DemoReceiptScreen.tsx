@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   BackHandler,
   Pressable,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import SuccessConfetti from '../components/SuccessConfetti';
 import { DemoReceipt } from '../lib/demoLedger';
 import { PAYOUT_NETWORKS } from '../lib/refundQuote';
 export default function DemoReceiptScreen({
@@ -16,6 +17,17 @@ export default function DemoReceiptScreen({
   receipt: DemoReceipt;
   onClose: () => void;
 }) {
+  const [replay, setReplay] = useState(0);
+  const taps = useRef({ count: 0, time: 0 });
+  const replayConfetti = () => {
+    const now = Date.now();
+    const count = now - taps.current.time < 1500 ? taps.current.count + 1 : 1;
+    taps.current = { count, time: now };
+    if (count === 3) {
+      taps.current.count = 0;
+      setReplay(value => value + 1);
+    }
+  };
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       onClose();
@@ -24,70 +36,73 @@ export default function DemoReceiptScreen({
     return () => sub.remove();
   }, [onClose]);
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.badge}>SIMULATED REFUND · SAVED IN BACKEND</Text>
-      <Text accessibilityLabel="Receipt saved" style={styles.check}>
-        ✓
-      </Text>
-      <Text accessibilityRole="header" style={styles.title}>
-        Your demo receipt.
-      </Text>
-      <Text style={styles.note}>
-        No funds were sent. Your physical card balance is unchanged.
-      </Text>
-      <View style={styles.panel}>
-        <Text style={styles.label}>Simulated crypto payout</Text>
-        <Text style={styles.amount}>
-          {receipt.estimatedCrypto} {PAYOUT_NETWORKS[receipt.network].asset}
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.badge}>REFUND REQUEST RECORDED</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Receipt saved"
+          onPress={replayConfetti}
+        >
+          <Text style={styles.check}>✓</Text>
+        </Pressable>
+        <Text accessibilityRole="header" style={styles.title}>
+          Your receipt.
         </Text>
-        <Text style={styles.note}>After the 2% demo service fee</Text>
-      </View>
-      <View style={styles.panel}>
-        <Row label="Receipt reference" value={receipt.id} />
-        <Row
-          label="Recorded at"
-          value={new Date(receipt.createdAt).toLocaleString()}
-        />
-        <Row label="Card" value={`•••• ${receipt.cardId.slice(-4)}`} />
-        <Row
-          label="Demo refund amount"
-          value={`¥${receipt.amountJpy.toLocaleString('en-US')}`}
-        />
-        <Row
-          label="Demo service fee"
-          value={`¥${receipt.feeJpy.toLocaleString('en-US')}`}
-        />
-        <Row
-          label="Amount converted"
-          value={`¥${receipt.netJpy.toLocaleString('en-US')}`}
-        />
-        <Row
-          label="Network"
-          value={
-            receipt.network === 'mizuhiki'
-              ? 'Mizuhiki · Awaji Testnet'
-              : PAYOUT_NETWORKS[receipt.network].name
-          }
-        />
-        <Row label="Recipient wallet" value={receipt.recipient} />
-        <Row
-          label="Demo balance after this refund"
-          value={`¥${receipt.remainingDemoJpy.toLocaleString('en-US')}`}
-        />
-      </View>
-      <Text style={styles.note}>
-        This demo receipt is not proof of payment. No blockchain transaction or
-        transaction hash was created. Rates and fees are illustrative.
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close demo receipt"
-        onPress={onClose}
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>Back to card</Text>
-      </Pressable>
-    </ScrollView>
+        <Text style={styles.note}>
+          Your refund request and destination have been recorded.
+        </Text>
+        <View style={styles.panel}>
+          <Text style={styles.label}>Estimated crypto payout</Text>
+          <Text style={styles.amount}>
+            {receipt.estimatedCrypto} {PAYOUT_NETWORKS[receipt.network].asset}
+          </Text>
+          <Text style={styles.note}>After the 2% service fee</Text>
+        </View>
+        <View style={styles.panel}>
+          <Row label="Receipt reference" value={receipt.id} />
+          <Row
+            label="Recorded at"
+            value={new Date(receipt.createdAt).toLocaleString()}
+          />
+          <Row label="Card" value={`•••• ${receipt.cardId.slice(-4)}`} />
+          <Row
+            label="Refund amount"
+            value={`¥${receipt.amountJpy.toLocaleString('en-US')}`}
+          />
+          <Row
+            label="Service fee"
+            value={`¥${receipt.feeJpy.toLocaleString('en-US')}`}
+          />
+          <Row
+            label="Amount converted"
+            value={`¥${receipt.netJpy.toLocaleString('en-US')}`}
+          />
+          <Row
+            label="Network"
+            value={
+              receipt.network === 'mizuhiki'
+                ? 'Mizuhiki · Awaji Testnet'
+                : PAYOUT_NETWORKS[receipt.network].name
+            }
+          />
+          <Row label="Recipient wallet" value={receipt.recipient} />
+          <Row
+            label="Available balance after this refund"
+            value={`¥${receipt.remainingDemoJpy.toLocaleString('en-US')}`}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close receipt"
+          onPress={onClose}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Back to card</Text>
+        </Pressable>
+      </ScrollView>
+      <SuccessConfetti key={replay} />
+    </View>
   );
 }
 function Row({ label, value }: { label: string; value: string }) {
@@ -101,6 +116,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   check: { fontSize: 48, color: '#173E35', textAlign: 'center' },
   content: { gap: 22, paddingVertical: 28 },
   badge: { fontSize: 12, color: '#385131', fontWeight: '700' },

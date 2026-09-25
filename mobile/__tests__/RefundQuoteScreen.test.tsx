@@ -40,53 +40,35 @@ afterEach(async () => {
   jest.clearAllMocks();
 });
 
-test('invalid amounts and recipients stay on the form with useful errors', async () => {
-  await act(async () => {
-    input('refund-amount').props.onChangeText('1000');
-    button('Review demo quote').props.onPress();
-  });
-  // Review again after the edited state has rendered.
-  await act(async () => button('Review demo quote').props.onPress());
+test('invalid amount and recipient cannot start confirmation', async () => {
+  await act(async () => button('Change refund amount').props.onPress());
+  await act(async () => input('refund-amount').props.onChangeText('1000'));
+  await act(async () => button('Confirm refund').props.onPress());
   expect(JSON.stringify(view.toJSON())).toContain('cannot exceed');
-  expect(JSON.stringify(view.toJSON())).toContain('64 hexadecimal');
-  expect(view.root.findAllByProps({ testID: 'quote-payout' })).toHaveLength(0);
+  expect(readCard).not.toHaveBeenCalled();
+  expect(demoLedger.record).not.toHaveBeenCalled();
 });
-test('reviews an exact quote, preserves edits when going back, and closes without sending funds', async () => {
+test('shows the fee and payout inline, and closes without recording', async () => {
   await act(async () => input('refund-recipient').props.onChangeText(address));
-  await act(async () => button('Review demo quote').props.onPress());
-  const output = JSON.stringify(view.toJSON());
-  expect(output).toContain('0.05635');
-  expect(output).toContain(address);
-  expect(output).toContain('11.5');
-  expect(output).toContain('NO FUNDS SENT');
-  await act(async () => button('Edit quote').props.onPress());
-  expect(input('refund-recipient').props.value).toBe(address);
-  await act(async () => input('refund-amount').props.onChangeText('245'));
-  await act(async () => button('Review demo quote').props.onPress());
-  expect(JSON.stringify(view.toJSON())).toContain('0.02401');
-  await act(async () => button('Edit quote').props.onPress());
+  expect(JSON.stringify(view.toJSON())).toContain('0.05635');
+  expect(JSON.stringify(view.toJSON())).toContain('11.5');
   await act(async () => button('Back to card').props.onPress());
   expect(onClose).toHaveBeenCalledTimes(1);
+  expect(demoLedger.record).not.toHaveBeenCalled();
 });
-test('changing chains clears the recipient and applies the selected asset and address length', async () => {
+test('switching networks resets the destination and updates the inline estimate', async () => {
   await act(async () => input('refund-recipient').props.onChangeText(address));
+  await act(async () => button('Change payout network').props.onPress());
   await act(async () => button('Ethereum').props.onPress());
   expect(input('refund-recipient').props.value).toBe('');
-  await act(async () =>
-    input('refund-recipient').props.onChangeText(`0x${'2'.repeat(40)}`),
-  );
-  await act(async () => button('Review demo quote').props.onPress());
   expect(JSON.stringify(view.toJSON())).toContain('0.001127');
-  expect(JSON.stringify(view.toJSON())).toContain('ETH');
-  await act(async () => button('Edit quote').props.onPress());
+  await act(async () => button('Change payout network').props.onPress());
   await act(async () => button('Mizuhiki').props.onPress());
   expect(input('refund-recipient').props.value).toBe('');
-  expect(JSON.stringify(view.toJSON())).toContain('Awaji Testnet');
 });
 
 async function review() {
   await act(async () => input('refund-recipient').props.onChangeText(address));
-  await act(async () => button('Review demo quote').props.onPress());
 }
 test('requires the same unchanged card before persisting a simulated refund', async () => {
   await review();
@@ -94,14 +76,14 @@ test('requires the same unchanged card before persisting a simulated refund', as
     idm: '1123456789abcdef',
     balanceJpy: 575,
   });
-  await act(async () => button('Confirm simulated refund').props.onPress());
+  await act(async () => button('Confirm refund').props.onPress());
   expect(JSON.stringify(view.toJSON())).toContain('different card');
   expect(demoLedger.record).not.toHaveBeenCalled();
   (readCard as jest.Mock).mockResolvedValueOnce({
     idm: '0123456789abcdef',
     balanceJpy: 574,
   });
-  await act(async () => button('Confirm simulated refund').props.onPress());
+  await act(async () => button('Confirm refund').props.onPress());
   expect(JSON.stringify(view.toJSON())).toContain('balance changed');
   expect(demoLedger.record).not.toHaveBeenCalled();
   (readCard as jest.Mock).mockResolvedValueOnce({
@@ -112,7 +94,7 @@ test('requires the same unchanged card before persisting a simulated refund', as
     id: 'DEMO-000001',
     status: 'simulated',
   });
-  await act(async () => button('Confirm simulated refund').props.onPress());
+  await act(async () => button('Confirm refund').props.onPress());
   expect(demoLedger.record).toHaveBeenCalledTimes(1);
   expect(onRecorded).toHaveBeenCalledWith({
     id: 'DEMO-000001',
@@ -129,14 +111,14 @@ test('cancellation ignores a late NFC response and saves nothing', async () => {
       }),
   );
   await act(async () => {
-    button('Confirm simulated refund').props.onPress();
+    button('Confirm refund').props.onPress();
   });
-  await act(async () => button('Cancel confirmation').props.onPress());
+  await act(async () => button('Cancel scan').props.onPress());
   await act(async () => resolve({ idm: '0123456789abcdef', balanceJpy: 575 }));
   expect(cancelScan).toHaveBeenCalled();
   expect(demoLedger.record).not.toHaveBeenCalled();
   expect(onRecorded).not.toHaveBeenCalled();
-  expect(button('Confirm simulated refund').props.disabled).toBe(false);
+  expect(button('Confirm refund').props.disabled).toBe(false);
 });
 test('a storage failure retries the same request and guards rapid double taps', async () => {
   await review();
@@ -148,13 +130,13 @@ test('a storage failure retries the same request and guards rapid double taps', 
     .mockRejectedValueOnce(Error('Could not save'))
     .mockResolvedValueOnce({ id: 'DEMO-000001' });
   await act(async () => {
-    const pending = button('Confirm simulated refund').props.onPress();
-    button('Confirm simulated refund').props.onPress();
+    const pending = button('Confirm refund').props.onPress();
+    button('Confirm refund').props.onPress();
     await pending;
   });
   expect(demoLedger.record).toHaveBeenCalledTimes(1);
   const first = (demoLedger.record as jest.Mock).mock.calls[0][0].requestId;
-  await act(async () => button('Confirm simulated refund').props.onPress());
+  await act(async () => button('Confirm refund').props.onPress());
   expect((demoLedger.record as jest.Mock).mock.calls[1][0].requestId).toBe(
     first,
   );
@@ -172,7 +154,7 @@ test('times out confirmation without recording a refund', async () => {
         }),
     );
     await act(async () => {
-      button('Confirm simulated refund').props.onPress();
+      button('Confirm refund').props.onPress();
     });
     await act(async () => {
       jest.advanceTimersByTime(25000);
@@ -197,7 +179,7 @@ test('unmount during confirmation ignores any later card response', async () => 
       }),
   );
   await act(async () => {
-    button('Confirm simulated refund').props.onPress();
+    button('Confirm refund').props.onPress();
   });
   await act(async () => view.unmount());
   await act(async () => resolve({ idm: '0123456789abcdef', balanceJpy: 575 }));
@@ -220,9 +202,8 @@ test('explicit sample-card mode confirms without invoking NFC', async () => {
   );
   (demoLedger.record as jest.Mock).mockResolvedValue({ id: 'DEMO-SAMPLE' });
   await act(async () => input('refund-recipient').props.onChangeText(address));
-  await act(async () => button('Review demo quote').props.onPress());
   expect(JSON.stringify(view.toJSON())).toContain('without NFC');
-  await act(async () => button('Confirm simulated refund').props.onPress());
+  await act(async () => button('Confirm refund').props.onPress());
   expect(readCard).not.toHaveBeenCalled();
   expect(demoLedger.record).toHaveBeenCalledWith(
     expect.objectContaining({

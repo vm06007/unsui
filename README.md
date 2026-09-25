@@ -34,8 +34,8 @@ npm start
 ```
 
 In another terminal, run `npm run android` from `mobile`. Use **Menu → Demo**
-without a physical card. **Menu → Ledger connection** defaults to
-`http://localhost:4100`. All refunds require that backend; scanning works offline.
+without a physical card. `BACKEND_URL` in `mobile/src/config.ts` defaults to
+`http://localhost:4100` and is bundled with the app. All refunds require that backend; scanning works offline.
 Use a physical NFC-F-capable device to test real card reading.
 
 See [mobile setup](mobile/README.md) and [backend setup/API](server/README.md).
