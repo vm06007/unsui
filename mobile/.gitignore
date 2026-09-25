@@ -78,3 +78,8 @@ yarn-error.log
 .env
 .env.*
 !.env.example
+
+# Downloaded station source and generated lookup
+/.cache/stations/
+/src/generated/stationCodes.json
+/src/generated/stationCodes.json.*.tmp

@@ -5,10 +5,15 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "lint": "eslint .",
+    "lint": "eslint . --ext .js,.cjs,.ts,.tsx",
     "start": "react-native start",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "stations:prepare": "node scripts/prepare-stations.cjs",
+    "postinstall": "node scripts/prepare-stations.cjs --offline",
+    "pretest": "node scripts/prepare-stations.cjs --offline",
+    "pretypecheck": "node scripts/prepare-stations.cjs --offline",
+    "test:stations": "node --test scripts/stations.check.cjs"
   },
   "dependencies": {
     "react": "19.2.3",

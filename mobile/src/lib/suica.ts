@@ -1,7 +1,13 @@
 import { Platform } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 
-export type CardBalance = { idm: string; balanceJpy: number };
+import { decodeHistory, HistoryRecord } from './history';
+export type CardBalance = {
+  idm: string;
+  balanceJpy: number;
+  history: HistoryRecord[];
+  historyLimited: boolean;
+};
 export class ScanError extends Error {
   constructor(
     public code: 'unsupported' | 'disabled' | 'card',
@@ -10,14 +16,16 @@ export class ScanError extends Error {
     super(message);
   }
 }
-export function readCommand(idm: string, framed = true): number[] {
+export function readCommand(idm: string, framed = true, block = 0): number[] {
   if (!/^[\da-f]{16}$/i.test(idm))
     throw new ScanError('card', 'Unsupported card. Try a physical Suica card.');
+  if (!Number.isInteger(block) || block < 0 || block >= 20)
+    throw new Error('Invalid history block');
   const bytes = idm.match(/../g)!.map(byte => parseInt(byte, 16));
-  const command = [0x06, ...bytes, 1, 0x0f, 0x09, 1, 0x80, 0];
+  const command = [0x06, ...bytes, 1, 0x0f, 0x09, 1, 0x80, block];
   return framed ? [command.length + 1, ...command] : command;
 }
-export function parseBalance(response: number[], idm: string): number {
+export function parseBlock(response: number[], idm: string): number[] {
   const invalid = () =>
     new ScanError(
       'card',
@@ -44,7 +52,11 @@ export function parseBalance(response: number[], idm: string): number {
   if (returnedId !== idm.toLowerCase()) throw invalid();
   const balance = bytes[22] + bytes[23] * 256;
   if (balance > 20000) throw invalid();
-  return balance;
+  return bytes.slice(12);
+}
+export function parseBalance(response: number[], idm: string): number {
+  const block = parseBlock(response, idm);
+  return block[10] + block[11] * 256;
 }
 export async function cancelScan() {
   await NfcManager.cancelTechnologyRequest().catch(() => {});
@@ -78,13 +90,33 @@ export async function readCard(cancelled: () => boolean): Promise<CardBalance> {
       idm?: string;
     } | null;
     const idm = (tag?.idm || tag?.id || '').toLowerCase();
-    const command = readCommand(idm, Platform.OS !== 'ios');
-    const response =
-      Platform.OS === 'ios'
-        ? await NfcManager.sendFelicaCommandIOS(command)
-        : await NfcManager.transceive(command);
-    check();
-    return { idm, balanceJpy: parseBalance(response, idm) };
+    const blocks: number[][] = [];
+    let historyLimited = false;
+    for (let block = 0; block < 20; block++) {
+      check();
+      try {
+        const command = readCommand(idm, Platform.OS !== 'ios', block);
+        const response =
+          Platform.OS === 'ios'
+            ? await NfcManager.sendFelicaCommandIOS(command)
+            : await NfcManager.transceive(command);
+        check();
+        const data = parseBlock(response, idm);
+        if (block > 0 && data.every(byte => byte === 0)) break;
+        blocks.push(data);
+      } catch (error) {
+        check();
+        if (block === 0) throw error;
+        historyLimited = true;
+        break;
+      }
+    }
+    return {
+      idm,
+      balanceJpy: blocks[0][10] + blocks[0][11] * 256,
+      history: decodeHistory(blocks),
+      historyLimited,
+    };
   } finally {
     await cancelScan();
   }

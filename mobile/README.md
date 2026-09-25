@@ -2,7 +2,8 @@
 
 React Native app for reading the balance of a physical Suica card over NFC.
 The app works without a backend or account. It reads the newest balance record
-without changing the card. Transaction history and refund flows are planned next.
+without changing the card. Switch between Card and History after a scan to see
+up to 20 recent records. Refund flows are planned next.
 
 ## Run
 
@@ -40,3 +41,39 @@ npm run lint
 
 Tests cover packet validation, balance decoding, unavailable NFC and cancellation
 of a pending scan. These checks do not replace a physical card/device test.
+
+## Card history
+
+History shows dates, activity labels, balances and available station names, newest
+first. Amounts are differences between adjacent stored balances; the oldest record
+has no known change. These are not guaranteed itemized fares or receipts. Station
+names and activity labels are best-effort, with unknown values left unidentified.
+Keep the card still until scanning finishes. If a later record cannot be read, the
+app preserves the balance and available records with a partial-history notice.
+Scanned data stays in memory and is cleared when scanning another card.
+
+## Station dataset
+
+The full station dataset is downloaded automatically when Metro starts or creates
+an Android/iOS release JavaScript bundle. The source is pinned to revision
+`e550c704890ba66149fcbb5f78ce15e66bc2ef60` of
+[m2wasabi/nfcpy-suica-sample](https://github.com/m2wasabi/nfcpy-suica-sample), and
+its SHA-256 is checked before use. Verified downloads are cached locally; builds
+reuse that cache without another request. The app itself never fetches stations.
+
+If a download fails or times out after eight seconds and no valid cache exists,
+the build uses a bundled 22-entry Tokyo fallback: Ginza-line Shibuya, Toranomon,
+Omotesando, Ginza, Ueno and Asakusa; selected JR entries for Tokyo, Shinagawa,
+Shibuya, Shinjuku and Ikebukuro, plus entries for Akihabara, Shimbashi, Harajuku,
+Ebisu and Roppongi. Codes are specific to a line, so this is not full
+coverage of every line serving those stations. Other stations show as unknown;
+dates and balances still work. A later build retries the full download.
+
+Only `src/lib/stationCodes.fallback.json` belongs in git. Downloaded CSV files in
+`.cache/stations/` and `src/generated/stationCodes.json` are ignored. `npm ci`,
+tests and typechecking prepare the cached lookup or fallback without networking.
+Run `npm run stations:prepare` to download explicitly, then restart Metro if it
+was already running. Run `npm run test:stations` to check failure handling.
+
+The lookup is keyed by line and station code, preferring region 0 for collisions.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the source license.

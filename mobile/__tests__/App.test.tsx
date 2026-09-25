@@ -16,7 +16,12 @@ afterEach(async () => {
   jest.clearAllMocks();
 });
 test('scan shows the actual balance and allows another scan', async () => {
-  (readCard as jest.Mock).mockResolvedValue({ idm: 'card', balanceJpy: 575 });
+  (readCard as jest.Mock).mockResolvedValue({
+    idm: 'card',
+    balanceJpy: 575,
+    history: [],
+    historyLimited: false,
+  });
   await act(async () => {
     view = ReactTestRenderer.create(<App />);
   });
@@ -50,9 +55,54 @@ test('cancel ignores a late card response', async () => {
       .props.onPress();
   });
   await act(async () => {
-    resolve({ idm: 'card', balanceJpy: 575 });
+    resolve({
+      idm: 'card',
+      balanceJpy: 575,
+      history: [],
+      historyLimited: false,
+    });
   });
   expect(JSON.stringify(view.toJSON())).not.toContain('575');
   expect(JSON.stringify(view.toJSON())).toContain('Scan cancelled');
   expect(cancelScan).toHaveBeenCalled();
+});
+
+test('history tab shows records and a partial-read notice without another scan', async () => {
+  (readCard as jest.Mock).mockResolvedValue({
+    idm: 'card',
+    balanceJpy: 575,
+    historyLimited: true,
+    history: [
+      {
+        index: 0,
+        date: '2026-09-25',
+        activity: 'Rail travel',
+        balanceJpy: 575,
+        changeJpy: -245,
+        entry: 'Shibuya',
+        exit: 'Toranomon',
+        terminal: 9,
+        process: 1,
+      },
+    ],
+  });
+  await act(async () => {
+    view = ReactTestRenderer.create(<App />);
+  });
+  await act(async () => {
+    await view.root
+      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .props.onPress();
+  });
+  await act(async () => {
+    view.root
+      .findAllByProps({ accessibilityRole: 'tab' })
+      .filter(node => typeof node.props.onPress === 'function')[1]
+      .props.onPress();
+  });
+  const output = JSON.stringify(view.toJSON());
+  expect(output).toContain('Shibuya');
+  expect(output).toContain('Toranomon');
+  expect(output).toContain('Only part of the history');
+  expect(readCard).toHaveBeenCalledTimes(1);
 });
