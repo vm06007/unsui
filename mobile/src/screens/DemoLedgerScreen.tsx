@@ -39,7 +39,7 @@ export default function DemoLedgerScreen({
         Demo receipts.
       </Text>
       <Text style={styles.note}>
-        Saved on this phone only. All refunds below are simulated; no funds were
+        Saved in the shared development backend. All refunds below are simulated; no funds were
         sent.
       </Text>
       {!receipts.length && (

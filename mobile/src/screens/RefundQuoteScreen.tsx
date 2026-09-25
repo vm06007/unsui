@@ -22,13 +22,14 @@ import {
 } from '../lib/refundQuote';
 
 import { readCard, cancelScan } from '../lib/suica';
-import { demoLedger } from '../lib/localDemoLedger';
+import { demoLedger } from '../lib/ledger';
 import { DemoReceipt } from '../lib/demoLedger';
 import RecipientEditor, {
   Destination,
   manualDestination,
 } from '../components/RecipientEditor';
 type Props = {
+  isSample?: boolean;
   balanceJpy: number;
   scannedBalanceJpy: number;
   cardId: string;
@@ -39,6 +40,7 @@ const yen = (value: number) =>
   `¥${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 
 export default function RefundQuoteScreen({
+  isSample = false,
   balanceJpy,
   scannedBalanceJpy,
   cardId,
@@ -103,10 +105,11 @@ export default function RefundQuoteScreen({
       25000,
     );
     try {
-      const confirmed = await readCard(
-        () => cancelled.current || !mounted.current,
-        { history: false },
-      );
+      const confirmed = isSample
+        ? { idm: cardId, balanceJpy: scannedBalanceJpy }
+        : await readCard(() => cancelled.current || !mounted.current, {
+            history: false,
+          });
       clearTimeout(timeout);
       if (cancelled.current || !mounted.current) return;
       if (confirmed.idm.toLowerCase() !== cardId.toLowerCase())
@@ -271,9 +274,11 @@ export default function RefundQuoteScreen({
               fees are not included.
             </Text>
             <Text style={styles.note}>
-              Re-scan the same card to save a simulated refund on this phone.
-              This reduces only your remaining demo allowance, across all
-              networks.
+              {isSample
+                ? 'Confirm this sample-card refund without NFC.'
+                : 'Re-scan the same card to confirm.'}{' '}
+              The simulated receipt is saved in the development backend . This
+              reduces only your remaining demo allowance, across all networks.
             </Text>
             {!!confirmationError && (
               <Text accessibilityRole="alert" style={styles.error}>
@@ -292,7 +297,7 @@ export default function RefundQuoteScreen({
                 />
                 <Text accessibilityLiveRegion="polite" style={styles.note}>
                   {phase === 'saving'
-                    ? 'Saving the receipt on this phone…'
+                    ? 'Saving the receipt to the backend…'
                     : phase === 'cancelling'
                     ? 'Closing the NFC session…'
                     : 'Hold the original card near your phone. Its balance must be unchanged.'}
@@ -320,6 +325,8 @@ export default function RefundQuoteScreen({
               <Text style={styles.primaryText}>
                 {confirmationError
                   ? 'Retry confirmation'
+                  : isSample
+                  ? 'Confirm sample refund'
                   : 'Re-scan & confirm demo refund'}
               </Text>
             </Pressable>

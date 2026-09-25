@@ -1,18 +1,19 @@
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import App from '../App';
-import { demoLedger } from '../src/lib/localDemoLedger';
+import { demoLedger } from '../src/lib/ledger';
 import { createDemoQuote } from '../src/lib/refundQuote';
 import { readCard, cancelScan } from '../src/lib/suica';
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
   SafeAreaView: require('react-native').View,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock('../src/lib/suica', () => ({
   readCard: jest.fn(),
   cancelScan: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../src/lib/localDemoLedger', () => ({
+jest.mock('../src/lib/ledger', () => ({
   demoLedger: { list: jest.fn().mockResolvedValue([]), record: jest.fn() },
 }));
 let view: ReactTestRenderer.ReactTestRenderer;
@@ -32,7 +33,8 @@ test('scan shows the actual balance and allows another scan', async () => {
   });
   await act(async () => {
     await view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   expect(JSON.stringify(view.toJSON())).toContain('575');
@@ -51,12 +53,14 @@ test('cancel ignores a late card response', async () => {
   });
   await act(async () => {
     view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   await act(async () => {
     view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Cancel scan' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   await act(async () => {
@@ -96,7 +100,8 @@ test('history tab shows records and a partial-read notice without another scan',
   });
   await act(async () => {
     await view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   await act(async () => {
@@ -124,7 +129,8 @@ test('opens and closes the refund flow without changing the scanned card', async
   });
   await act(async () => {
     await view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   const press = (label: string) =>
@@ -151,7 +157,8 @@ test('a zero balance cannot open a refund quote', async () => {
   });
   await act(async () => {
     await view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   const preview = view.root
@@ -180,13 +187,17 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
     createdAt: '2026-09-25T12:00:00.000Z',
     status: 'simulated',
   };
-  (demoLedger.record as jest.Mock).mockResolvedValue(receipt);
+  (demoLedger.record as jest.Mock).mockImplementation(async () => {
+    (demoLedger.list as jest.Mock).mockResolvedValue([receipt]);
+    return receipt;
+  });
   await act(async () => {
     view = ReactTestRenderer.create(<App />);
   });
   await act(async () => {
     await view.root
-      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+      .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   });
   const press = (label: string) =>
@@ -232,7 +243,7 @@ test('saved refunds restore the allowance on a new app mount', async () => {
     createdAt: '2026-09-25T12:00:00.000Z',
     status: 'simulated',
   };
-  (demoLedger.list as jest.Mock).mockResolvedValueOnce([receipt]);
+  (demoLedger.list as jest.Mock).mockResolvedValue([receipt]);
   (readCard as jest.Mock).mockResolvedValueOnce({
     idm: '0123456789abcdef',
     balanceJpy: 1000,
@@ -243,12 +254,8 @@ test('saved refunds restore the allowance on a new app mount', async () => {
     view = ReactTestRenderer.create(<App />);
   });
   const scan = view.root
-    .findAllByProps({ accessibilityRole: 'button' })
-    .filter(
-      n =>
-        typeof n.props.onPress === 'function' &&
-        n.props.accessibilityLabel !== 'Open demo ledger',
-    )[0];
+    .findAllByProps({ accessibilityLabel: 'Scan transit card' })
+    .find(n => typeof n.props.onPress === 'function')!;
   await act(async () => scan.props.onPress());
   const preview = view.root
     .findAllByProps({ accessibilityLabel: 'Preview refund' })
@@ -257,4 +264,37 @@ test('saved refunds restore the allowance on a new app mount', async () => {
   expect(JSON.stringify(view.toJSON())).toContain(
     'Available for demo refunds: ¥0',
   );
+});
+
+test('sample journeys need no NFC and language choice survives remount', async () => {
+  (demoLedger.list as jest.Mock).mockResolvedValue([]);
+  const press = (label: string) =>
+    view.root
+      .findAllByProps({ accessibilityLabel: label })
+      .find(n => typeof n.props.onPress === 'function')!
+      .props.onPress();
+  const history = () =>
+    view.root
+      .findAllByProps({ accessibilityRole: 'tab' })
+      .filter(n => typeof n.props.onPress === 'function')[1]
+      .props.onPress();
+  await act(async () => {
+    view = ReactTestRenderer.create(<App />);
+  });
+  await act(async () => press('Try sample card'));
+  expect(readCard).not.toHaveBeenCalled();
+  expect(JSON.stringify(view.toJSON())).toContain('SAMPLE CARD');
+  await act(async () => history());
+  await act(async () => press('English station names'));
+  expect(JSON.stringify(view.toJSON())).toContain('Shibuya');
+  expect(JSON.stringify(view.toJSON())).toContain('Toranomon');
+  await act(async () => view.unmount());
+  await act(async () => {
+    view = ReactTestRenderer.create(<App />);
+  });
+  await act(async () => press('Try sample card'));
+  await act(async () => history());
+  expect(JSON.stringify(view.toJSON())).toContain('Shibuya');
+  await act(async () => press('Japanese station names'));
+  expect(JSON.stringify(view.toJSON())).toContain('渋谷');
 });

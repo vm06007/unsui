@@ -25,7 +25,10 @@ export default function DemoReceiptScreen({
   }, [onClose]);
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.badge}>SIMULATED REFUND · SAVED ON THIS PHONE</Text>
+      <Text style={styles.badge}>SIMULATED REFUND · SAVED IN BACKEND</Text>
+      <Text accessibilityLabel="Receipt saved" style={styles.check}>
+        ✓
+      </Text>
       <Text accessibilityRole="header" style={styles.title}>
         Your demo receipt.
       </Text>
@@ -42,7 +45,7 @@ export default function DemoReceiptScreen({
       <View style={styles.panel}>
         <Row label="Receipt reference" value={receipt.id} />
         <Row
-          label="Recorded on this phone"
+          label="Recorded at"
           value={new Date(receipt.createdAt).toLocaleString()}
         />
         <Row label="Card" value={`•••• ${receipt.cardId.slice(-4)}`} />
@@ -73,7 +76,7 @@ export default function DemoReceiptScreen({
         />
       </View>
       <Text style={styles.note}>
-        This local receipt is not proof of payment. No blockchain transaction or
+        This demo receipt is not proof of payment. No blockchain transaction or
         transaction hash was created. Rates and fees are illustrative.
       </Text>
       <Pressable
@@ -98,6 +101,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 const styles = StyleSheet.create({
+  check: { fontSize: 48, color: '#173E35', textAlign: 'center' },
   content: { gap: 22, paddingVertical: 28 },
   badge: { fontSize: 12, color: '#385131', fontWeight: '700' },
   title: { fontSize: 34, color: '#214A37', fontWeight: '700' },

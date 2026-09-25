@@ -3,8 +3,8 @@ import Renderer, { act } from 'react-test-renderer';
 import RefundQuoteScreen from '../src/screens/RefundQuoteScreen';
 let view: Renderer.ReactTestRenderer;
 import { readCard, cancelScan } from '../src/lib/suica';
-import { demoLedger } from '../src/lib/localDemoLedger';
-jest.mock('../src/lib/localDemoLedger', () => ({
+import { demoLedger } from '../src/lib/ledger';
+jest.mock('../src/lib/ledger', () => ({
   demoLedger: { record: jest.fn() },
 }));
 jest.mock('../src/lib/suica', () => ({
@@ -203,4 +203,32 @@ test('unmount during confirmation ignores any later card response', async () => 
   await act(async () => resolve({ idm: '0123456789abcdef', balanceJpy: 575 }));
   expect(demoLedger.record).not.toHaveBeenCalled();
   expect(onRecorded).not.toHaveBeenCalled();
+});
+
+test('explicit sample-card mode confirms without invoking NFC', async () => {
+  await act(async () =>
+    view.update(
+      <RefundQuoteScreen
+        isSample
+        balanceJpy={1500}
+        scannedBalanceJpy={1500}
+        cardId="ffffffffffffffff"
+        onClose={onClose}
+        onRecorded={onRecorded}
+      />,
+    ),
+  );
+  (demoLedger.record as jest.Mock).mockResolvedValue({ id: 'DEMO-SAMPLE' });
+  await act(async () => input('refund-recipient').props.onChangeText(address));
+  await act(async () => button('Review demo quote').props.onPress());
+  expect(JSON.stringify(view.toJSON())).toContain('without NFC');
+  await act(async () => button('Confirm simulated refund').props.onPress());
+  expect(readCard).not.toHaveBeenCalled();
+  expect(demoLedger.record).toHaveBeenCalledWith(
+    expect.objectContaining({
+      cardId: 'ffffffffffffffff',
+      confirmedCardId: 'ffffffffffffffff',
+    }),
+  );
+  expect(onRecorded).toHaveBeenCalledWith({ id: 'DEMO-SAMPLE' });
 });

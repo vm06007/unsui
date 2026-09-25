@@ -1,7 +1,8 @@
 # UnSui mobile
 
 React Native app for reading the balance of a physical Suica card over NFC.
-The app works without a backend or account. It reads the newest balance record
+NFC reading works without an account or backend. Refunds require the development
+backend. The app reads the newest balance record
 without changing the card. Switch between Card and History after a scan to see
 up to 20 recent records. Preview a refund quote after scanning.
 
@@ -93,29 +94,25 @@ create a receipt. While the receipt is being saved, navigation is held until the
 write succeeds or fails. Failed saves can be retried with the same request ID;
 even an ambiguous persisted write is recovered without a duplicate debit.
 
-After a successful save, the receipt is explicitly marked **Simulated** and shows
-the yen amount, fee, crypto estimate, recipient, network and remaining demo
+After a successful save, the receipt shows the yen amount, fee, crypto estimate,
+recipient, network and remaining demo
 balance. No funds are sent, no physical card balance changes and no transaction
-hash is created. **Demo receipts** reopens saved receipts, including after app
+hash is created. **Demo receipts** reopens backend receipts, including after app
 restart. Card history remains the physical card's NFC records; it is separate
-from the local demo ledger.
+from the backend demo ledger.
 
-The ledger uses AsyncStorage 3.1.1 in the `unsui-demo` database, under
-`unsui.demo-refunds.v1`. Rebuild the native app after installing dependencies;
-on iOS, run `bundle exec pod install --project-directory=ios` before rebuilding.
-The ledger stores card IDs, recipient addresses and receipts locally. It is not
-encrypted or synced to a server, and must never authorize real payouts.
+The backend is the only refund ledger. It stores balances and receipts across app
+restarts and devices. The phone retains only the backend URL, history language
+and pending request references for safe retries; it never falls back to local
+refund storage. Previous on-device receipts are not uploaded automatically.
 
 The first demo refund establishes that card's allowance from its scanned balance.
-Subsequent refunds share the remaining allowance across all networks; it never
-exceeds the newly scanned physical balance. Re-scanning or physically topping up
-the card does not replenish the original demo allowance. There is deliberately
-no in-app reset in this step. Clearing app data removes this local protection;
-a trusted backend must enforce balances before real payouts are enabled.
-
-Each refund is one serialized read/validate/write of the complete ledger. Storage
-errors or invalid saved data block further refunds rather than silently clearing
-previous records. The app shows success only after the receipt is persisted.
+Subsequent refunds share the remaining allowance across all networks. Re-scanning
+or physically topping up the card does not replenish that initial allowance.
+The backend serializes writes and validates quotes using the same rules as the
+mobile app. Duplicate request IDs return the original receipt. Corrupt storage
+blocks further refunds rather than clearing previous records. This development
+service trusts the app's card readings and must not authorize real payouts.
 
 Illustrative rates: 1 SUI = ¥10,000, 1 ETH = ¥500,000, 1 MIZU = ¥10,000.
 The 2% fee is deducted before conversion, not charged separately. Estimates use
@@ -157,3 +154,32 @@ required. Missing names, missing targets and service errors block that selection
 there is no hard-coded address fallback. A name lookup does not prove ownership.
 Name and signing metadata are session-only; saved receipts retain the selected
 address. Lookup cancellation and changes discard late results.
+
+## Device demo and backend
+
+Start the shared ledger in another terminal (after `npm ci` in `mobile`):
+
+```sh
+cd ../server
+npm start
+```
+
+It listens on `http://localhost:4100` and persists to `server/data/ledger.json`.
+For Android over USB, run `adb reverse tcp:4100 tcp:4100`, then start Metro and
+`npm run android` as above. Open **Menu → Ledger connection** to check or change
+the URL. Saving validates the connection. Refunds pause on connection failure;
+card scanning and journey history remain available. **Refresh ledger** reloads
+shared balances. See `../server/README.md` for LAN/iPhone setup and feed details.
+
+**Menu → Demo** or **No card nearby? Try the demo** opens a fictional ¥1,500
+sample card with three journey records. Confirmation is explicit and requires no
+NFC. Sample refunds use a reserved sample ID, share their backend allowance, and
+remain visibly labeled. Return **Home** or scan a physical card to leave the
+sample flow. Physical-card confirmations still require a matching NFC re-scan.
+There is no silent switch to sample data after an NFC failure.
+
+History offers Japanese and English station/line names. The choice persists
+across restarts. Known names are translated; unknown names keep their original
+text. Menu/About describes the current demo scope. The original brand mark,
+animated transit illustration, palette and rounded controls are shared with the
+updated home screen. A modal scan sheet supports cancellation and Android Back.

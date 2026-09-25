@@ -1,0 +1,11 @@
+{
+  "name": "unsui-dev-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "start": "npm run build && node server.cjs",
+    "test": "npm run build && node --test test/*.test.cjs"
+  },
+  "engines": { "node": ">=22.11.0" }
+}

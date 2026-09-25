@@ -42,7 +42,7 @@ function sameQuote(a: RefundQuote, b: RefundQuote) {
     a.estimatedCrypto === b.estimatedCrypto
   );
 }
-function decode(raw: string | null): DemoReceipt[] {
+export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
   if (raw === null) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -88,7 +88,7 @@ function decode(raw: string | null): DemoReceipt[] {
     return validated;
   } catch {
     throw Error(
-      'The local demo ledger is unreadable. Refunds are paused to protect the saved balance.',
+      'The demo ledger is unreadable. Refunds are paused to protect the saved balance.',
     );
   }
 }
@@ -106,10 +106,10 @@ export function createDemoLedger(storage: Storage) {
       raw = await storage.getItem(LEDGER_KEY);
     } catch {
       throw Error(
-        'Could not read the local demo ledger. Try loading it again.',
+        'Could not read the demo ledger. Try loading it again.',
       );
     }
-    return decode(raw);
+    return decodeDemoReceipts(raw);
   };
   return {
     list: () => serial(load),

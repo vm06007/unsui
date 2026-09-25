@@ -15,9 +15,45 @@ import RefundQuoteScreen from './src/screens/RefundQuoteScreen';
 import DemoReceiptScreen from './src/screens/DemoReceiptScreen';
 import DemoLedgerScreen from './src/screens/DemoLedgerScreen';
 import { availableDemoBalance, DemoReceipt } from './src/lib/demoLedger';
-import { demoLedger } from './src/lib/localDemoLedger';
+import { demoLedger } from './src/lib/ledger';
+import BrandMark from './src/components/BrandMark';
+import AppMenu from './src/components/AppMenu';
+import LedgerSettings from './src/components/LedgerSettings';
+import HomeScreen from './src/screens/HomeScreen';
+import { sampleCard } from './src/lib/sampleCard';
+import { getStoredLanguage, storeLanguage } from './src/lib/preferences';
+import { DisplayLanguage, translateRoute } from './src/lib/stationTranslations';
 
 export default function App() {
+  const [isSample, setIsSample] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [language, setLanguage] = useState<DisplayLanguage>('ja');
+  const [preferenceError, setPreferenceError] = useState('');
+  useEffect(() => {
+    let current = true;
+    getStoredLanguage()
+      .then(value => {
+        if (current) setLanguage(value);
+      })
+      .catch(() => {
+        if (current)
+          setPreferenceError('Language preference could not be loaded.');
+      });
+    return () => {
+      current = false;
+    };
+  }, []);
+  const changeLanguage = async (value: DisplayLanguage) => {
+    setLanguage(value);
+    try {
+      await storeLanguage(value);
+      setPreferenceError('');
+    } catch {
+      setPreferenceError(
+        'Language changed for this session, but could not be saved.',
+      );
+    }
+  };
   const [scanning, setScanning] = useState(false);
   const [card, setCard] = useState<CardBalance | null>(null);
   const [message, setMessage] = useState('');
@@ -29,20 +65,29 @@ export default function App() {
     null,
   );
   const alive = useRef(true);
+  const ledgerGeneration = useRef(0);
+  const [ledgerBusy, setLedgerBusy] = useState(false);
   const loadLedger = useCallback(async () => {
+    const current = ++ledgerGeneration.current;
+    setLedgerBusy(true);
     setLedgerError('');
     try {
       const saved = await demoLedger.list();
-      if (alive.current) setReceipts(saved);
+
+      if (alive.current && current === ledgerGeneration.current)
+        setReceipts(saved);
     } catch (error) {
-      if (alive.current) {
+      if (alive.current && current === ledgerGeneration.current) {
         setReceipts(null);
         setLedgerError(
           error instanceof Error
             ? error.message
-            : 'Could not load the demo ledger.',
+            : 'Could not reach the backend. Open Menu → Ledger connection to check its URL.',
         );
       }
+    } finally {
+      if (alive.current && current === ledgerGeneration.current)
+        setLedgerBusy(false);
     }
   }, []);
   useEffect(() => {
@@ -56,7 +101,7 @@ export default function App() {
     card && receipts
       ? availableDemoBalance(receipts, card.idm, card.balanceJpy)
       : 0;
-  const refundDisabled = receipts === null || available === 0;
+  const refundDisabled = ledgerBusy || receipts === null || available === 0;
   const [tab, setTab] = useState<'card' | 'history'>('card');
   const scroll = useRef<ScrollView>(null);
   const generation = useRef(0);
@@ -88,6 +133,7 @@ export default function App() {
     if (busy.current) return;
     busy.current = true;
     const current = ++generation.current;
+    setIsSample(false);
     setScanning(true);
     setCard(null);
     setRefundOpen(false);
@@ -103,7 +149,10 @@ export default function App() {
     }, 25000);
     try {
       const result = await readCard(() => generation.current !== current);
-      if (generation.current === current) setCard(result);
+      if (generation.current === current) {
+        setCard(result);
+        await loadLedger();
+      }
     } catch (error) {
       if (generation.current === current)
         setMessage(
@@ -122,9 +171,52 @@ export default function App() {
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={styles.screen}>
         <View style={styles.brand}>
-          <Text style={styles.name}>UnSui</Text>
-          <Text style={styles.japanese}>雲水</Text>
+          <BrandMark />
+          {!refundOpen && (
+            <AppMenu
+              disabled={scanning}
+              onHome={() => {
+                setCard(null);
+                setIsSample(false);
+                setLedgerOpen(false);
+                setSelectedReceipt(null);
+                setMessage('');
+                loadLedger();
+              }}
+              onDemo={() => {
+                setCard(sampleCard());
+                setIsSample(true);
+                setTab('card');
+                setRefundOpen(false);
+                setLedgerOpen(false);
+                setSelectedReceipt(null);
+                setMessage('');
+                loadLedger();
+              }}
+              onSettings={() => setSettingsOpen(true)}
+            />
+          )}
         </View>
+        {!refundOpen && (
+          <Text style={styles.connection}>
+            Shared development ledger
+            {isSample ? ' · SAMPLE CARD' : ''}
+          </Text>
+        )}
+        {settingsOpen && (
+          <LedgerSettings
+            onClose={() => setSettingsOpen(false)}
+            onSaved={() => {
+              setSettingsOpen(false);
+              setCard(null);
+              setIsSample(false);
+              setSelectedReceipt(null);
+              setLedgerOpen(false);
+              setReceipts(null);
+              loadLedger();
+            }}
+          />
+        )}
         {!!receipts?.length &&
           !refundOpen &&
           !selectedReceipt &&
@@ -154,6 +246,7 @@ export default function App() {
           />
         ) : card && refundOpen ? (
           <RefundQuoteScreen
+            isSample={isSample}
             balanceJpy={available}
             scannedBalanceJpy={card.balanceJpy}
             cardId={card.idm}
@@ -165,11 +258,26 @@ export default function App() {
               );
               setRefundOpen(false);
               setSelectedReceipt(receipt);
+              loadLedger();
             }}
             onClose={() => {
               setRefundOpen(false);
               loadLedger();
             }}
+          />
+        ) : !card ? (
+          <HomeScreen
+            scanning={scanning}
+            onScan={scan}
+            onCancel={cancel}
+            onDemo={() => {
+              setCard(sampleCard());
+              setIsSample(true);
+              setTab('card');
+              setMessage('');
+              loadLedger();
+            }}
+            message={[message, ledgerError].filter(Boolean).join(' ')}
           />
         ) : (
           <>
@@ -217,6 +325,8 @@ export default function App() {
                   <Text style={styles.description}>
                     {scanning
                       ? 'Place one physical Suica card against your phone’s NFC antenna. Keep it still while we read the balance and recent history.'
+                      : isSample
+                      ? 'Explore this sample card, its journeys and a simulated refund.'
                       : 'Tap your physical Suica card to see its balance in yen.'}
                   </Text>
                   {scanning && (
@@ -236,11 +346,13 @@ export default function App() {
                         ¥{card.balanceJpy.toLocaleString('en-US')}
                       </Text>
                       <Text style={styles.note}>
-                        Physical card balance · unchanged by demo refunds
+                        {isSample
+                          ? 'Sample card · fictional journeys'
+                          : 'Physical card balance · unchanged by demo refunds'}
                       </Text>
                       <Text style={styles.description}>
                         {receipts === null
-                          ? 'Demo ledger unavailable'
+                          ? 'Backend ledger unavailable'
                           : `Available for demo refunds: ¥${available.toLocaleString(
                               'en-US',
                             )}`}
@@ -272,6 +384,34 @@ export default function App() {
                   <Text accessibilityRole="header" style={styles.historyTitle}>
                     Recent journeys
                   </Text>
+                  <View style={styles.tabs}>
+                    {(['ja', 'en'] as const).map(lang => (
+                      <Pressable
+                        key={lang}
+                        accessibilityRole="radio"
+                        accessibilityLabel={
+                          lang === 'ja'
+                            ? 'Japanese station names'
+                            : 'English station names'
+                        }
+                        accessibilityState={{ selected: language === lang }}
+                        onPress={() => changeLanguage(lang)}
+                        style={[
+                          styles.tab,
+                          language === lang && styles.activeTab,
+                        ]}
+                      >
+                        <Text style={styles.tabText}>
+                          {lang === 'ja' ? '日本語' : 'English'}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {!!preferenceError && (
+                    <Text accessibilityRole="alert" style={styles.message}>
+                      {preferenceError}
+                    </Text>
+                  )}
                   <Text style={styles.note}>
                     Newest first · up to 20 records stored on your card.
                     Activity labels and station names are best-effort.
@@ -315,8 +455,11 @@ export default function App() {
                       </Text>
                       {record.activity === 'Rail travel' && (
                         <Text style={styles.note}>
-                          {record.entry || 'Unknown entry station'} →{' '}
-                          {record.exit || 'Unknown exit station'}
+                          {translateRoute(record.entry, language) ||
+                            'Unknown entry station'}{' '}
+                          →{' '}
+                          {translateRoute(record.exit, language) ||
+                            'Unknown exit station'}
                         </Text>
                       )}
                       {record.activity === 'Other activity' && (
@@ -336,7 +479,9 @@ export default function App() {
                 </>
               )}
               {receipts === null && !ledgerError && (
-                <Text style={styles.note}>Loading saved demo refunds…</Text>
+                <Text style={styles.note}>
+                  Connecting to the shared ledger…
+                </Text>
               )}
               {!!ledgerError && (
                 <View style={styles.balance}>
@@ -360,6 +505,17 @@ export default function App() {
               )}
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Refresh ledger"
+                disabled={ledgerBusy}
+                onPress={loadLedger}
+                style={styles.tab}
+              >
+                <Text style={styles.tabText}>
+                  {ledgerBusy ? 'Refreshing ledger…' : 'Refresh ledger'}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
                 style={styles.button}
                 onPress={scanning ? cancel : scan}
               >
@@ -372,7 +528,9 @@ export default function App() {
                 </Text>
               </Pressable>
               <Text style={styles.note}>
-                NFC balance reader · no account or internet required
+                {isSample
+                  ? 'Sample-card demo · backend connection required'
+                  : 'Read-only NFC · backend connection required for refunds'}
               </Text>
             </ScrollView>
           </>
@@ -382,6 +540,7 @@ export default function App() {
   );
 }
 const styles = StyleSheet.create({
+  connection: { fontSize: 12, color: '#68776F', marginTop: 10 },
   ledgerButton: { paddingVertical: 14, alignSelf: 'flex-start' },
   disabledButton: { opacity: 0.45 },
   tabs: { flexDirection: 'row', gap: 8, marginTop: 20 },
@@ -403,11 +562,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   activity: { fontSize: 18, fontWeight: '600', color: '#214A37' },
-  screen: { flex: 1, backgroundColor: '#F6F7F1', paddingHorizontal: 28 },
+  screen: { flex: 1, backgroundColor: '#F5F6F0', paddingHorizontal: 24 },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    justifyContent: 'space-between',
     paddingTop: 12,
   },
   name: { fontSize: 30, fontWeight: '700', color: '#214A37' },
@@ -419,7 +579,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   eyebrow: { fontSize: 12, letterSpacing: 2, color: '#63765C' },
-  title: { fontSize: 40, fontWeight: '700', color: '#214A37' },
+  title: { fontSize: 32, fontWeight: '700', color: '#214A37' },
   description: { fontSize: 18, lineHeight: 28, color: '#5D6B60' },
   note: { fontSize: 14, lineHeight: 22, color: '#687667' },
   balance: {
