@@ -126,3 +126,34 @@ Address checks cover hexadecimal shape, chain-specific length and the zero
 address. They do not prove ownership, EVM checksum validity, account existence,
 or network compatibility. Live quotes, human verification, merchant charges and
 blockchain payouts are not connected in this step.
+
+## Recipient wallets and Sui names
+
+Manual address entry is available on every network. On an Android dGen1 with
+ethOS WalletProxy, connect the device wallet for Ethereum (chain 1) or Mizuhiki
+Awaji Testnet (chain 6497). A network mismatch blocks review until the wallet
+switches successfully, or you return to manual entry. Awaji must be supported by
+the wallet; there is no fallback to another chain.
+
+Signing the destination message is optional. It identifies the address, selected
+network, time and unique request, and does not authorize a transaction or token
+approval. Connection and signing can be cancelled and time out after two minutes.
+The bridge checks the account and network before and after signing. Changing the
+recipient or network clears the signature. Signed responses stay in memory and
+are not server-verified ownership proofs; receipts store only the recipient
+address. No private keys are accessed and no funds are sent.
+
+The native bridge follows the public interface in
+[EthereumPhone WalletSDK](https://github.com/EthereumPhone/WalletSDK/tree/e774281fb23170e4461f2676c4540e7de73aa992).
+Rebuild the Android app to include it. Physical dGen1 testing is still required.
+Other devices retain manual entry.
+
+On Sui, enter a `.sui` name and resolve it through the
+[Sui mainnet GraphQL service](https://sdk.mystenlabs.com/sui/clients/graphql).
+Review the full address and tap **Use resolved address** before continuing.
+**Use demo name** independently chooses `kartik.sui` or `vitally.sui` with equal
+probability on each tap, then performs the same live lookup. Internet access is
+required. Missing names, missing targets and service errors block that selection;
+there is no hard-coded address fallback. A name lookup does not prove ownership.
+Name and signing metadata are session-only; saved receipts retain the selected
+address. Lookup cancellation and changes discard late results.

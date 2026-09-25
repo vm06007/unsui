@@ -24,6 +24,10 @@ import {
 import { readCard, cancelScan } from '../lib/suica';
 import { demoLedger } from '../lib/localDemoLedger';
 import { DemoReceipt } from '../lib/demoLedger';
+import RecipientEditor, {
+  Destination,
+  manualDestination,
+} from '../components/RecipientEditor';
 type Props = {
   balanceJpy: number;
   scannedBalanceJpy: number;
@@ -43,7 +47,10 @@ export default function RefundQuoteScreen({
 }: Props) {
   const [amount, setAmount] = useState(String(balanceJpy));
   const [network, setNetwork] = useState<PayoutNetwork>('sui');
-  const [recipient, setRecipient] = useState('');
+  const [destination, setDestination] =
+    useState<Destination>(manualDestination);
+  const [recipientBusy, setRecipientBusy] = useState(false);
+  const recipient = destination.address;
   const [attempted, setAttempted] = useState(false);
   const [quote, setQuote] = useState<RefundQuote | null>(null);
   const scroll = useRef<ScrollView>(null);
@@ -134,7 +141,9 @@ export default function RefundQuoteScreen({
     }
   };
   const amountIssue = amountError(amount, balanceJpy);
-  const recipientIssue = recipientError(recipient, network);
+  const recipientIssue = destination.blocked
+    ? 'Resolve and select the name, or reconnect the wallet on the selected network.'
+    : recipientError(recipient, network);
   const back = () => {
     if (active.current) {
       cancelConfirmation();
@@ -166,7 +175,7 @@ export default function RefundQuoteScreen({
   }, [quote, onClose]);
   const review = () => {
     setAttempted(true);
-    if (amountIssue || recipientIssue) return;
+    if (amountIssue || recipientIssue || recipientBusy) return;
     Keyboard.dismiss();
     setQuote(createDemoQuote(amount, balanceJpy, network, recipient));
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -241,6 +250,21 @@ export default function RefundQuoteScreen({
                 </Text>
               </View>
             </View>
+            {destination.resolved && (
+              <Text style={styles.note}>
+                Resolved from {destination.resolved.name} on Sui mainnet. The
+                full destination is shown above.
+              </Text>
+            )}
+            {destination.connection && (
+              <Text style={styles.note}>
+                Recipient supplied by dGen1 · chain{' '}
+                {destination.connection.chainId}.{' '}
+                {destination.signed
+                  ? 'Destination message signed on-device; not server-verified.'
+                  : 'No signed message requested.'}
+              </Text>
+            )}
             <Text style={styles.note}>
               This is a local estimate, not a live offer. No card debit, wallet
               verification or blockchain transaction has taken place. Network
@@ -341,7 +365,8 @@ export default function RefundQuoteScreen({
                   onPress={() => {
                     if (key !== network) {
                       setNetwork(key);
-                      setRecipient('');
+                      setDestination(manualDestination());
+                      setRecipientBusy(false);
                       setAttempted(false);
                     }
                   }}
@@ -363,32 +388,18 @@ export default function RefundQuoteScreen({
                 </Pressable>
               ))}
             </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>Recipient wallet address</Text>
-              <TextInput
-                testID="refund-recipient"
-                accessibilityLabel="Recipient wallet address"
-                value={recipient}
-                onChangeText={setRecipient}
-                autoCapitalize="none"
-                autoCorrect={false}
-                spellCheck={false}
-                placeholder="0x…"
-                placeholderTextColor="#78856B"
-                multiline
-                style={[styles.input, styles.addressInput]}
-              />
-              <Text style={styles.note}>
-                Use your {payout.name} address. Switching networks clears this
-                field. Only address format is checked; ownership and network
-                compatibility are not verified.
+            <RecipientEditor
+              key={network}
+              network={network}
+              value={destination}
+              onChange={setDestination}
+              onBusy={setRecipientBusy}
+            />
+            {attempted && recipientIssue && (
+              <Text accessibilityRole="alert" style={styles.error}>
+                {recipientIssue}
               </Text>
-              {attempted && recipientIssue && (
-                <Text accessibilityRole="alert" style={styles.error}>
-                  {recipientIssue}
-                </Text>
-              )}
-            </View>
+            )}
             <View style={styles.estimate}>
               <Text style={styles.label}>Fixed demo rate</Text>
               <Text style={styles.description}>
@@ -402,6 +413,8 @@ export default function RefundQuoteScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Review demo quote"
+              disabled={recipientBusy}
+              accessibilityState={{ disabled: recipientBusy }}
               onPress={review}
               style={styles.primary}
             >
