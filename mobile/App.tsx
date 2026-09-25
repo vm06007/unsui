@@ -161,7 +161,7 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={[styles.screen, isHome && styles.homeScreen]}>
-        {!isHome && (
+        {!isHome && !selectedReceipt && (
           <View style={styles.brand}>
             <BrandMark />
             {!refundOpen && (

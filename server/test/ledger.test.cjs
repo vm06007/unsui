@@ -44,11 +44,35 @@ test('development reset clears shared receipts and restores allowance durably',a
  assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,0);
  assert.equal((await(await fetch(f.url+'/merchant-feed')).json()).records.length,0);
  await f.stop();f.url=await f.start();assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,0);
- assert.equal((await post(f.url,input('after-reset',1500))).status,200);
+ assert.equal((await post(f.url,input('after-reset',1000))).status,200);
 });
 
 test('reset is unavailable when disabled',async t=>{
  const f=await fixture(t,{allowReset:false});await post(f.url,input());
  const response=await fetch(f.url+'/ledger/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirm:'reset-demo-ledger'})});
  assert.equal(response.status,403);assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,1);
+});
+
+test('refund endpoint enforces World ID above 1000 yen',async t=>{
+ const f=await fixture(t);
+ assert.equal((await post(f.url,input('large',1001))).status,403);
+ assert.equal((await post(f.url,{...input('forged',1001),worldVerificationId:'forged'})).status,403);
+ assert.equal((await (await fetch(f.url+'/ledger')).json()).receipts.length,0);
+ assert.equal((await post(f.url,input('boundary',1000))).status,200);
+});
+test('verified request reaches ledger and persisted retries do not consume another proof',async t=>{
+ let uses=0;
+ const f=await fixture(t,{worldId:{status(){return {status:'verified'};},allows(body){uses++;return body.worldVerificationId==='approved'&&body.amountJpy===1112;}}});
+ const body={...input('verified',1112),worldVerificationId:'approved'};
+ assert.equal((await post(f.url,body)).status,200);
+ assert.equal((await post(f.url,body)).status,200);
+ assert.equal(uses,1);
+ assert.equal((await post(f.url,{...body,quote:{...body.quote,amountJpy:1200}})).status,400);
+});
+test('test bypass audit is server-owned and survives retries and restart',async t=>{
+ const f=await fixture(t,{worldId:{status(){return {status:'bypassed'};},allows(){return true;}}});
+ const body={...input('bypass',1112),humanCheck:'verified'};
+ const first=await(await post(f.url,body)).json();assert.equal(first.receipt.humanCheck,'bypassed');
+ await f.stop();f.url=await f.start();
+ assert.equal((await(await post(f.url,body)).json()).receipt.humanCheck,'bypassed');
 });

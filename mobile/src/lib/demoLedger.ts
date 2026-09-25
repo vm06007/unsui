@@ -8,6 +8,7 @@ export type DemoReceipt = RefundQuote & {
   remainingDemoJpy: number;
   createdAt: string;
   status: 'simulated';
+  humanCheck?: 'verified' | 'bypassed' | 'not_required';
 };
 type Storage = {
   getItem(key: string): Promise<string | null>;
@@ -129,6 +130,7 @@ export function createDemoLedger(storage: Storage) {
       scannedBalanceJpy: number;
       confirmedCardId: string;
       confirmedBalanceJpy: number;
+      humanCheck?: DemoReceipt['humanCheck'];
     }) =>
       serial(async () => {
         const cardId = cardKey(input.cardId);
@@ -170,6 +172,7 @@ export function createDemoLedger(storage: Storage) {
           remainingDemoJpy: available - quote.amountJpy,
           createdAt: new Date().toISOString(),
           status: 'simulated',
+          ...(input.humanCheck ? { humanCheck: input.humanCheck } : {}),
         };
         try {
           await storage.setItem(

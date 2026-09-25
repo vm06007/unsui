@@ -5,7 +5,9 @@ import {
   DemoReceipt,
 } from './demoLedger';
 import { normalizeBackendUrl } from './preferences';
-type RecordInput = Parameters<ReturnType<typeof createDemoLedger>['record']>[0];
+type RecordInput = Parameters<
+  ReturnType<typeof createDemoLedger>['record']
+>[0] & { worldVerificationId?: string };
 const requests = createAsyncStorage('unsui-backend-requests');
 export async function backendRequest(
   url: string,
@@ -50,10 +52,10 @@ export async function listBackend(url: string): Promise<DemoReceipt[]> {
     JSON.stringify(await backendRequest(url, '/ledger')),
   );
 }
-export async function recordBackend(
+export async function prepareBackendRecord(
   url: string,
   input: RecordInput,
-): Promise<DemoReceipt> {
+): Promise<RecordInput> {
   // Keep the same request after a lost response or app restart. Never fall back locally.
   const fingerprint = JSON.stringify([
     normalizeBackendUrl(url),
@@ -65,6 +67,22 @@ export async function recordBackend(
   const saved = await requests.getItem(key);
   const requestId = saved || input.requestId;
   if (!saved) await requests.setItem(key, requestId);
+  return { ...input, requestId };
+}
+export async function recordBackend(
+  url: string,
+  input: RecordInput,
+): Promise<DemoReceipt> {
+  const prepared = await prepareBackendRecord(url, input);
+  const requestId = prepared.requestId;
+  const key =
+    'pending:' +
+    JSON.stringify([
+      normalizeBackendUrl(url),
+      input.cardId.toLowerCase(),
+      input.scannedBalanceJpy,
+      input.quote,
+    ]);
   const result = await backendRequest(url, '/refunds', { ...input, requestId });
   const receipts = await listBackend(url);
   const receipt = receipts.find(r => r.requestId === requestId);

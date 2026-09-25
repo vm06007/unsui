@@ -1,3 +1,6 @@
+jest.mock('../src/lib/worldId', () => ({
+  verifyRefundHuman: jest.fn().mockResolvedValue(undefined),
+}));
 import React from 'react';
 import Renderer, { act } from 'react-test-renderer';
 import RefundQuoteScreen from '../src/screens/RefundQuoteScreen';
@@ -5,7 +8,7 @@ let view: Renderer.ReactTestRenderer;
 import { readCard, cancelScan } from '../src/lib/suica';
 import { demoLedger } from '../src/lib/ledger';
 jest.mock('../src/lib/ledger', () => ({
-  demoLedger: { record: jest.fn() },
+  demoLedger: { prepare: jest.fn(async input => input), record: jest.fn() },
 }));
 jest.mock('../src/lib/suica', () => ({
   readCard: jest.fn(),
@@ -212,4 +215,76 @@ test('explicit sample-card mode confirms without invoking NFC', async () => {
     }),
   );
   expect(onRecorded).toHaveBeenCalledWith({ id: 'DEMO-SAMPLE' });
+});
+
+test('1112 yen waits for World ID before starting the confirmation scan', async () => {
+  const { verifyRefundHuman } = require('../src/lib/worldId');
+  let approve!: (value: string) => void;
+  verifyRefundHuman.mockImplementationOnce(
+    () =>
+      new Promise<string>(resolve => {
+        approve = resolve;
+      }),
+  );
+  await act(async () => {
+    view.unmount();
+    view = Renderer.create(
+      <RefundQuoteScreen
+        balanceJpy={1112}
+        scannedBalanceJpy={1112}
+        cardId="0123456789abcdef"
+        onClose={onClose}
+        onRecorded={onRecorded}
+      />,
+    );
+  });
+  await act(async () => input('refund-recipient').props.onChangeText(address));
+  await act(async () => {
+    button('Confirm refund').props.onPress();
+  });
+  expect(JSON.stringify(view.toJSON())).toContain('One quick human check');
+  expect(readCard).not.toHaveBeenCalled();
+  expect(demoLedger.record).not.toHaveBeenCalled();
+  (readCard as jest.Mock).mockResolvedValueOnce({
+    idm: '0123456789abcdef',
+    balanceJpy: 1112,
+  });
+  (demoLedger.record as jest.Mock).mockResolvedValueOnce({ id: 'GM-000001' });
+  await act(async () => approve('approved-session'));
+  expect(demoLedger.record).toHaveBeenCalledWith(
+    expect.objectContaining({
+      worldVerificationId: 'approved-session',
+      quote: expect.objectContaining({ amountJpy: 1112 }),
+    }),
+  );
+});
+test('cancelled human check cannot start NFC or save a refund even if approval arrives late', async () => {
+  const { verifyRefundHuman } = require('../src/lib/worldId');
+  let approve!: (value: string) => void;
+  verifyRefundHuman.mockImplementationOnce(
+    () =>
+      new Promise<string>(resolve => {
+        approve = resolve;
+      }),
+  );
+  await act(async () => {
+    view.unmount();
+    view = Renderer.create(
+      <RefundQuoteScreen
+        balanceJpy={1112}
+        scannedBalanceJpy={1112}
+        cardId="0123456789abcdef"
+        onClose={onClose}
+        onRecorded={onRecorded}
+      />,
+    );
+  });
+  await act(async () => input('refund-recipient').props.onChangeText(address));
+  await act(async () => {
+    button('Confirm refund').props.onPress();
+  });
+  await act(async () => button('Cancel human check').props.onPress());
+  await act(async () => approve('late-session'));
+  expect(readCard).not.toHaveBeenCalled();
+  expect(demoLedger.record).not.toHaveBeenCalled();
 });

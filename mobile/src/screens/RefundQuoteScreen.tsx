@@ -20,6 +20,7 @@ import {
   recipientError,
 } from '../lib/refundQuote';
 
+import { verifyRefundHuman } from '../lib/worldId';
 import ScanSheet from '../components/ScanSheet';
 import { showScanError } from '../lib/scanFeedback';
 import { readCard, cancelScan } from '../lib/suica';
@@ -65,9 +66,10 @@ export default function RefundQuoteScreen({
   const [amountOpen, setAmountOpen] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const [phase, setPhase] = useState<
-    'idle' | 'confirming' | 'cancelling' | 'saving'
+    'idle' | 'human' | 'confirming' | 'cancelling' | 'saving'
   >('idle');
   const [confirmationError, setConfirmationError] = useState('');
+  const humanAbort = useRef<AbortController | null>(null);
   const active = useRef(false);
   const mounted = useRef(true);
   const saving = useRef(false);
@@ -77,6 +79,7 @@ export default function RefundQuoteScreen({
     reason = 'Confirmation cancelled. No new refund was recorded.',
   ) => {
     if (!active.current || saving.current) return;
+    humanAbort.current?.abort();
     cancelled.current = true;
     setConfirmationError(reason);
     setPhase('cancelling');
@@ -86,6 +89,7 @@ export default function RefundQuoteScreen({
     mounted.current = true;
     return () => {
       mounted.current = false;
+      humanAbort.current?.abort();
       cancelled.current = true;
       if (active.current && !saving.current) cancelScan().catch(() => {});
     };
@@ -100,7 +104,7 @@ export default function RefundQuoteScreen({
     cancelled.current = false;
     saving.current = false;
     setConfirmationError('');
-    setPhase('confirming');
+    setPhase(quote.amountJpy > 1000 ? 'human' : 'confirming');
     const fingerprint = JSON.stringify(quote);
     if (request.current?.fingerprint !== fingerprint) {
       request.current = {
@@ -109,14 +113,31 @@ export default function RefundQuoteScreen({
       };
     }
     const requestId = request.current.id;
-    const timeout = setTimeout(
-      () =>
-        cancelConfirmation(
-          'Confirmation timed out. Hold the same card still and retry.',
-        ),
-      25000,
-    );
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
+      const prepared = await demoLedger.prepare({
+        requestId,
+        quote,
+        cardId,
+        scannedBalanceJpy,
+        confirmedCardId: cardId,
+        confirmedBalanceJpy: scannedBalanceJpy,
+      });
+      humanAbort.current = new AbortController();
+      if (cancelled.current || !mounted.current) return;
+      const worldVerificationId = await verifyRefundHuman(
+        prepared,
+        humanAbort.current.signal,
+      );
+      if (cancelled.current || !mounted.current) return;
+      setPhase('confirming');
+      timeout = setTimeout(
+        () =>
+          cancelConfirmation(
+            'Confirmation timed out. Hold the same card still and retry.',
+          ),
+        25000,
+      );
       const confirmed = isSample
         ? { idm: cardId, balanceJpy: scannedBalanceJpy }
         : await readCard(() => cancelled.current || !mounted.current, {
@@ -133,7 +154,8 @@ export default function RefundQuoteScreen({
       saving.current = true;
       setPhase('saving');
       const receipt = await demoLedger.record({
-        requestId,
+        requestId: prepared.requestId,
+        worldVerificationId,
         quote,
         cardId,
         scannedBalanceJpy,
@@ -143,7 +165,8 @@ export default function RefundQuoteScreen({
       if (mounted.current) onRecorded(receipt);
     } catch (error) {
       if (mounted.current && !cancelled.current) {
-        if (!saving.current && !isSample) showScanError(error);
+        if (!saving.current && !isSample && quote.amountJpy <= 1000)
+          showScanError(error);
         setConfirmationError(
           error instanceof Error
             ? error.message
@@ -198,6 +221,25 @@ export default function RefundQuoteScreen({
       )
     : null;
   const locked = phase !== 'idle';
+  if (phase === 'human')
+    return (
+      <View style={styles.flex}>
+        <Text style={styles.title}>One quick human check</Text>
+        <Text style={styles.note}>
+          Refunds above ¥1,000 need World ID verification. Complete the check in
+          your browser, then return here to scan your card.
+        </Text>
+        <ActivityIndicator color="#173E35" />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cancel human check"
+          onPress={() => cancelConfirmation('Human check cancelled.')}
+          style={styles.back}
+        >
+          <Text style={styles.muted}>Cancel human check</Text>
+        </Pressable>
+      </View>
+    );
   return (
     <KeyboardAvoidingView
       style={styles.flex}

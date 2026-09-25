@@ -34,7 +34,7 @@ test('persists receipts across ledger instances and preserves a separate demo al
   const { ledger, storage } = fixture();
   const receipt = await ledger.record(request());
   expect(receipt).toMatchObject({
-    id: 'DEMO-000001',
+    id: 'GM-000001',
     status: 'simulated',
     remainingDemoJpy: 425,
     scannedBalanceJpy: 1000,
@@ -99,7 +99,7 @@ test('a persisted write with an ambiguous response is recovered without a duplic
   });
   await expect(ledger.record(request())).rejects.toThrow();
   await expect(ledger.record(request())).resolves.toMatchObject({
-    id: 'DEMO-000001',
+    id: 'GM-000001',
   });
   expect(storage.setItem).toHaveBeenCalledTimes(1);
 });
@@ -124,4 +124,17 @@ test('rejects duplicate request ids with different inputs and altered persisted 
   );
   await expect(ledger.list()).rejects.toThrow('unreadable');
   expect(LEDGER_KEY).toBe('unsui.demo-refunds.v1');
+});
+
+test('legacy DEMO receipts remain readable and retries keep their reference', async () => {
+  const { ledger, corrupt } = fixture();
+  const receipt = await ledger.record(request());
+  corrupt(
+    JSON.stringify({
+      version: 1,
+      receipts: [{ ...receipt, id: 'DEMO-000001' }],
+    }),
+  );
+  expect((await ledger.list())[0].id).toBe('DEMO-000001');
+  expect((await ledger.record(request())).id).toBe('DEMO-000001');
 });

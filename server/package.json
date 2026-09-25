@@ -7,5 +7,11 @@
     "start": "npm run build && node server.cjs",
     "test": "npm run build && node --test test/*.test.cjs"
   },
-  "engines": { "node": ">=22.11.0" }
+  "engines": {
+    "node": ">=22.11.0"
+  },
+  "dependencies": {
+    "@worldcoin/idkit-core": "4.3.0",
+    "qrcode-generator": "2.0.4"
+  }
 }

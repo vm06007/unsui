@@ -1,3 +1,6 @@
+jest.mock('../src/lib/worldId', () => ({
+  verifyRefundHuman: jest.fn().mockResolvedValue(undefined),
+}));
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import App from '../App';
@@ -16,7 +19,11 @@ jest.mock('../src/lib/suica', () => ({
   cancelScan: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../src/lib/ledger', () => ({
-  demoLedger: { list: jest.fn().mockResolvedValue([]), record: jest.fn() },
+  demoLedger: {
+    prepare: jest.fn(async input => input),
+    list: jest.fn().mockResolvedValue([]),
+    record: jest.fn(),
+  },
 }));
 let view: ReactTestRenderer.ReactTestRenderer;
 afterEach(async () => {
@@ -221,7 +228,7 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
     edit('refund-recipient', recipient);
   });
   await act(async () => press('Confirm refund'));
-  expect(JSON.stringify(view.toJSON())).toContain('Your receipt.');
+  expect(JSON.stringify(view.toJSON())).toContain('A little goes further.');
   expect(JSON.stringify(view.toJSON())).toContain('DEMO-000001');
   await act(async () => press('Close receipt'));
   expect(JSON.stringify(view.toJSON())).toContain(
@@ -239,7 +246,7 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
   await act(async () => press('Open menu'));
   await act(async () => press('Open receipts'));
   await act(async () => press('View DEMO-000001'));
-  expect(JSON.stringify(view.toJSON())).toContain('Your receipt.');
+  expect(JSON.stringify(view.toJSON())).toContain('A little goes further.');
   await act(async () => press('Close receipt'));
   expect(JSON.stringify(view.toJSON())).toContain('Your receipts.');
 });
@@ -272,9 +279,7 @@ test('saved refunds restore the allowance on a new app mount', async () => {
     .findAllByProps({ accessibilityLabel: 'Preview refund' })
     .find(n => typeof n.props.onPress === 'function')!;
   expect(preview.props.disabled).toBe(true);
-  expect(JSON.stringify(view.toJSON())).toContain(
-    'Available for refunds: ¥0',
-  );
+  expect(JSON.stringify(view.toJSON())).toContain('Available for refunds: ¥0');
 });
 
 test('sample journeys need no NFC and language choice survives remount', async () => {

@@ -60,3 +60,19 @@ npm test
 Tests cover persistence after restart, concurrent overspend prevention,
 idempotency, quote tampering, wrong-card confirmation, corruption, and feed
 privacy. They use separate temporary ledger files and ephemeral loopback ports.
+
+## World ID
+
+Refunds above ¥1,000 require a server-verified World ID proof, including sample-card requests. Up to ¥1,000 does not require a proof. This is a per-request threshold, not a daily limit.
+
+Copy `.env.example` to `.env` and configure the RP signing key on the server only. `npm start` loads this file. For the USB-connected Android phone, localhost works with `adb reverse tcp:4100 tcp:4100` and `WORLD_ALLOW_LOCAL_HTTP=true`. Use an HTTPS origin for a hosted handoff. The local HTTP exception is disabled in production.
+
+The default credential is Proof of Human. Set `WORLD_ID_CREDENTIAL=selfie` to select Selfie Check; restart to apply. The app opens the official IDKit browser flow, waits for verification, then requests the same-card confirmation when the app is foreground again. Cancellation, expiry, missing credentials and verification errors block recording the refund.
+
+Proofs are bound to the card, recipient, amount, scanned balance, network and stable request reference. Approval is single-use; pending approvals expire after five minutes and are lost on restart. Recorded request retries retain their receipt without consuming another proof.
+
+Development uses World staging verification. Automated provider responses are test fixtures; successful real credential verification still requires an end-to-end user test. The browser handoff and official SDK initialization have been checked on dGen1.
+
+The verification page supports a QR code for another phone and a same-device link. After cancellation, completion, or expiry, **Return to UnSui** opens the mobile app. Android must include the `unsui://world/return` intent filter.
+
+For local flow testing only, `WORLD_ALLOW_TEST_BYPASS=true` enables **Skip check for testing**. It is disabled by default and rejected when either Node or World ID uses production. Bypassed requests remain bound and single-use; receipts persist `humanCheck: bypassed`, never a verified claim. Disable this option when demonstrating actual World ID verification.

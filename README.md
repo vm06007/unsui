@@ -39,5 +39,5 @@ without a physical card. `BACKEND_URL` in `mobile/src/config.ts` defaults to
 Use a physical NFC-F-capable device to test real card reading.
 
 See [mobile setup](mobile/README.md) and [backend setup/API](server/README.md).
-World ID, contract payouts and the dedicated dashboard are future steps. The
+World ID gates refunds over ¥1,000. Contract payouts and the dedicated dashboard are future steps. The
 merchant feed is ready for the dashboard to consume when it is added.

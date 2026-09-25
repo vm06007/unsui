@@ -1,12 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  BackHandler,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
+import { styles } from './DemoReceiptScreen.styles';
 import SuccessConfetti from '../components/SuccessConfetti';
 import { DemoReceipt } from '../lib/demoLedger';
 import { PAYOUT_NETWORKS } from '../lib/refundQuote';
@@ -38,28 +32,48 @@ export default function DemoReceiptScreen({
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.badge}>REFUND REQUEST RECORDED</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Receipt saved"
-          onPress={replayConfetti}
-        >
-          <Text style={styles.check}>✓</Text>
-        </Pressable>
-        <Text accessibilityRole="header" style={styles.title}>
-          Your receipt.
-        </Text>
-        <Text style={styles.note}>
-          Your refund request and destination have been recorded.
-        </Text>
-        <View style={styles.panel}>
-          <Text style={styles.label}>Estimated crypto payout</Text>
-          <Text style={styles.amount}>
-            {receipt.estimatedCrypto} {PAYOUT_NETWORKS[receipt.network].asset}
+        <View style={styles.hero}>
+          <Pressable
+            style={styles.check}
+            accessibilityRole="button"
+            accessibilityLabel="Receipt saved"
+            onPress={replayConfetti}
+          >
+            <Text style={styles.checkText}>✓</Text>
+          </Pressable>
+          <Text style={styles.eyebrow}>REFUND REQUEST RECORDED</Text>
+          <Text accessibilityRole="header" style={styles.title}>
+            A little goes further.
           </Text>
-          <Text style={styles.note}>After the 2% service fee</Text>
+          <Text style={styles.amount}>
+            {Number(receipt.estimatedCrypto).toFixed(
+              receipt.network === 'ethereum' ? 6 : 4,
+            )}{' '}
+            {PAYOUT_NETWORKS[receipt.network].asset}
+          </Text>
+          <Text style={styles.payoutNote}>
+            Estimated payout · after the 2% service fee
+          </Text>
+        </View>
+        <View style={styles.reference}>
+          <Text style={styles.receiptLabel}>RECEIPT REFERENCE</Text>
+          <Text selectable style={styles.digest}>
+            {receipt.id}
+          </Text>
         </View>
         <View style={styles.panel}>
+          <Row
+            label="Human check"
+            value={
+              receipt.humanCheck === 'bypassed'
+                ? 'Bypassed for testing'
+                : receipt.humanCheck === 'verified'
+                ? 'World ID verified'
+                : receipt.humanCheck === 'not_required'
+                ? 'Not required'
+                : 'Not recorded'
+            }
+          />
           <Row label="Receipt reference" value={receipt.id} />
           <Row
             label="Recorded at"
@@ -115,22 +129,3 @@ function Row({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  check: { fontSize: 48, color: '#173E35', textAlign: 'center' },
-  content: { gap: 22, paddingVertical: 28 },
-  badge: { fontSize: 12, color: '#385131', fontWeight: '700' },
-  title: { fontSize: 34, color: '#214A37', fontWeight: '700' },
-  note: { fontSize: 14, lineHeight: 22, color: '#687667' },
-  label: { fontSize: 17, lineHeight: 25, color: '#214A37', fontWeight: '600' },
-  amount: { fontSize: 32, fontWeight: '700', color: '#214A37' },
-  panel: { gap: 18, padding: 20, borderRadius: 18, backgroundColor: '#E9EFDD' },
-  row: { gap: 4 },
-  button: {
-    padding: 18,
-    backgroundColor: '#214A37',
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  buttonText: { color: 'white', fontSize: 18, fontWeight: '600' },
-});
