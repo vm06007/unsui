@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { cancelScan, CardBalance, readCard } from './src/lib/suica';
+import RefundQuoteScreen from './src/screens/RefundQuoteScreen';
 
 export default function App() {
   const [scanning, setScanning] = useState(false);
   const [card, setCard] = useState<CardBalance | null>(null);
   const [message, setMessage] = useState('');
+  const [refundOpen, setRefundOpen] = useState(false);
   const [tab, setTab] = useState<'card' | 'history'>('card');
   const scroll = useRef<ScrollView>(null);
   const generation = useRef(0);
@@ -49,6 +51,7 @@ export default function App() {
     const current = ++generation.current;
     setScanning(true);
     setCard(null);
+    setRefundOpen(false);
     setTab('card');
     setMessage('');
     const timer = setTimeout(() => {
@@ -83,165 +86,198 @@ export default function App() {
           <Text style={styles.name}>UnSui</Text>
           <Text style={styles.japanese}>雲水</Text>
         </View>
-        {card && (
-          <View style={styles.tabs}>
-            {(['card', 'history'] as const).map(value => (
+        {card && refundOpen ? (
+          <RefundQuoteScreen
+            balanceJpy={card.balanceJpy}
+            onClose={() => setRefundOpen(false)}
+          />
+        ) : (
+          <>
+            {card && (
+              <View style={styles.tabs}>
+                {(['card', 'history'] as const).map(value => (
+                  <Pressable
+                    key={value}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: tab === value }}
+                    onPress={() => {
+                      setTab(value);
+                      scroll.current?.scrollTo({ y: 0, animated: false });
+                    }}
+                    style={[styles.tab, tab === value && styles.activeTab]}
+                  >
+                    <Text style={styles.tabText}>
+                      {value === 'card'
+                        ? 'Card'
+                        : `History · ${card.history.length}`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <ScrollView
+              ref={scroll}
+              contentContainerStyle={[
+                styles.content,
+                tab === 'history' && styles.historyContent,
+              ]}
+            >
+              {tab === 'card' && (
+                <>
+                  <Text style={styles.eyebrow}>
+                    YOUR TRANSIT CARD, AT A GLANCE
+                  </Text>
+                  <Text accessibilityRole="header" style={styles.title}>
+                    {scanning
+                      ? 'Hold your card close.'
+                      : card
+                      ? 'A little left to explore.'
+                      : 'What’s left on your card?'}
+                  </Text>
+                  <Text style={styles.description}>
+                    {scanning
+                      ? 'Place one physical Suica card against your phone’s NFC antenna. Keep it still while we read the balance and recent history.'
+                      : 'Tap your physical Suica card to see its balance in yen.'}
+                  </Text>
+                  {scanning && (
+                    <ActivityIndicator
+                      size="large"
+                      color="#214A37"
+                      accessibilityLabel="Waiting for transit card"
+                    />
+                  )}
+                  {card && (
+                    <View style={styles.balance}>
+                      <Text style={styles.description}>Card balance</Text>
+                      <Text
+                        accessibilityLabel={`${card.balanceJpy} yen`}
+                        style={styles.amount}
+                      >
+                        ¥{card.balanceJpy.toLocaleString('en-US')}
+                      </Text>
+                      <Text style={styles.note}>
+                        Read from your card · no balance changes
+                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Preview refund"
+                        accessibilityState={{ disabled: card.balanceJpy === 0 }}
+                        disabled={card.balanceJpy === 0}
+                        onPress={() => setRefundOpen(true)}
+                        style={[
+                          styles.button,
+                          card.balanceJpy === 0 && styles.disabledButton,
+                        ]}
+                      >
+                        <Text style={styles.buttonText}>Preview refund →</Text>
+                      </Pressable>
+                      <Text style={styles.note}>
+                        {card.balanceJpy === 0
+                          ? 'No balance available for a refund quote.'
+                          : 'Demo estimate · no funds sent'}
+                      </Text>
+                    </View>
+                  )}
+                </>
+              )}
+              {card && tab === 'history' && (
+                <>
+                  <Text accessibilityRole="header" style={styles.historyTitle}>
+                    Recent journeys
+                  </Text>
+                  <Text style={styles.note}>
+                    Newest first · up to 20 records stored on your card.
+                    Activity labels and station names are best-effort.
+                  </Text>
+                  {card.historyLimited && (
+                    <Text style={styles.message}>
+                      Only part of the history could be read. Scan again while
+                      holding the card still.
+                    </Text>
+                  )}
+                  {card.history.length === 0 && (
+                    <Text style={styles.description}>
+                      No recent history is stored on this card.
+                    </Text>
+                  )}
+                  {card.history.map(record => (
+                    <View key={record.index} style={styles.historyRow}>
+                      <View style={styles.rowHeading}>
+                        <Text style={styles.activity}>{record.activity}</Text>
+                        <Text style={styles.note}>
+                          {record.date || 'Date unavailable'}
+                        </Text>
+                      </View>
+                      <Text style={styles.description}>
+                        {record.changeJpy === null
+                          ? 'Change unavailable'
+                          : `${
+                              record.changeJpy > 0
+                                ? '+'
+                                : record.changeJpy < 0
+                                ? '−'
+                                : ''
+                            }¥${Math.abs(record.changeJpy).toLocaleString(
+                              'en-US',
+                            )}`}
+                        <Text style={styles.note}> · balance change</Text>
+                      </Text>
+                      <Text style={styles.note}>
+                        Balance after · ¥
+                        {record.balanceJpy.toLocaleString('en-US')}
+                      </Text>
+                      {record.activity === 'Rail travel' && (
+                        <Text style={styles.note}>
+                          {record.entry || 'Unknown entry station'} →{' '}
+                          {record.exit || 'Unknown exit station'}
+                        </Text>
+                      )}
+                      {record.activity === 'Other activity' && (
+                        <Text style={styles.note}>
+                          Terminal 0x
+                          {record.terminal.toString(16).padStart(2, '0')} ·
+                          process 0x
+                          {record.process.toString(16).padStart(2, '0')}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                  <Text style={styles.note}>
+                    Changes are calculated from adjacent recorded balances. The
+                    oldest entry has no earlier balance to compare.
+                  </Text>
+                </>
+              )}
+              {!!message && (
+                <Text accessibilityRole="alert" style={styles.message}>
+                  {message}
+                </Text>
+              )}
               <Pressable
-                key={value}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: tab === value }}
-                onPress={() => {
-                  setTab(value);
-                  scroll.current?.scrollTo({ y: 0, animated: false });
-                }}
-                style={[styles.tab, tab === value && styles.activeTab]}
+                accessibilityRole="button"
+                style={styles.button}
+                onPress={scanning ? cancel : scan}
               >
-                <Text style={styles.tabText}>
-                  {value === 'card'
-                    ? 'Card'
-                    : `History · ${card.history.length}`}
+                <Text style={styles.buttonText}>
+                  {scanning
+                    ? 'Cancel scan'
+                    : card
+                    ? 'Scan again'
+                    : 'Scan transit card'}
                 </Text>
               </Pressable>
-            ))}
-          </View>
+              <Text style={styles.note}>
+                NFC balance reader · no account or internet required
+              </Text>
+            </ScrollView>
+          </>
         )}
-        <ScrollView
-          ref={scroll}
-          contentContainerStyle={[
-            styles.content,
-            tab === 'history' && styles.historyContent,
-          ]}
-        >
-          {tab === 'card' && (
-            <>
-              <Text style={styles.eyebrow}>YOUR TRANSIT CARD, AT A GLANCE</Text>
-              <Text accessibilityRole="header" style={styles.title}>
-                {scanning
-                  ? 'Hold your card close.'
-                  : card
-                  ? 'A little left to explore.'
-                  : 'What’s left on your card?'}
-              </Text>
-              <Text style={styles.description}>
-                {scanning
-                  ? 'Place one physical Suica card against your phone’s NFC antenna. Keep it still while we read the balance and recent history.'
-                  : 'Tap your physical Suica card to see its balance in yen.'}
-              </Text>
-              {scanning && (
-                <ActivityIndicator
-                  size="large"
-                  color="#214A37"
-                  accessibilityLabel="Waiting for transit card"
-                />
-              )}
-              {card && (
-                <View style={styles.balance}>
-                  <Text style={styles.description}>Card balance</Text>
-                  <Text
-                    accessibilityLabel={`${card.balanceJpy} yen`}
-                    style={styles.amount}
-                  >
-                    ¥{card.balanceJpy.toLocaleString('en-US')}
-                  </Text>
-                  <Text style={styles.note}>
-                    Read from your card · no balance changes
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
-          {card && tab === 'history' && (
-            <>
-              <Text accessibilityRole="header" style={styles.historyTitle}>
-                Recent journeys
-              </Text>
-              <Text style={styles.note}>
-                Newest first · up to 20 records stored on your card. Activity
-                labels and station names are best-effort.
-              </Text>
-              {card.historyLimited && (
-                <Text style={styles.message}>
-                  Only part of the history could be read. Scan again while
-                  holding the card still.
-                </Text>
-              )}
-              {card.history.length === 0 && (
-                <Text style={styles.description}>
-                  No recent history is stored on this card.
-                </Text>
-              )}
-              {card.history.map(record => (
-                <View key={record.index} style={styles.historyRow}>
-                  <View style={styles.rowHeading}>
-                    <Text style={styles.activity}>{record.activity}</Text>
-                    <Text style={styles.note}>
-                      {record.date || 'Date unavailable'}
-                    </Text>
-                  </View>
-                  <Text style={styles.description}>
-                    {record.changeJpy === null
-                      ? 'Change unavailable'
-                      : `${
-                          record.changeJpy > 0
-                            ? '+'
-                            : record.changeJpy < 0
-                            ? '−'
-                            : ''
-                        }¥${Math.abs(record.changeJpy).toLocaleString(
-                          'en-US',
-                        )}`}
-                    <Text style={styles.note}> · balance change</Text>
-                  </Text>
-                  <Text style={styles.note}>
-                    Balance after · ¥{record.balanceJpy.toLocaleString('en-US')}
-                  </Text>
-                  {record.activity === 'Rail travel' && (
-                    <Text style={styles.note}>
-                      {record.entry || 'Unknown entry station'} →{' '}
-                      {record.exit || 'Unknown exit station'}
-                    </Text>
-                  )}
-                  {record.activity === 'Other activity' && (
-                    <Text style={styles.note}>
-                      Terminal 0x{record.terminal.toString(16).padStart(2, '0')}{' '}
-                      · process 0x{record.process.toString(16).padStart(2, '0')}
-                    </Text>
-                  )}
-                </View>
-              ))}
-              <Text style={styles.note}>
-                Changes are calculated from adjacent recorded balances. The
-                oldest entry has no earlier balance to compare.
-              </Text>
-            </>
-          )}
-          {!!message && (
-            <Text accessibilityRole="alert" style={styles.message}>
-              {message}
-            </Text>
-          )}
-          <Pressable
-            accessibilityRole="button"
-            style={styles.button}
-            onPress={scanning ? cancel : scan}
-          >
-            <Text style={styles.buttonText}>
-              {scanning
-                ? 'Cancel scan'
-                : card
-                ? 'Scan again'
-                : 'Scan transit card'}
-            </Text>
-          </Pressable>
-          <Text style={styles.note}>
-            NFC balance reader · no account or internet required
-          </Text>
-        </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 const styles = StyleSheet.create({
+  disabledButton: { opacity: 0.45 },
   tabs: { flexDirection: 'row', gap: 8, marginTop: 20 },
   tab: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
   activeTab: { backgroundColor: '#E9EFDD' },

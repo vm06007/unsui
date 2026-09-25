@@ -106,3 +106,52 @@ test('history tab shows records and a partial-read notice without another scan',
   expect(output).toContain('Only part of the history');
   expect(readCard).toHaveBeenCalledTimes(1);
 });
+
+test('opens and closes the refund flow without changing the scanned card', async () => {
+  (readCard as jest.Mock).mockResolvedValue({
+    idm: 'card',
+    balanceJpy: 575,
+    history: [],
+    historyLimited: false,
+  });
+  await act(async () => {
+    view = ReactTestRenderer.create(<App />);
+  });
+  await act(async () => {
+    await view.root
+      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .props.onPress();
+  });
+  const press = (label: string) =>
+    view.root
+      .findAllByProps({ accessibilityLabel: label })
+      .find(node => typeof node.props.onPress === 'function')!
+      .props.onPress();
+  await act(async () => press('Preview refund'));
+  expect(JSON.stringify(view.toJSON())).toContain('Where next for your yen?');
+  await act(async () => press('Back to card'));
+  expect(JSON.stringify(view.toJSON())).toContain('575');
+  expect(JSON.stringify(view.toJSON())).toContain('Scan again');
+  expect(readCard).toHaveBeenCalledTimes(1);
+});
+test('a zero balance cannot open a refund quote', async () => {
+  (readCard as jest.Mock).mockResolvedValue({
+    idm: 'card',
+    balanceJpy: 0,
+    history: [],
+    historyLimited: false,
+  });
+  await act(async () => {
+    view = ReactTestRenderer.create(<App />);
+  });
+  await act(async () => {
+    await view.root
+      .findAllByProps({ accessibilityRole: 'button' })[0]
+      .props.onPress();
+  });
+  const preview = view.root
+    .findAllByProps({ accessibilityLabel: 'Preview refund' })
+    .find(node => typeof node.props.onPress === 'function')!;
+  expect(preview.props.disabled).toBe(true);
+  expect(JSON.stringify(view.toJSON())).toContain('No balance available');
+});
