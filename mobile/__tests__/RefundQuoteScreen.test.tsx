@@ -87,15 +87,12 @@ test('shows the fee and payout inline, and closes without recording', async () =
   expect(onClose).toHaveBeenCalledTimes(1);
   expect(demoLedger.record).not.toHaveBeenCalled();
 });
-test('switching networks resets the destination and updates the inline estimate', async () => {
-  await act(async () => input('refund-recipient').props.onChangeText(address));
+test('network selector can return to the card before a recipient or Sui quote exists', async () => {
+  expect(button('Change payout network').props.disabled).toBe(false);
   await act(async () => button('Change payout network').props.onPress());
-  await act(async () => button('Ethereum').props.onPress());
-  expect(input('refund-recipient').props.value).toBe('');
-  expect(JSON.stringify(view.toJSON())).toContain('0.001127');
-  await act(async () => button('Change payout network').props.onPress());
-  await act(async () => button('Mizuhiki').props.onPress());
-  expect(input('refund-recipient').props.value).toBe('');
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(readCard).not.toHaveBeenCalled();
+  expect(demoLedger.record).not.toHaveBeenCalled();
 });
 
 async function review() {

@@ -27,6 +27,8 @@ type Props = {
   refundDisabled: boolean;
   scanning: boolean;
   onRefund: (network: PayoutNetwork) => void;
+  initialNetwork?: PayoutNetwork;
+  initialNetworkOpen?: boolean;
   onScan: () => void;
   onCancel: () => void;
   onRefresh: () => void;
@@ -44,13 +46,15 @@ export default function CardScreen({
   refundDisabled,
   scanning,
   onRefund,
+  initialNetwork = 'sui',
+  initialNetworkOpen = false,
   onScan,
   onCancel,
   onRefresh,
 }: Props) {
   const scroll = useRef<ScrollView>(null);
-  const [network, setNetwork] = useState<PayoutNetwork>('sui');
-  const [networkOpen, setNetworkOpen] = useState(false);
+  const [network, setNetwork] = useState<PayoutNetwork>(initialNetwork);
+  const [networkOpen, setNetworkOpen] = useState(initialNetworkOpen);
   const [expanded, setExpanded] = useState<number | null>(null);
   const refunds = cardReceipts(receipts, card.idm);
   const historyCount = card.history.length + refunds.length * 2;
@@ -123,6 +127,9 @@ export default function CardScreen({
                   value => (
                     <TouchableOpacity
                       key={value}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Receive on ${PAYOUT_NETWORKS[value].name}`}
+                      accessibilityState={{ selected: network === value }}
                       style={styles.networkOption}
                       onPress={() => {
                         setNetwork(value);

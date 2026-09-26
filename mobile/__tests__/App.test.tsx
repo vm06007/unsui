@@ -356,3 +356,26 @@ test('scan failures close the sheet and use the original feedback handler', asyn
   );
   expect(JSON.stringify(view.toJSON())).not.toContain('Ready to Scan');
 });
+
+test('refund network control returns to open choices and restarts with a fresh destination', async () => {
+  (readCard as jest.Mock).mockResolvedValue({ idm: '0123456789abcdef', balanceJpy: 575, history: [], historyLimited: false });
+  await act(async () => { view = ReactTestRenderer.create(<App />); });
+  const button = (label: string) => view.root.findAllByProps({ accessibilityLabel: label }).find(node => typeof node.props.onPress === 'function')!;
+  const recipient = () => view.root.findAllByProps({ testID: 'refund-recipient' }).find(node => typeof node.props.onChangeText === 'function')!;
+  await act(async () => button('Scan transit card').props.onPress());
+  await act(async () => button('Preview refund').props.onPress());
+  for (const name of ['Ethereum', 'Mizuhiki', 'Sui']) {
+    expect(button('Change payout network').props.disabled).toBe(false);
+    await act(async () => button('Change payout network').props.onPress());
+    expect(button('Receive on ' + name)).toBeDefined();
+    await act(async () => button('Receive on ' + name).props.onPress());
+    await act(async () => button('Preview refund').props.onPress());
+    expect(recipient().props.value).toBe('');
+    await act(async () => recipient().props.onChangeText('0x' + '1'.repeat(name === 'Sui' ? 64 : 40)));
+  }
+  await act(async () => button('Change payout network').props.onPress());
+  expect(button('Receive on Sui').props.accessibilityState.selected).toBe(true);
+  expect(readCard).toHaveBeenCalledTimes(1);
+  expect(demoLedger.prepare).not.toHaveBeenCalled();
+  expect(demoLedger.record).not.toHaveBeenCalled();
+});

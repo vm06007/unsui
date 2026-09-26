@@ -42,6 +42,7 @@ type Props = {
   scannedBalanceJpy: number;
   cardId: string;
   onClose: () => void;
+  onChangeNetwork?: () => void;
   onRecorded: (receipt: DemoReceipt) => void;
 };
 const yen = (value: number) =>
@@ -56,10 +57,11 @@ export default function RefundQuoteScreen({
   scannedBalanceJpy,
   cardId,
   onClose,
+  onChangeNetwork,
   onRecorded,
 }: Props) {
   const amount = String(balanceJpy);
-  const [network, setNetwork] = useState<PayoutNetwork>(initialNetwork);
+  const network = initialNetwork;
   const [destination, setDestination] =
     useState<Destination>(manualDestination);
   const [recipientBusy, setRecipientBusy] = useState(false);
@@ -124,7 +126,6 @@ export default function RefundQuoteScreen({
     quoteRefresh,
   ]);
   const [attempted, setAttempted] = useState(false);
-  const [networkOpen, setNetworkOpen] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const [phase, setPhase] = useState<
     'idle' | 'human' | 'confirming' | 'cancelling' | 'saving'
@@ -370,12 +371,12 @@ export default function RefundQuoteScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Change payout network"
-              disabled={
-                locked ||
-                recipientBusy ||
-                (useMarket && (!marketQuote || quoteLoading))
-              }
-              onPress={() => setNetworkOpen(!networkOpen)}
+              disabled={locked}
+              onPress={() => {
+                if (active.current) return;
+                Keyboard.dismiss();
+                (onChangeNetwork ?? onClose)();
+              }}
             >
               <Text style={styles.network}>{payout.name} ⌄</Text>
             </Pressable>
@@ -396,41 +397,6 @@ export default function RefundQuoteScreen({
             On your card · {yen(scannedBalanceJpy)}
           </Text>
         </View>
-        {networkOpen && (
-          <View style={styles.networkPanel}>
-            {(Object.keys(PAYOUT_NETWORKS) as PayoutNetwork[]).map(key => (
-              <Pressable
-                key={key}
-                accessibilityRole="button"
-                accessibilityLabel={PAYOUT_NETWORKS[key].name}
-                style={styles.networkOption}
-                onPress={() => {
-                  setNetwork(key);
-                  setDestination(previous =>
-                    key !== 'sui' && previous.connection
-                      ? {
-                          ...previous,
-                          signed: undefined,
-                          blocked:
-                            previous.connection.chainId !==
-                            (key === 'ethereum' ? 1 : 6497),
-                        }
-                      : manualDestination(),
-                  );
-                  setRecipientBusy(false);
-                  setAttempted(false);
-                  setNetworkOpen(false);
-                }}
-              >
-                <Text style={styles.label}>
-                  {PAYOUT_NETWORKS[key].name}
-                  {key === 'mizuhiki' ? ' · Awaji Testnet' : ''}
-                </Text>
-                <Text style={styles.link}>{key === network ? '✓' : '→'}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
         <RecipientEditor
           key={network}
           network={network}
@@ -660,17 +626,6 @@ const styles = StyleSheet.create({
   fill: { paddingVertical: 14 },
   note: { fontSize: 12, lineHeight: 19, color: '#68776F', marginBottom: 10 },
   error: { color: '#B74136', fontSize: 13, marginTop: 12 },
-  networkPanel: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  networkOption: {
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   title: {
     fontSize: 22,
     fontWeight: '700',

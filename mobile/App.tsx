@@ -51,6 +51,7 @@ export default function App() {
   const [card, setCard] = useState<CardBalance | null>(null);
   const [message, setMessage] = useState('');
   const [refundOpen, setRefundOpen] = useState(false);
+  const [networkPickerOpen, setNetworkPickerOpen] = useState(false);
   const [receipts, setReceipts] = useState<DemoReceipt[] | null>(null);
   const [ledgerError, setLedgerError] = useState('');
   const [ledgerOpen, setLedgerOpen] = useState(false);
@@ -214,6 +215,11 @@ export default function App() {
               cardReceipts(receipts ?? [], card.idm).length * 2
             }
             initialNetwork={payoutNetwork}
+            onChangeNetwork={() => {
+              setTab('card');
+              setNetworkPickerOpen(true);
+              setRefundOpen(false);
+            }}
             isSample={isSample}
             balanceJpy={available}
             scannedBalanceJpy={card.balanceJpy}
@@ -273,7 +279,10 @@ export default function App() {
             busy={ledgerBusy}
             refundDisabled={refundDisabled}
             scanning={scanning}
+            initialNetwork={payoutNetwork}
+            initialNetworkOpen={networkPickerOpen}
             onRefund={network => {
+              setNetworkPickerOpen(false);
               setPayoutNetwork(network);
               setRefundOpen(true);
             }}

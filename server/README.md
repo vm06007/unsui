@@ -62,7 +62,7 @@ privacy. They use separate temporary ledger files and ephemeral loopback ports.
 
 ## World ID
 
-Refunds above ¥1,000 require a server-verified World ID proof, including sample-card requests. Up to ¥1,000 does not require a proof. This is a per-request threshold, not a daily limit.
+Refunds above ¥1,000 require a server-verified World ID proof, including sample-card requests. Up to ¥1,000 does not require a proof. This is a per-request product threshold, not a daily limit or a Japanese legal threshold. World ID adds a proof-of-human control to a flow that transfers real crypto; it does not replace legally required KYC, AML controls or registration. See [why World ID is part of the payout flow](../README.md#why-world-id-is-part-of-the-payout-flow).
 
 Copy `.env.example` to `.env` and configure the RP signing key on the server only. `npm start` loads this file. For the USB-connected Android phone, localhost works with `adb reverse tcp:4100 tcp:4100` and `WORLD_ALLOW_LOCAL_HTTP=true`. Use an HTTPS origin for a hosted handoff. The local HTTP exception is disabled in production.
 

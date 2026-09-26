@@ -13,6 +13,25 @@ Scanning works offline. Refunds use the hosted backend at `unsui.ca`. Refunds ab
 require a server-verified World ID proof. Sui mainnet payouts are available through the hosted operator backend. The local
 `unsui-extension` reads those refund receipts from `GET /merchant-feed` and projects them onto the SB Payment merchant page. It does not send data to SB Payment.
 
+## Why World ID is part of the payout flow
+
+UnSui sends crypto from a prefunded treasury to the recipient’s wallet. Because
+this moves real value, the normal flow adds a World ID check for refunds above
+¥1,000 to help resist automated abuse. The server verifies the proof and binds
+approval to that specific refund’s card, recipient, amount and network. UnSui
+receives a proof of humanity without collecting identity documents through this
+check. See [World ID’s proof-of-human explanation](https://world.org/world-id).
+
+The intent is to support responsible operation in Japan as part of a broader
+compliance process. World ID alone does **not** establish compliance with Japanese
+law or replace legally required customer identification (KYC), anti-money-laundering
+controls or registration. Which obligations apply depends on the service’s actual
+activities and operating structure; see the [Japan FSA’s FinTech guidance](https://www.fsa.go.jp/en/news/2018/20180717.html)
+and [crypto-service AML/CFT guidance](https://www.fsa.go.jp/inter/etc/20221207/01.pdf).
+The ¥1,000 trigger is UnSui’s per-request product rule, not a Japanese legal
+threshold or an exemption for smaller payouts. UnSui transfers existing assets;
+this payout flow does not mint a new cryptoasset.
+
 ## Payout contracts and funding
 
 Use these explorer links to check the current payout treasury balances and transactions.

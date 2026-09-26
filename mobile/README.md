@@ -105,6 +105,11 @@ Refunds above ¥1,000 require a server-verified World ID proof. Address validati
 and name resolution do not prove ownership. See [the backend README](../server/README.md)
 for quote validation, persistence and network configuration.
 
+On the refund review screen, tap the current network name to return to the card
+with the network choices open. Choose Sui, Ethereum or Mizuhiki, then tap Refund
+again to enter a recipient for that network and review a fresh quote. Network
+changes remain locked while a confirmation or payout is in progress.
+
 ## Recipient wallets and Sui names
 
 Manual address entry is available on every network. On an Android dGen1 with
