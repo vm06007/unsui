@@ -47,8 +47,7 @@ export function App({
     };
   }, [layout.fontSize]);
   const [initialLoading, setInitialLoading] = useState(true),
-    [introReady, setIntroReady] = useState(false),
-    [customizeCards, setCustomizeCards] = useState(false);
+    [introReady, setIntroReady] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setIntroReady(true), demoLoadingDelay());
     return () => clearTimeout(timer);
@@ -172,7 +171,6 @@ export function App({
     setPageLoading(true);
     setView(next);
     setStatus('all');
-    setCustomizeCards(false);
     await Promise.all([
       refresh(),
       new Promise((resolve) => setTimeout(resolve, demoLoadingDelay())),
@@ -254,13 +252,13 @@ export function App({
         compact={layout.compact}
         onCompact={(compact) => setLayout({ ...layout, compact })}
       />
-      {mobile && (
-        <button
-          className="mobile-backdrop"
-          aria-label="Close navigation"
-          onClick={() => setMobile(false)}
-        />
-      )}
+      <button
+        className={`mobile-backdrop ${mobile ? 'show' : ''}`}
+        aria-label="Close navigation"
+        aria-hidden={!mobile}
+        tabIndex={mobile ? 0 : -1}
+        onClick={() => setMobile(false)}
+      />
       <div className="main-shell">
         <WorkspaceTopbar
           setMobile={setMobile}
@@ -291,7 +289,6 @@ export function App({
             setFrom={setFrom}
             to={to}
             setTo={setTo}
-            setCustomizeCards={setCustomizeCards}
             connection={connection}
             feed={feed}
           />
@@ -306,8 +303,6 @@ export function App({
               <>
                 {view === 'overview' && (
                   <Overview
-                    customizeOpen={customizeCards}
-                    onCloseCustomize={() => setCustomizeCards(false)}
                     rows={rows}
                     activity={
                       <>

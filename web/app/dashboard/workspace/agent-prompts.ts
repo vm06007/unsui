@@ -6,8 +6,8 @@ const prompts: Record<string, PagePrompts> = {
     placeholder: 'Put payouts and latest journeys first…',
     examples: [
       'On Overview, put recorded payouts and latest journeys first. Make latest journeys wide.',
-      'On Overview, hide merchant settlement and yen settlement cards.',
-      'Show only in-app purchases on Overview and hide the card detail text.',
+      'On Overview, show only Recorded payouts, Payout buffer, Payout asset mix and Latest journeys, in that order.',
+      'On Overview, show all cards again and put Needs reconciliation and Reconciliation breakdown first.',
     ],
   },
   orders: {

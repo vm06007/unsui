@@ -41,7 +41,14 @@ export function AgentSidebar({
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
-    if (open) textarea.current?.focus();
+    if (!open) return;
+    const previousFocus = document.activeElement;
+    textarea.current?.focus({ preventScroll: true });
+    return () => {
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus({ preventScroll: true });
+      }
+    };
   }, [open]);
   useEffect(() => {
     if (open) end.current?.scrollIntoView({ block: 'nearest' });
@@ -118,7 +125,9 @@ export function AgentSidebar({
       id="dashboard-agent"
       className="dashboard-agent"
       aria-label="Dashboard assistant"
-      hidden={!open}
+      data-open={open}
+      aria-hidden={!open}
+      inert={!open}
     >
       <div
         className="agent-resize"

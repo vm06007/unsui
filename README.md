@@ -17,12 +17,78 @@ require a server-verified World ID proof. Sui mainnet payouts are available thro
   English/Japanese journey history, dGen1 wallet connection, Sui name lookup,
   refund review, and the World ID handoff.
 - `server/` — Shared refund ledger with persistent receipts, remaining-allowance
-  tracking, retry protection, World ID verification, and a merchant feed for a
-  future dashboard.
-- `web/` — Public site and a browser demo of the wallet. The demo stays in the
-  browser and does not call the phone, ledger, or treasuries.
+  tracking, retry protection, World ID verification, and authenticated dashboard
+  APIs with an assistant for display preferences.
+- `web/` — Public site, browser wallet demo, and operations dashboard at
+  `/dashboard`. The dashboard reads backend records; the separate wallet demo
+  stays in the browser and does not call the phone, ledger, or treasuries.
 - `extension/` — Chrome extension that projects a sample merchant dashboard.
   It can also read this repo's local merchant feed on port 4100.
+
+## Operations dashboard and workspace assistant
+
+The dashboard at `/dashboard` gives operators a shared view of service purchases,
+crypto payouts, recipients, transaction hashes, and reconciliation. It brings app
+ledger records, the SB merchant view, and MultiBaas-indexed Awaji payout evidence
+into one workspace. Merchant records and blockchain evidence remain distinct:
+an indexed payout does not establish that a merchant charge occurred.
+
+Overview summarizes activity and payouts; Orders, Crypto payouts, and
+Reconciliation provide detailed exploration. Treasury & forecast and Connections
+provide liquidity planning and data-source context. Source labels distinguish
+app records from sample merchant data; the overview's sandbox buffer is not a
+live treasury balance.
+
+### Make the dashboard yours
+
+Use **Customize cards** on Overview to show or hide cards, drag them into order,
+and choose small or wide cards. The popup stays open while changes appear on the
+page. Start with All cards, Payout focus, or Reconciliation focus, then refine the
+layout. Preferences save automatically in the current browser.
+
+Tables have live filter and sort popups, draggable column ordering, column
+visibility controls, and table, card, or timeline views. Layout preferences also
+control text size, header and sidebar placement, compact navigation, content
+width, descriptions, and card detail text.
+
+### Describe the view you want
+
+Open **Assistant** in the header and type a plain-language instruction or select
+one of the examples suggested for the current page. The assistant changes the
+same saved preferences as the manual controls, so the resulting layout updates
+immediately. For example:
+
+- “On Overview, show only Recorded payouts, Payout buffer, Payout asset mix and Latest journeys, in that order.”
+- “Put recorded payouts and latest journeys first. Make latest journeys wide.”
+- “Show only in-app SUI orders, largest purchase first.”
+- “On Orders, move Recipient and Transaction hash to the first columns and show both.”
+
+An **Undo** action restores the previous settings unless those settings have
+since been changed again. The assistant customizes the workspace; it cannot
+issue refunds, move funds, edit ledger records, or change authentication.
+Input is currently text-based; microphone transcription is not implemented.
+
+The backend uses OpenRouter's `openrouter/free` router with no paid-model
+fallback. It validates an allowlisted `update_dashboard` tool call before the
+browser applies it. Conversation text and display preferences go to OpenRouter;
+ledger records and wallet keys are not automatically included. Free-model
+availability and rate limits can affect response times.
+
+### Run the dashboard
+
+Start the backend as described below, then run `npm install` and `npm run dev`
+inside `web/`. Open `/dashboard` on the URL printed by the dev server. Local
+API requests are proxied to the backend on port 4100.
+
+- Set `OPENROUTER_API_KEY` in the ignored `server/.env` to enable assistant requests.
+- Set the public `VITE_THIRDWEB_CLIENT_ID` in `web/.env.local` to enable wallet login.
+- Hosted deployments need authenticated backend routing as well as frontend
+  environment configuration. Keep the OpenRouter key server-side; never expose it
+  through a `VITE_*` variable.
+
+Manual customization works without an AI key. See [assistant backend setup](server/README.md#dashboard-assistant),
+[dashboard UI](web/app/dashboard/workspace), and the
+[shared settings schema](shared/dashboard-settings.mjs) for implementation details.
 
 ## Run on Android
 

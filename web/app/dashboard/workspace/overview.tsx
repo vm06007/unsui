@@ -1,14 +1,14 @@
 import { normalizeItems } from '../../../../shared/dashboard-settings.mjs';
 import { type ReactNode } from 'react';
 import { CountUp } from './motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Settings2 } from 'lucide-react';
 import {
   useSaved,
   ReorderSettings,
-  Modal,
   ExpandablePanel,
   type SettingItem,
 } from './preferences';
+import { ToolbarPopover } from './popover';
 import type { Row } from './types';
 import { summarize, yen, treasury, sandbox, reconcile } from './domain.mjs';
 export const cardDefaults: SettingItem[] = [
@@ -28,16 +28,80 @@ export const cardDefaults: SettingItem[] = [
   wide: Boolean(wide),
   enabled: true,
 }));
+export function OverviewCardControls() {
+  const [stored, setItems] = useSaved<SettingItem[]>(
+    'unsui-overview-cards',
+    cardDefaults,
+  );
+  const items: SettingItem[] = normalizeItems(stored, cardDefaults);
+  const preset = (ids: string[]) =>
+    setItems([
+      ...ids.map((id) => ({
+        ...cardDefaults.find((card) => card.id === id)!,
+        enabled: true,
+      })),
+      ...cardDefaults
+        .filter((card) => !ids.includes(card.id))
+        .map((card) => ({ ...card, enabled: false })),
+    ]);
+  return (
+    <ToolbarPopover
+      label="Customize cards"
+      title="Customize overview"
+      width={390}
+      triggerContent={
+        <>
+          <Settings2 size={15} />
+          Customize cards{' '}
+          <small>
+            {items.filter((card) => card.enabled).length}/{items.length}
+          </small>
+        </>
+      }
+    >
+      <p className="subtle">
+        Drag cards to reorder, toggle their visibility, or choose a width. Your
+        layout saves automatically.
+      </p>
+      <div
+        className="overview-presets"
+        role="group"
+        aria-label="Overview layouts"
+      >
+        <button className="secondary" onClick={() => setItems(cardDefaults)}>
+          All cards
+        </button>
+        <button
+          className="secondary"
+          onClick={() => preset(['payouts', 'buffer', 'assets', 'latest'])}
+        >
+          Payout focus
+        </button>
+        <button
+          className="secondary"
+          onClick={() =>
+            preset(['issues', 'states', 'settlement', 'settlements'])
+          }
+        >
+          Reconciliation focus
+        </button>
+      </div>
+      <ReorderSettings
+        items={items}
+        onChange={setItems}
+        onReset={() => setItems(cardDefaults)}
+        resize
+      />
+    </ToolbarPopover>
+  );
+}
+
 export function Overview({
   rows,
   activity,
   latest,
   navigate,
-  customizeOpen,
-  onCloseCustomize,
 }: {
-  customizeOpen: boolean;
-  onCloseCustomize: () => void;
   rows: Row[];
   activity: ReactNode;
   latest: ReactNode;
@@ -181,16 +245,6 @@ export function Overview({
             </div>
           ))}
       </div>
-      {customizeOpen && (
-        <Modal title="Customize overview" onClose={onCloseCustomize}>
-          <ReorderSettings
-            items={items}
-            onChange={setItems}
-            onReset={() => setItems(cardDefaults)}
-            resize
-          />
-        </Modal>
-      )}
     </>
   );
 }
