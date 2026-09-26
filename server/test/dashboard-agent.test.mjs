@@ -165,3 +165,12 @@ test("assistant endpoint requires the operations session and blocks extension ac
   assert.equal((await response.json()).patch.page, "orders");
   assert.equal(calls, 1);
 });
+
+test("invalid requests fail before calling the inference provider", async () => {
+  let called = false;
+  const chat = agent.createDashboardAgent({ apiKey: "test", request: async () => { called = true; throw Error("Unexpected provider call"); } });
+  for (const input of [null, {}, { message: "" }, { message: "x".repeat(2001) }]) {
+    await assert.rejects(chat(input), /message/);
+  }
+  assert.equal(called, false);
+});

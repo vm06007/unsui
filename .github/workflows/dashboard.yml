@@ -1,0 +1,28 @@
+name: Dashboard checks
+on:
+  push:
+    branches: [master]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+        working-directory: server
+      - run: node --test server/test/dashboard-agent.test.mjs
+      - run: npm ci
+        working-directory: web
+      - run: npx tsc --noEmit --incremental false
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+        env:
+          VERCEL: '1'
+      - name: Verify Vercel output exists
+        run: test -d web/.vercel/output/functions

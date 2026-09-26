@@ -90,6 +90,21 @@ Manual customization works without an AI key. See [assistant backend setup](serv
 [dashboard UI](web/app/dashboard/workspace), and the
 [shared settings schema](shared/dashboard-settings.mjs) for implementation details.
 
+### Deployment checks
+
+Dashboard CI checks TypeScript, assistant validation/authentication tests, and a
+Vercel production build. After deployment, run:
+
+```sh
+node web/scripts/check-production.mjs https://unsui.vercel.app
+```
+
+This checks API routes, JSON responses, rejected credentials, authenticated
+sessions, and assistant configuration without requesting a payout or an AI
+completion. Live ledger connectivity is reported separately: the hosted operations
+route currently returns an explicit unavailable response until a hosted ledger
+connection is implemented. It does not report an empty live ledger as connected.
+
 ## Run on Android
 
 Requires Node >= 22.11.

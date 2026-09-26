@@ -4,7 +4,7 @@ export function createDashboardAgent({ apiKey = process.env.OPENROUTER_API_KEY, 
   return async function chat(body) {
     if (!apiKey)
       throw Error("Set OPENROUTER_API_KEY in the backend environment to enable the assistant.");
-    if (typeof body.message !== "string" || !body.message.trim() || body.message.length > 2000)
+    if (!body || typeof body.message !== "string" || !body.message.trim() || body.message.length > 2000)
       throw Error("Enter a message under 2,000 characters.");
     const { patchSchema, validatePatch } = await import("./dashboard-settings.mjs");
     const history = Array.isArray(body.history)
@@ -20,7 +20,7 @@ export function createDashboardAgent({ apiKey = process.env.OPENROUTER_API_KEY, 
         "Content-Type": "application/json",
         "X-Title": "UnSui Dashboard",
       },
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(45000),
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 2200,
@@ -83,4 +83,3 @@ export function createDashboardAgent({ apiKey = process.env.OPENROUTER_API_KEY, 
     };
   };
 }
-

@@ -38,7 +38,9 @@ export async function POST(request: Request) {
       {
         error:
           error instanceof Error
-            ? error.message
+            ? error.name === 'TimeoutError'
+              ? 'The assistant timed out. Please retry.'
+              : error.message
             : 'The assistant could not complete this request.',
       },
       { status: 400 },

@@ -162,7 +162,7 @@ export function WorkspaceHeading({
           {feed.records.length
             ? 'Showing the last received app records.'
             : 'Sandbox records remain available.'}{' '}
-          Start the mobile backend to resume updates.
+          Connect the app backend to resume updates.
         </div>
       )}
     </>
