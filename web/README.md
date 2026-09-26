@@ -1,5 +1,22 @@
 # UnSui web
 
+**[Live website](https://unsui.ca) · [Operations dashboard](https://unsui.ca/dashboard)**
+
+## Explore the dashboard
+
+Open [unsui.ca/dashboard](https://unsui.ca/dashboard) and choose **Try demo**.
+The dashboard displays hosted app refund records, recipients, transaction links,
+and reconciliation views. Customize Overview and Treasury & forecast cards,
+filter and reorder table columns, or use the **Assistant** and its page-specific
+prompts to change the same settings in plain language. Changes can be undone.
+
+The assistant uses OpenRouter free models for display preferences; it does not
+issue payouts or edit ledger records. Forecasts and sample merchant data remain
+labeled separately from app receipts. See the [dashboard guide](../README.md#operations-dashboard-and-workspace-assistant)
+for details.
+
+## Browser wallet demo
+
 Public site for the UnSui refund flow. It explains the product and includes a
 browser demo of the wallet. The demo does not talk to the phone, the ledger
 server, or the treasuries.

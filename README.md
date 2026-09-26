@@ -1,14 +1,16 @@
 # UnSui
 
+**[Website](https://unsui.ca) · [Live operations dashboard](https://unsui.ca/dashboard)**
+
 UnSui connects a Japanese Suica card to a crypto refund workflow. Hold a
 physical card to the phone to read the latest balance and recent journeys
 without changing the card. A sample-card demo works when no card is nearby.
 After a reading, choose a wallet and network, review the yen conversion, and
-submit a refund request. A shared development ledger stores the receipt, tracks
+submit a refund request. A shared hosted ledger stores the receipt, tracks
 the remaining allowance, and blocks duplicate requests.
 
-Scanning works offline. Refunds need the local backend. Refunds above ¥1,000
-require a server-verified World ID proof. Sui mainnet payouts are available through the local operator backend. The local
+Scanning works offline. Refunds use the hosted backend at `unsui.ca`. Refunds above ¥1,000
+require a server-verified World ID proof. Sui mainnet payouts are available through the hosted operator backend. The local
 `unsui-extension` reads those refund receipts from `GET /merchant-feed` and projects them onto the SB Payment merchant page. It does not send data to SB Payment.
 
 ## Payout contracts and funding
@@ -17,9 +19,9 @@ Use these explorer links to check the current payout treasury balances and trans
 
 | Network | Payout asset | Treasury / contract | Where to check funding |
 | --- | --- | --- | --- |
-| Sui mainnet | SUI | [`0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535`](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535) | Open the Ledger object's `pool` field. Its balance is in MIST: divide by 1,000,000,000 for SUI. |
-| Ethereum mainnet | ETH | [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52) | Check the contract's ETH balance and transactions on Etherscan. |
-| Mizuhiki Awaji testnet (6497) | MJPY | [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52) | Check MJPY under token holdings and token transfers on Blockscout. |
+| Sui mainnet | SUI | [`0xa4b33876…f94e535`](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535) | Open the Ledger object's `pool` field. Its balance is in MIST: divide by 1,000,000,000 for SUI. |
+| Ethereum mainnet | ETH | [`0xeAf3e03A…2319C52`](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52) | Check the contract's ETH balance and transactions on Etherscan. |
+| Mizuhiki Awaji testnet (6497) | MJPY | [`0xeAf3e03A…2319C52`](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52) | Check MJPY under token holdings and token transfers on Blockscout. |
 
 - **Sui Move package:** [`0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8`](https://suivision.xyz/package/0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8). Funds live in the Ledger above. Top up through `refunds::deposit`; a normal wallet transfer to the package or Ledger ID does not increase its payout pool.
 - **Ethereum funding:** send ETH to the Ethereum contract above.
@@ -44,7 +46,10 @@ Balances change with every refund; the explorer state is the current reference. 
 
 ## Operations dashboard and workspace assistant
 
-The dashboard at `/dashboard` gives operators a shared view of service purchases,
+Open **[unsui.ca/dashboard](https://unsui.ca/dashboard)** and choose **Try demo**
+on the sign-in screen to explore the workspace. No local setup is needed.
+
+The dashboard gives operators a shared view of service purchases,
 crypto payouts, recipients, transaction hashes, and reconciliation. It brings app
 ledger records, the SB merchant view, and MultiBaas-indexed Awaji payout evidence
 into one workspace. Merchant records and blockchain evidence remain distinct:
@@ -55,6 +60,17 @@ Reconciliation provide detailed exploration. Treasury & forecast and Connections
 provide liquidity planning and data-source context. Source labels distinguish
 app records from sample merchant data; the overview's sandbox buffer is not a
 live treasury balance.
+
+### Quick dashboard tour
+
+1. Open **Orders** or **Crypto payouts** to inspect app receipts, recipients, and transaction hashes.
+2. Use **Customize cards** on Overview or Treasury & forecast to hide, reorder, and resize cards.
+3. Open **Assistant** and try a page-specific suggestion to change the layout or visible columns, then use **Undo** to restore it.
+
+The dashboard reads the hosted app ledger. Its **Try demo** entry opens the
+operations workspace; the separate browser wallet demo at `/demo` uses local
+sample data. Treasury forecast cards are planning views; use the contract
+explorer links above to check actual funding.
 
 ### Make the dashboard yours
 
@@ -121,9 +137,8 @@ node web/scripts/check-production.mjs https://unsui.vercel.app
 
 This checks API routes, JSON responses, rejected credentials, authenticated
 sessions, and assistant configuration without requesting a payout or an AI
-completion. Live ledger connectivity is reported separately: the hosted operations
-route currently returns an explicit unavailable response until a hosted ledger
-connection is implemented. It does not report an empty live ledger as connected.
+completion. The hosted operations route reads the Neon-backed app ledger through
+the mobile API and returns an explicit unavailable response if that connection fails.
 
 ## Run on Android
 
@@ -163,17 +178,6 @@ Repeated requests recover the saved transaction instead of signing a new payment
 Use **Menu → Demo**, or **No card nearby? Try the demo**, without a physical
 card. Real card reading needs a physical NFC-F-capable Android phone with NFC
 enabled. An Android emulator can show the layout, but it cannot read a card.
-
-## Limits
-
-In Sui mainnet mode, a confirmed refund sends real SUI from the prefunded
-treasury and includes its transaction hash and explorer link. NFC scanning does
-not debit the physical card or prove a merchant charge. The backend fetches SUI/JPY from CoinGecko, deducts a 2% fee and issues an
-authenticated five-minute quote. The contract pays the exact quoted MIST amount.
-The local development server binds to loopback; the hosted API uses server-only operator keys. Public ledger reset is disabled.
-Ethereum mainnet payouts are enabled with `ETHEREUM_LIVE_PAYOUTS=true`; Awaji MJPY payouts are enabled with `AWAJI_LIVE_PAYOUTS=true` and require MJPY treasury funding.
-
-See [mobile setup](mobile/README.md) and [backend setup and API](server/README.md).
 
 ## Code to verify
 
