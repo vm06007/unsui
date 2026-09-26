@@ -14,36 +14,36 @@ const prompts: Record<string, PagePrompts> = {
     label: 'Orders',
     placeholder: 'Show in-app SUI orders, largest purchase first…',
     examples: [
-      'Show only in-app SUI orders, largest purchase first.',
+      'Switch Orders to card view.',
       'On Orders, move Recipient and Transaction hash to the first columns and show both.',
-      'Show Orders as compact table rows with 25 orders per page.',
+      'On Orders, use table view and show only Order, Purchase, Asset and Payout columns.',
     ],
   },
   payouts: {
     label: 'Crypto payouts',
     placeholder: 'Show confirmed SUI payouts, newest first…',
     examples: [
-      'On Crypto payouts, show only confirmed in-app SUI payouts, newest first.',
+      'Switch Crypto payouts to card view.',
       'On Crypto payouts, show Recipient, Crypto amount, Asset and Transaction hash first.',
       'Switch Crypto payouts to timeline view.',
     ],
   },
   reconciliation: {
     label: 'Reconciliation',
-    placeholder: 'Show amount mismatches and unmatched orders…',
+    placeholder: 'Switch reconciliation to cards or simplify its columns…',
     examples: [
-      'On Reconciliation, show only amount mismatches and unmatched orders.',
-      'On Reconciliation, put Merchant reference, Purchase and Reconciliation first and show them.',
-      'On Reconciliation, show all statuses again and sort by newest date.',
+      'Switch Reconciliation to card view.',
+      'On Reconciliation, use table view and show only Order, Purchase, Merchant reference and Reconciliation columns.',
+      'On Reconciliation, switch to timeline view and show all statuses.',
     ],
   },
   treasury: {
     label: 'Treasury & forecast',
-    placeholder: 'Focus the treasury view on in-app purchases…',
+    placeholder: 'Show balance, runway and buffer forecast only…',
     examples: [
-      'Keep Treasury open and filter to in-app purchases only.',
-      'Clear the search and date filters on Treasury and include all purchase sources.',
-      'Explain how the payout buffer differs from merchant settlement.',
+      'On Treasury, show only Available balance, Projected runway and Buffer forecast, in that order. Make Buffer forecast wide.',
+      'On Treasury, move Scenario assumptions and Buffer forecast first and make both wide.',
+      'On Treasury, show all cards again and put Recorded payouts first.',
     ],
   },
   connections: {

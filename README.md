@@ -44,7 +44,10 @@ live treasury balance.
 Use **Customize cards** on Overview to show or hide cards, drag them into order,
 and choose small or wide cards. The popup stays open while changes appear on the
 page. Start with All cards, Payout focus, or Reconciliation focus, then refine the
-layout. Preferences save automatically in the current browser.
+layout. Treasury & forecast has its own card controls for balance, commitments,
+payouts, runway, forecast, assumptions, and settlement context. Its saved layout
+is independent of Overview and can also be changed by the assistant. Preferences
+save automatically in the current browser.
 
 Tables have live filter and sort popups, draggable column ordering, column
 visibility controls, and table, card, or timeline views. Layout preferences also

@@ -235,12 +235,16 @@
     font-weight: 500;
 }
 .ops .connection {
+    flex: 0 0 auto;
+    width: calc(23ch + 13px);
+    white-space: nowrap;
     font-size: 0.625rem;
     display: flex;
     gap: 7px;
     align-items: center;
 }
 .ops .connection i {
+    flex-shrink: 0;
     width: 6px;
     height: 6px;
     background: #b9a06b;

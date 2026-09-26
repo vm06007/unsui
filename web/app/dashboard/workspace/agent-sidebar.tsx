@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ChevronDown,
   Sparkles,
   X,
   Send,
@@ -26,6 +27,7 @@ export function AgentSidebar({
   onResize: (width: number) => void;
 }) {
   const prompts = promptsForPage(page);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const drag = useRef<null | { x: number; width: number }>(null);
   const resize = (value: number) =>
     onResize(Math.max(320, Math.min(680, Math.round(value))));
@@ -90,12 +92,10 @@ export function AgentSidebar({
         throw Error(
           'The assistant service is not available yet. No dashboard settings were changed.',
         );
-      const data = (await res
-        .json()
-        .catch(() => ({
-          error:
-            'The assistant service returned an unreadable response. Please retry.',
-        }))) as {
+      const data = (await res.json().catch(() => ({
+        error:
+          'The assistant service returned an unreadable response. Please retry.',
+      }))) as {
         error?: string;
         reply: string;
         patch?: unknown;
@@ -236,14 +236,24 @@ export function AgentSidebar({
         </button>
       )}
       <div
-        className="agent-examples"
-        aria-label={`${prompts.label} example prompts`}
+        id="agent-suggestions"
+        className="agent-suggestions"
+        data-open={suggestionsOpen}
+        inert={!suggestionsOpen}
+        aria-hidden={!suggestionsOpen}
       >
-        {prompts.examples.map((prompt) => (
-          <button key={prompt} disabled={busy} onClick={() => send(prompt)}>
-            {prompt}
-          </button>
-        ))}
+        <div className="agent-suggestions-inner">
+          <div
+            className="agent-examples"
+            aria-label={`${prompts.label} example prompts`}
+          >
+            {prompts.examples.map((prompt) => (
+              <button key={prompt} disabled={busy} onClick={() => send(prompt)}>
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       {error && (
         <p className="agent-error" role="alert">
@@ -256,9 +266,23 @@ export function AgentSidebar({
           void send(input);
         }}
       >
-        <label className="agent-input-label" htmlFor="agent-prompt">
-          Ask your assistant
-        </label>
+        <div className="agent-input-heading">
+          <label className="agent-input-label" htmlFor="agent-prompt">
+            Ask your assistant
+          </label>
+          <button
+            type="button"
+            className="icon-button agent-suggestions-toggle"
+            aria-label={
+              suggestionsOpen ? 'Hide suggestions' : 'Show suggestions'
+            }
+            aria-expanded={suggestionsOpen}
+            aria-controls="agent-suggestions"
+            onClick={() => setSuggestionsOpen((value) => !value)}
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
         <textarea
           ref={textarea}
           id="agent-prompt"

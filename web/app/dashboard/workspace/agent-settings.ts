@@ -4,9 +4,10 @@ import {
   reorderItems,
   tablePages,
 } from '../../../../shared/dashboard-settings.mjs';
+import { treasuryCardDefaults } from './treasury';
 import { cardDefaults } from './overview';
 import { columnDefaults } from './orders';
-import { defaultLayout, readSaved } from './preferences';
+import { defaultLayout, readSaved, type SettingItem } from './preferences';
 
 const tableFields = [
   'columns',
@@ -23,6 +24,7 @@ const keys = [
   'unsui-page',
   'unsui-layout',
   'unsui-overview-cards',
+  'unsui-treasury-cards',
   ...['source', 'search', 'from', 'to'].map((x) => 'unsui-filter-' + x),
   ...tablePages.flatMap((page) =>
     tableFields.map((field) => `unsui-table-${page}-${field}`),
@@ -67,6 +69,20 @@ export function applyDashboardPatch(input: unknown) {
       wide: patch.wideCards ? patch.wideCards.includes(card.id) : card.wide,
     }));
     changes['unsui-overview-cards'] = cards;
+  }
+  if (patch.treasuryCards) {
+    const t = patch.treasuryCards;
+    const cards = normalizeItems(
+      readSaved('unsui-treasury-cards', treasuryCardDefaults),
+      treasuryCardDefaults,
+    );
+    changes['unsui-treasury-cards'] = reorderItems(cards, t.order).map(
+      (card: SettingItem) => ({
+        ...card,
+        enabled: t.hidden ? !t.hidden.includes(card.id) : card.enabled,
+        wide: t.wide ? t.wide.includes(card.id) : card.wide,
+      }),
+    );
   }
   if (patch.table) {
     const t = patch.table,

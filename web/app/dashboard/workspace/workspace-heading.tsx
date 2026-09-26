@@ -5,6 +5,7 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
+import { TreasuryCardControls } from './treasury';
 import { OverviewCardControls } from './overview';
 import { ToolbarPopover } from './popover';
 import type { Feed } from './types';
@@ -150,6 +151,7 @@ export function WorkspaceHeading({
           </div>
         </ToolbarPopover>
         {view === 'overview' && <OverviewCardControls />}
+        {view === 'treasury' && <TreasuryCardControls />}
       </div>
       {from && to && from > to && (
         <div className="notice">

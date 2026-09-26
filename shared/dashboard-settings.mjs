@@ -13,6 +13,7 @@ export const cardIds = [
   "settlements",
   "latest",
 ];
+export const treasuryCardIds = ["available", "queued", "payouts", "runway", "forecast", "assumptions", "settlement"];
 export const columnIds = [
   "id",
   "date",
@@ -46,6 +47,7 @@ export const patchSchema = object({
     showCardDetails: { type: "boolean" },
     contentWidth: enumField(["full", "focused"]),
   }),
+  treasuryCards: object({ order: list(treasuryCardIds), hidden: list(treasuryCardIds), wide: list(treasuryCardIds) }),
   cardOrder: list(cardIds),
   hiddenCards: list(cardIds),
   wideCards: list(cardIds),
@@ -111,6 +113,7 @@ export function validatePatch(value) {
   validate(value, patchSchema, "settings");
   if (
     value.hiddenCards?.length === cardIds.length ||
+    value.treasuryCards?.hidden?.length === treasuryCardIds.length ||
     value.table?.hiddenColumns?.length === columnIds.length
   )
     throw Error("Keep at least one card and column visible.");

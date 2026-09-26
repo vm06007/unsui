@@ -174,3 +174,9 @@ test("invalid requests fail before calling the inference provider", async () => 
   }
   assert.equal(called, false);
 });
+
+test('treasury layouts support only known cards and keep one visible', () => {
+  assert.deepEqual(validatePatch({ treasuryCards: { order: ['forecast', 'available'], hidden: ['settlement'], wide: ['forecast'] } }).treasuryCards.order, ['forecast', 'available']);
+  assert.throws(() => validatePatch({ treasuryCards: { order: ['unknown'] } }));
+  assert.throws(() => validatePatch({ treasuryCards: { hidden: ['available', 'queued', 'payouts', 'runway', 'forecast', 'assumptions', 'settlement'] } }));
+});

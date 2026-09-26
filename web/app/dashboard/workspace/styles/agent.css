@@ -71,8 +71,9 @@
 .ops .agent-examples {
   display: grid;
   gap: 6px;
-  max-height: 180px;
+  max-height: clamp(96px, calc(100dvh - 430px), 420px);
   overflow: auto;
+  overscroll-behavior: contain;
 }
 .ops .agent-examples button {
   text-align: left;
@@ -129,9 +130,6 @@
 @media (max-width: 600px) {
   .ops .dashboard-agent {
     width: 100%;
-  }
-  .ops .agent-examples {
-    max-height: 125px;
   }
 }
 .ops .dashboard-agent {
@@ -244,4 +242,39 @@
 .ops .overview-presets .secondary {
   padding: 8px 10px;
   font-size: 13px;
+}
+
+.ops .agent-suggestions {
+  display: grid;
+  grid-template-rows: 1fr;
+  flex-shrink: 0;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--sidebar-motion),
+    opacity var(--sidebar-motion),
+    margin-bottom var(--sidebar-motion);
+}
+.ops .agent-suggestions[data-open='false'] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-bottom: -14px;
+}
+.ops .agent-suggestions-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.ops .agent-input-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ops .agent-input-heading .agent-input-label {
+  margin: 0;
+}
+.ops .agent-suggestions-toggle svg {
+  transition: transform var(--sidebar-motion);
+}
+.ops .agent-suggestions-toggle[aria-expanded='false'] svg {
+  transform: rotate(180deg);
 }
