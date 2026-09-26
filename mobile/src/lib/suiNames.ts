@@ -1,6 +1,7 @@
 import { BACKEND_URL } from '../config';
 import { recipientError } from './refundQuote';
 export const SUI_NAMES_ENDPOINT = `${BACKEND_URL}/sui/resolve-name`;
+export const OPERATOR_SUI_ADDRESS = '0x8e305ff1ca0058eb7462fe56011a78774966577b09f4f32e96d0d7fa589c1f4a';
 export const DEVELOPER_SUI_NAME = 'kartik.sui';
 export type ResolvedSuiName = {
   name: string;

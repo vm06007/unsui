@@ -152,7 +152,7 @@ pairing or wallet login. Existing balance checks, World ID rules, request bindin
 and on-chain replay protection still apply. World ID sessions and ledger writes
 share a transaction-scoped Postgres lock. Payout journals commit separately before
 broadcast so an interrupted invocation can recover the same transaction. Public
-ledger reset is disabled. The local server remains available for development.
+ledger reset is disabled by default; the hosted hackathon flag below enables new rounds. The local server remains available for development.
 
 The Vercel build packages `hosted.cjs` as a separate Node function with a 300-second
 limit. Clients retain the original request ID after a timeout. Confirmation is

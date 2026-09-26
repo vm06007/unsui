@@ -24,6 +24,7 @@ import {
 } from '../lib/deviceWallet';
 import {
   DEVELOPER_SUI_NAME,
+  OPERATOR_SUI_ADDRESS,
   ResolvedSuiName,
   resolveSuiName,
 } from '../lib/suiNames';
@@ -269,19 +270,33 @@ export default function RecipientEditor({
         </Text>
       )}
       {network === 'sui' ? (
-        <>
+        <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Use developer address"
+            accessibilityLabel="Use operator wallet"
+            accessibilityState={{ disabled: busy || disabled }}
             disabled={busy || disabled}
             onPress={() => {
-              run('resolve', DEVELOPER_SUI_NAME);
+              if (busy || disabled) return;
+              invalidate();
+              setError('');
+              onChange(manualDestination(OPERATOR_SUI_ADDRESS));
             }}
-            style={styles.prefill}
+            style={[styles.walletShortcut, (busy || disabled) && styles.disabled]}
           >
-            <Text style={styles.prefillText}>Use developer address</Text>
+            <Text style={styles.prefillText}>Use operator wallet</Text>
           </Pressable>
-        </>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Use developer wallet"
+            accessibilityState={{ disabled: busy || disabled }}
+            disabled={busy || disabled}
+            onPress={() => run('resolve', DEVELOPER_SUI_NAME)}
+            style={[styles.walletShortcut, (busy || disabled) && styles.disabled]}
+          >
+            <Text style={styles.prefillText}>Use developer wallet</Text>
+          </Pressable>
+        </View>
       ) : (
         <>
           <Pressable
@@ -425,6 +440,7 @@ const styles = StyleSheet.create({
     color: '#24856B',
     textDecorationLine: 'underline',
   },
+  walletShortcut: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, borderRadius: 10, backgroundColor: '#E9EFDD' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   walletRow: {
     flexDirection: 'row',

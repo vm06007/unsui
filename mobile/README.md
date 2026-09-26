@@ -90,7 +90,7 @@ Successful payouts show the amount, recipient, transaction hash and explorer
 link. History includes the recorded refund alongside the scanned card history.
 The physical card balance is not changed by the NFC scan; the shared ledger
 tracks the remaining refund allowance across networks. Re-scanning or topping
-up the physical card does not reset that allowance. Public ledger reset is disabled.
+up the physical card does not reset that allowance. Hosted reset is disabled by default; the hackathon setting described below enables new allowance rounds.
 
 Receipts and pending transactions persist in Neon. The phone retains preferences
 and pending request references so a failed or interrupted request can be retried
@@ -135,7 +135,8 @@ Other devices retain manual entry.
 On Sui, enter a `.sui` name and resolve it through the
 [Sui mainnet GraphQL service](https://sdk.mystenlabs.com/sui/clients/graphql).
 The resolved address is selected automatically and shown for review.
-**Use developer address** always prefills `kartik.sui`. Ethereum and Awaji also
+**Use developer wallet** resolves `kartik.sui`. **Use operator wallet** selects
+`0x8e305ff1ca0058eb7462fe56011a78774966577b09f4f32e96d0d7fa589c1f4a` directly so the payout can return to the operator. Moving these funds into the treasury still requires `refunds::deposit`. Ethereum and Awaji also
 support manual hexadecimal addresses or `.eth` names, resolved through Ethereum.
 The input's resolve button checks a typed name. Internet access is
 required. Missing names, missing targets and service errors block that selection;
@@ -186,3 +187,10 @@ Run `./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a` from
 `adb install -r`. This hackathon build uses the existing development signing key.
 The release contains its own JavaScript bundle and works over Wi-Fi or mobile
 data after unplugging USB. It does not require Metro.
+
+### Starting a new hackathon round
+
+With `ALLOW_HOSTED_HACKATHON_RESET=true` on the hosted backend, tap the home-screen
+UnSui logo three times quickly, then scan the card again. This permits another real
+payout from that card. Earlier receipts stay in the dashboard; an unresolved payout
+blocks the reset. Install the updated APK to use this gesture in a release build.

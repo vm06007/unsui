@@ -24,6 +24,7 @@ jest.mock('../src/lib/deviceWallet', () => ({
 }));
 jest.mock('../src/lib/suiNames', () => ({
   DEVELOPER_SUI_NAME: 'kartik.sui',
+  OPERATOR_SUI_ADDRESS: '0x8e305ff1ca0058eb7462fe56011a78774966577b09f4f32e96d0d7fa589c1f4a',
   resolveSuiName: jest.fn(),
 }));
 let view: Renderer.ReactTestRenderer;
@@ -63,7 +64,7 @@ test('developer name resolves directly into the recipient without a second confi
     network: 'mainnet',
   });
   await mount('sui');
-  await act(async () => button('Use developer address').props.onPress());
+  await act(async () => button('Use developer wallet').props.onPress());
   expect(props().value.input).toBe('kartik.sui');
   expect(props().value.address).toBe(address);
   expect(props().value.blocked).toBe(false);
@@ -78,7 +79,7 @@ test('cancelled lookup cannot fill a recipient when its late response arrives', 
   );
   await mount('sui');
   await act(async () => {
-    button('Use developer address').props.onPress();
+    button('Use developer wallet').props.onPress();
   });
   await act(async () => button('Cancel recipient request').props.onPress());
   await act(async () =>
@@ -244,4 +245,24 @@ test('changing networks with a connected wallet requests the selected chain auto
   expect(switchDeviceWallet).toHaveBeenCalledWith('mizuhiki');
   expect(props().value.connection.chainId).toBe(6497);
   expect(props().value.blocked).toBe(false);
+});
+
+
+test('operator shortcut selects the mainnet operator without resolving a name', async () => {
+  await mount('sui');
+  await act(async () => button('Use operator wallet').props.onPress());
+  expect(props().value).toEqual(manualDestination('0x8e305ff1ca0058eb7462fe56011a78774966577b09f4f32e96d0d7fa589c1f4a'));
+  expect(resolveSuiName).not.toHaveBeenCalled();
+});
+
+test('operator shortcut cancels a scheduled name lookup so it cannot overwrite the selection', async () => {
+  jest.useFakeTimers();
+  try {
+    await mount('sui');
+    await act(async () => view.root.findByProps({ testID: 'refund-recipient' }).props.onChangeText('kartik.sui'));
+    await act(async () => button('Use operator wallet').props.onPress());
+    await act(async () => jest.advanceTimersByTime(600));
+    expect(props().value.address).toBe('0x8e305ff1ca0058eb7462fe56011a78774966577b09f4f32e96d0d7fa589c1f4a');
+    expect(resolveSuiName).not.toHaveBeenCalled();
+  } finally { jest.useRealTimers(); }
 });
