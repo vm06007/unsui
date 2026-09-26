@@ -37,7 +37,7 @@ Open http://localhost:3000. The interactive wallet is at http://localhost:3000/d
 - Landing page, ideology, and a how-it-works page for the refund path.
 - A browser wallet: sample card, scanner, refund confirmation, and a local receipt.
 - Sui is the default network. Ethereum is a preview choice only.
-- The film and app download sections are still placeholders.
+- Watch Demo opens the published ETHGlobal video in a modal with playback controls, audio, Escape/close handling, and a direct-video fallback. The Android download buttons serve the release APK.
 
 Demo state lives in the browser and clears on reload. Receipt hashes use
 `UNSUI_WEB_DEMO_V1`. They are not the Move contract's BCS receipts, and nothing

@@ -1,3 +1,4 @@
+import { DemoVideoLink } from '@/components/demo-video';
 import { PresentationMode } from '@/components/presentation-mode';
 import { MarketOpportunity } from '@/components/market-opportunity';
 import { SiteHeader, SiteFooter } from '@/components/site-chrome';
@@ -334,24 +335,25 @@ export default function Home() {
           </a>
         </section>
         <section id="film" className="section film">
-          <div className="video-placeholder">
+          <DemoVideoLink className="video-placeholder demo-video-card">
             <Play size={42} />
-            <span>THE UNSUI FILM</span>
+            <span>WATCH DEMO</span>
             <h3>A journey worth showing.</h3>
-            <p>Demo video coming soon.</p>
-          </div>
+            <p>Play the project presentation</p>
+          </DemoVideoLink>
           <div>
             <span className="eyebrow">04 / SEE IT IN MOTION</span>
             <h2>
-              Until the film drops,
+              From the first tap,
               <br />
-              you’re in the driver’s seat.
+              to the confirmed payout.
             </h2>
             <p>
-              Scan a sample card, explore your Japan travel history, and follow
-              a refund all the way to its receipt.
+              Watch UnSui in action: scan a transit card, choose a payout wallet,
+              and follow the refund through its receipt and dashboard.
             </p>
-            <a href="/demo" className="button dark">
+            <DemoVideoLink className="button dark">Watch Demo <Play size={18} /></DemoVideoLink>
+            <a href="/demo" className="text-link video-browser-link">
               Open the interactive demo <ArrowUpRight size={18} />
             </a>
           </div>

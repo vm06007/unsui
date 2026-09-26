@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { DemoVideoLink } from './demo-video';
 import { siteNavigation } from './site-navigation';
 
 export function MobileNavigation() {
@@ -40,7 +41,11 @@ export function MobileNavigation() {
         </DialogDescription>
         <nav aria-label="Mobile navigation">
           {siteNavigation.map((item) => (
-            <a
+            item.href === '/#film' ? (
+              <DemoVideoLink key={item.href} onOpen={() => setOpen(false)}>
+                {item.label}<ArrowRight size={17} />
+              </DemoVideoLink>
+            ) : <a
               key={item.href}
               href={item.href}
               aria-current={

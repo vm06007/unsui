@@ -4748,3 +4748,16 @@ footer > span {
   overflow-wrap: anywhere;
   font-size: 12px;
 }
+
+/* Published project video: native top-layer modal, including over slides. */
+.demo-video-card { cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.demo-video-card:hover { transform: translateY(-3px); box-shadow: 0 14px 40px #173e3520; }
+.video-browser-link { display: flex; margin-top: 20px; }
+.demo-video-modal { margin: auto; padding: 0; border: 0; border-radius: 20px; width: min(1100px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); color: #edf3e9; background: #0c1c16; overflow: auto; }
+.demo-video-modal::backdrop { background: rgb(0 0 0 / .8); backdrop-filter: blur(8px); }
+.demo-video-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; }
+.demo-video-heading h2 { margin: 0; font-size: 18px; font-weight: 500; }
+.demo-video-heading button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #edf3e9; background: #233a2d; flex-shrink: 0; }
+.demo-video-panel video { display: block; width: 100%; max-height: calc(100dvh - 180px); aspect-ratio: 16 / 9; background: #000; object-fit: contain; }
+.demo-video-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 20px; font-size: 13px; }
+.demo-video-footer a { color: #c7e89d; text-decoration: underline; }

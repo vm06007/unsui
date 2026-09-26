@@ -79,6 +79,9 @@ Receipt **GM-000003** paid **5.967690706 SUI** to `kartik.sui` on
 [View the confirmed payout and recipient balance change on Suivision](https://suivision.xyz/txblock/7MnCfhtWLMi4yLvWzR7Td6uF4QNaCWEq5dp79a2VRYRQ?tab=Changes).
 ### Watching the video: check the Changes tab
 
+[Watch the project presentation](https://ethglobal.storage/projects/bnr04/video/high.mp4?t=1790452010001).
+On [unsui.ca](https://unsui.ca), select **Watch Demo** to play it in a modal.
+
 In the presentation video, opening the Sui transaction may appear to show no refund
 because Suivision’s **Overview → Amount** displays **0 SUI** for this transaction.
 Switch to **[Changes — view the issued SUI](https://suivision.xyz/txblock/7MnCfhtWLMi4yLvWzR7Td6uF4QNaCWEq5dp79a2VRYRQ?tab=Changes)**

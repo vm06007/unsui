@@ -1,3 +1,4 @@
+import { DemoVideoLink } from './demo-video';
 import { MobileNavigation } from './mobile-navigation';
 import { siteNavigation } from './site-navigation';
 import { ThemeToggle } from './theme-toggle';
@@ -27,7 +28,7 @@ export function SiteHeader() {
       <SiteWordmark />
       <nav aria-label="Main navigation">
         {siteNavigation.slice(1).map((item) => (
-          <a key={item.href} href={item.href}>
+          item.href === '/#film' ? <DemoVideoLink key={item.href}>{item.label}</DemoVideoLink> : <a key={item.href} href={item.href}>
             {item.label}
           </a>
         ))}
