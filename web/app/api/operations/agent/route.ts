@@ -1,5 +1,5 @@
 import { readSession } from '@/lib/ops-auth';
-import { createDashboardAgent } from '../../../../../server/dashboard-agent.cjs';
+import { createDashboardAgent } from '../../../../../shared/dashboard-agent.mjs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
