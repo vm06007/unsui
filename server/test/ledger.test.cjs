@@ -113,6 +113,40 @@ test('corrupt storage blocks new refunds and unknown origins cannot read records
   );
 });
 
+test('merchant extension can read the feed and no other route', async t => {
+  const f = await fixture(t);
+  await post(f.url, input());
+  const origin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
+  const feed = await fetch(f.url + '/merchant-feed', {
+    headers: { Origin: origin },
+  });
+  assert.equal(feed.status, 200);
+  assert.equal(feed.headers.get('access-control-allow-origin'), origin);
+  assert.equal((await feed.json()).records[0].amount, 1000);
+  assert.equal(
+    (await fetch(f.url + '/ledger', { headers: { Origin: origin } })).status,
+    403,
+  );
+  assert.equal(
+    (
+      await fetch(f.url + '/refunds', {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: '{}',
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await fetch(f.url + '/merchant-feed', {
+        headers: { Origin: 'chrome-extension://not-a-valid-id' },
+      })
+    ).status,
+    403,
+  );
+});
+
 test('development reset clears shared receipts and restores allowance durably', async t => {
   const f = await fixture(t);
   await post(f.url, input());

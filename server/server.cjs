@@ -77,11 +77,18 @@ function createServer({
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
     const origin = req.headers.origin;
+    const merchantProjection =
+      req.method === 'GET' && req.url === '/merchant-feed';
     // Trusted local operator service: do not expose payout endpoints publicly.
+    // The unpacked merchant extension may read the public projection only.
     if (
       origin &&
       origin !== process.env.WORLD_PUBLIC_BASE_URL &&
-      !/^http:\/\/(localhost|127\.0\.0\.1):(3010|3012)$/.test(origin)
+      !/^http:\/\/(localhost|127\.0\.0\.1):(3010|3012)$/.test(origin) &&
+      !(
+        merchantProjection &&
+        /^chrome-extension:\/\/[a-p]{32}$/.test(origin)
+      )
     ) {
       res.writeHead(403);
       res.end(JSON.stringify({ error: 'Origin not allowed' }));

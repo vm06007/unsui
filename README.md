@@ -8,8 +8,8 @@ submit a refund request. A shared development ledger stores the receipt, tracks
 the remaining allowance, and blocks duplicate requests.
 
 Scanning works offline. Refunds need the local backend. Refunds above ¥1,000
-require a server-verified World ID proof. Sui mainnet payouts are available through the local operator backend. Merchant
-charges and the dedicated dashboard are not connected yet.
+require a server-verified World ID proof. Sui mainnet payouts are available through the local operator backend. The local
+`unsui-extension` reads those refund receipts from `GET /merchant-feed` and projects them onto the SB Payment merchant page. It does not send data to SB Payment.
 
 ## Project structure
 
@@ -19,6 +19,10 @@ charges and the dedicated dashboard are not connected yet.
 - `server/` — Shared refund ledger with persistent receipts, remaining-allowance
   tracking, retry protection, World ID verification, and a merchant feed for a
   future dashboard.
+- `web/` — Public site and a browser demo of the wallet. The demo stays in the
+  browser and does not call the phone, ledger, or treasuries.
+- `extension/` — Chrome extension that projects a sample merchant dashboard.
+  It can also read this repo's local merchant feed on port 4100.
 
 ## Run on Android
 
@@ -114,8 +118,8 @@ Full object IDs and reproducibility metadata: [deployment record](contracts/depl
 
 - Chain: **Awaji testnet (6497)**. Gas: **MIZU**. Payout token: **MJPY**, 6 decimals.
 - Treasury: [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52). This is the same hexadecimal address as Ethereum, on a different chain with different contract code.
-- [Deployment transaction](https://awaji.blockscout.com/tx/0xe9db9ab93df06ce03958b7cf3bcddf69cc8fb56a6f831976fd80615553c11976), deployed and linked through the official MultiBaas SDK; source verified on Blockscout.
-- Token: [`0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`](https://awaji.blockscout.com/address/0x78f5f0Ac4EF201618b97638ded959b155c4f4B04).
+- [Deployment transaction](https://awaji.blockscout.com/tx/0xe9db9ab93df06ce03958b7cf3bcddf69cc8fb56a6f831976fd80615553c11976), block **2390077**, deployed and linked through the official MultiBaas SDK. [Verified contract source](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52?tab=contract).
+- **MJPY token contract:** [`0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`](https://awaji.blockscout.com/address/0x78f5f0Ac4EF201618b97638ded959b155c4f4B04).
 - Gross parity: **¥1 = 1 MJPY**; after the 2% fee, **¥1,112 pays 1,089.76 MJPY**. These are testnet assets.
 - Contract accepts prefunded ERC-20 payouts, not native MIZU payouts. Fund it with MJPY; keep MIZU in the operator wallet for gas.
 - Backend persists signed transactions before submission through MultiBaas, waits for two confirmations, and verifies token-bound receipts. `/multibaas-feed` provides indexed events.

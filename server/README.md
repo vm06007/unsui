@@ -39,11 +39,11 @@ and production storage are a later backend step.
 - `POST /refunds`: confirmed card, quote and stable request ID. Revalidates the
   quote and remaining allowance. A repeated ID returns the original result;
   changing its quote is rejected. Data survives app and backend restarts.
-- `GET /merchant-feed`: merchant-shaped demo purchases for dashboard integration.
-  Excludes card IDs and wallet addresses. Includes gross yen purchase, 2% fee,
-  net crypto estimate, chain, reference and demo designation. Confirmed Sui receipts include the transaction hash. There is no live
-  processor connection. Configure the dashboard to use this
-  endpoint when its code is added; existing dashboard URLs are not changed here.
+- `GET /merchant-feed`: merchant-shaped Suica refund purchases for the local
+  `unsui-extension`. Excludes card IDs and wallet addresses. Includes gross yen
+  amount, 2% fee, net crypto estimate, chain, reference and demo designation.
+  Confirmed receipts include the transaction hash. A `chrome-extension://` page
+  may read this route only. There is no live processor connection.
 
 `ffffffffffffffff` is the sample card ID. Its shared ¥1,500 allowance is tracked
 like other cards; reopening Demo does not replenish it. Real card data and sample

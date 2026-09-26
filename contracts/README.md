@@ -78,3 +78,14 @@ source, optimizer settings and constructor arguments on their explorers.
 Source verification is confirmed on [Etherscan](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52#code) (matching bytecode and ABI) and Sourcify (exact creation and runtime matches).
 
 Ethereum treasury initial funding: **0.0045 ETH**, confirmed in [this deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). The mobile Ethereum payout adapter is available behind `ETHEREUM_LIVE_PAYOUTS=true`.
+
+## Verified Mizuhiki Awaji MJPY contract
+
+- Network: **Awaji testnet**, chain ID **6497**.
+- Payout treasury (`UnSuiMJPY`): [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52?tab=contract), source verified on Blockscout.
+- **MJPY token contract:** [`0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`](https://awaji.blockscout.com/address/0x78f5f0Ac4EF201618b97638ded959b155c4f4B04), 6 decimals.
+- [Deployment transaction](https://awaji.blockscout.com/tx/0xe9db9ab93df06ce03958b7cf3bcddf69cc8fb56a6f831976fd80615553c11976), block **2390077**; deployed and linked for indexing through MultiBaas.
+- Gross rate: **¥1 = 1 MJPY**; 2% service fee. Gas is paid separately in MIZU.
+- Compiler: Solidity **0.8.30**, Cancun, optimizer enabled with **200 runs**.
+- Constructor: admin and operator `0x20025F78da2b65D2b1cfa7FC411e1dA3F56f3BB3`, token `0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`.
+- [Deployment metadata](deployments/awaji-mjpy.json). Fund the treasury with MJPY on Awaji, not the token contract itself.
