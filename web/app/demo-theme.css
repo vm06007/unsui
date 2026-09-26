@@ -1,0 +1,212 @@
+.demo-theme-control {
+  margin-top: 18px;
+}
+.mobile-demo-bar .theme-toggle {
+  border: 1px solid #d6e0d8;
+}
+html[data-theme='dark'] .theme-sun {
+  display: block;
+}
+html[data-theme='dark'] .theme-moon {
+  display: none;
+}
+html[data-theme='dark']:has(.demo-stage) {
+  --background: #121f18;
+  --foreground: #e8efe5;
+  --card: #1b2c22;
+  --card-foreground: #e8efe5;
+  --popover: #1b2c22;
+  --popover-foreground: #e8efe5;
+  --muted: #26392b;
+  --muted-foreground: #b8c9ad;
+  --accent: #334b31;
+  --accent-foreground: #d8edc7;
+  --border: #3b513c;
+  --input: #3b513c;
+  --primary: #b9dc96;
+  --primary-foreground: #173e2f;
+  color-scheme: dark;
+}
+html[data-theme='dark']:has(.demo-stage) body,
+html[data-theme='dark'] .demo-stage {
+  background: #101b16;
+  color: #e8efe5;
+}
+html[data-theme='dark'] :is(.app-shell, .wallet-top) {
+  background: #14231a;
+}
+html[data-theme='dark']
+  :is(
+    .icon-button,
+    .wallet-actions button,
+    .activity-icon,
+    .history-totals > div,
+    .physical-card,
+    .receipt-list > button,
+    .address-input textarea,
+    .success-receipt,
+    .merkle-leaves span
+  ) {
+  background: #1e3024;
+  color: #e8efe5;
+}
+html[data-theme='dark']
+  :is(
+    .conversion,
+    .wallet-actions button > span,
+    .journey-summary,
+    .activity-icon.paid,
+    .flow-symbol,
+    .network-row [data-slot='select-trigger'],
+    .processing-spinner,
+    .proof-button,
+    .merkle-root,
+    .proof-code,
+    .proof-result,
+    .mobile-demo-bar
+  ) {
+  background: #293e2d;
+  color: #c6dfb4;
+}
+html[data-theme='dark'] .proof-result.changed {
+  background: #463425;
+  color: #edc39f;
+}
+html[data-theme='dark'] .bottom-nav {
+  background: #1b2c22 !important;
+}
+html[data-theme='dark'] .bottom-nav [data-slot='tabs-trigger'][data-active] {
+  background: #30472e !important;
+  color: #c9edac !important;
+}
+html[data-theme='dark'] .proof-dialog {
+  background: #17271d !important;
+  color: #e8efe5;
+}
+html[data-theme='dark']:has(.demo-stage)
+  :is(.app-shell, .demo-context, .proof-dialog)
+  * {
+  border-color: #3b513c;
+}
+html[data-theme='dark']:has(.demo-stage) .theme-toggle {
+  color: #c8e7ab;
+  border-color: #425543;
+}
+html[data-theme='dark'] .demo-stage .avatar {
+  background: #30472e;
+  color: #c9edac;
+}
+html[data-theme='dark'] .demo-stage .wordmark-kanji {
+  color: #b8c9ad;
+}
+@media (max-width: 700px) {
+  .demo-theme-control {
+    display: none;
+  }
+}
+
+html[data-theme='dark']:has(.demo-stage) .activity-icon,
+html[data-theme='dark']:has(.demo-stage) .activity-row small,
+html[data-theme='dark']:has(.demo-stage) .address-input,
+html[data-theme='dark']:has(.demo-stage) .address-input textarea,
+html[data-theme='dark']:has(.demo-stage) .amount-input,
+html[data-theme='dark']:has(.demo-stage) .amount-input small,
+html[data-theme='dark']:has(.demo-stage) .asset-credit,
+html[data-theme='dark']:has(.demo-stage) .back-site,
+html[data-theme='dark']:has(.demo-stage) .balance-block > span:first-child,
+html[data-theme='dark']:has(.demo-stage) .balance-block h1 small,
+html[data-theme='dark']:has(.demo-stage) .bottom-nav [data-slot='tabs-trigger'],
+html[data-theme='dark']:has(.demo-stage) .card-details dt,
+html[data-theme='dark']:has(.demo-stage) .demo-boundary > span,
+html[data-theme='dark']:has(.demo-stage) .demo-boundary p,
+html[data-theme='dark']:has(.demo-stage) .demo-intro .eyebrow,
+html[data-theme='dark']:has(.demo-stage) .demo-intro > p,
+html[data-theme='dark']:has(.demo-stage) .demo-intro li,
+html[data-theme='dark']:has(.demo-stage) .demo-intro li span,
+html[data-theme='dark']:has(.demo-stage) .device-caption,
+html[data-theme='dark']:has(.demo-stage) .empty-receipts p,
+html[data-theme='dark']:has(.demo-stage) .flow-screen .small-print,
+html[data-theme='dark']:has(.demo-stage) .flow-screen > p,
+html[data-theme='dark']:has(.demo-stage) .flow-top > span,
+html[data-theme='dark']:has(.demo-stage) .history-totals small,
+html[data-theme='dark']:has(.demo-stage) .home-link,
+html[data-theme='dark']:has(.demo-stage) .journey-summary span,
+html[data-theme='dark']:has(.demo-stage) .merkle-leaves span,
+html[data-theme='dark']:has(.demo-stage) .mobile-demo-bar,
+html[data-theme='dark']:has(.demo-stage) .mobile-demo-bar button,
+html[data-theme='dark']:has(.demo-stage) .network-row,
+html[data-theme='dark']:has(.demo-stage) .physical-card span,
+html[data-theme='dark']:has(.demo-stage) .processing .eyebrow,
+html[data-theme='dark']:has(.demo-stage) .processing-steps,
+html[data-theme='dark']:has(.demo-stage) .proof-button small,
+html[data-theme='dark']:has(.demo-stage) .proof-code,
+html[data-theme='dark']:has(.demo-stage) .proof-copy,
+html[data-theme='dark']:has(.demo-stage)
+  .proof-dialog
+  [data-slot='dialog-description'],
+html[data-theme='dark']:has(.demo-stage) .proof-explainer,
+html[data-theme='dark']:has(.demo-stage) .proof-explainer p,
+html[data-theme='dark']:has(.demo-stage) .proof-label,
+html[data-theme='dark']:has(.demo-stage) .proof-scope,
+html[data-theme='dark']:has(.demo-stage) .rate-note,
+html[data-theme='dark']:has(.demo-stage) .receipt-list > button > div > span,
+html[data-theme='dark']:has(.demo-stage) .refund-summary > span,
+html[data-theme='dark']:has(.demo-stage) .reset-demo,
+html[data-theme='dark']:has(.demo-stage) .sample-address,
+html[data-theme='dark']:has(.demo-stage) .small-print,
+html[data-theme='dark']:has(.demo-stage) .success-amount small,
+html[data-theme='dark']:has(.demo-stage) .success-receipt > div,
+html[data-theme='dark']:has(.demo-stage) .success-receipt code,
+html[data-theme='dark']:has(.demo-stage) .success-receipt label,
+html[data-theme='dark']:has(.demo-stage) .success-screen .eyebrow,
+html[data-theme='dark']:has(.demo-stage) .tab-heading > span,
+html[data-theme='dark']:has(.demo-stage) .tab-heading p,
+html[data-theme='dark']:has(.demo-stage) .tamper-button,
+html[data-theme='dark']:has(.demo-stage) .wallet-top span {
+  color: #b8c9ad;
+}
+
+html[data-theme='dark']:has(.demo-stage) .activity-icon.paid,
+html[data-theme='dark']:has(.demo-stage) .activity-row .positive,
+html[data-theme='dark']:has(.demo-stage) .amount-input > div,
+html[data-theme='dark']:has(.demo-stage) .amount-input button,
+html[data-theme='dark']:has(.demo-stage) .amount-input input,
+html[data-theme='dark']:has(.demo-stage) .conversion,
+html[data-theme='dark']:has(.demo-stage) .demo-intro h1 em,
+html[data-theme='dark']:has(.demo-stage) .empty-receipts > svg,
+html[data-theme='dark']:has(.demo-stage) .flow-symbol,
+html[data-theme='dark']:has(.demo-stage) .form-error,
+html[data-theme='dark']:has(.demo-stage) .home-link,
+html[data-theme='dark']:has(.demo-stage) .icon-button,
+html[data-theme='dark']:has(.demo-stage) .journey-summary,
+html[data-theme='dark']:has(.demo-stage) .journey-summary b,
+html[data-theme='dark']:has(.demo-stage) .merkle-root,
+html[data-theme='dark']:has(.demo-stage)
+  .network-row
+  [data-slot='select-trigger'],
+html[data-theme='dark']:has(.demo-stage) .processing-spinner,
+html[data-theme='dark']:has(.demo-stage) .proof-button,
+html[data-theme='dark']:has(.demo-stage) .proof-dialog .text-link,
+html[data-theme='dark']:has(.demo-stage) .proof-explainer a,
+html[data-theme='dark']:has(.demo-stage) .proof-result,
+html[data-theme='dark']:has(.demo-stage) .sample-address,
+html[data-theme='dark']:has(.demo-stage) .subheading button,
+html[data-theme='dark']:has(.demo-stage) .success-receipt b,
+html[data-theme='dark']:has(.demo-stage) .tamper-button,
+html[data-theme='dark']:has(.demo-stage) .wallet-actions button > span,
+html[data-theme='dark']:has(.demo-stage)
+  .wallet-actions
+  button:nth-child(2)
+  > span,
+html[data-theme='dark']:has(.demo-stage)
+  .wallet-actions
+  button:nth-child(3)
+  > span {
+  color: #b9dc96;
+}
+
+html[data-theme='dark']:has(.demo-stage)
+  .bottom-nav
+  [data-slot='tabs-trigger'][data-active] {
+  color: #b9dc96 !important;
+}

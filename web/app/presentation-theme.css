@@ -1,0 +1,419 @@
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid #d6e0d8;
+  background: transparent;
+  color: #35563f;
+  cursor: pointer;
+}
+.theme-toggle:hover {
+  background: #e7efdf;
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid #6f9f49;
+  outline-offset: 4px;
+}
+.theme-sun {
+  display: none;
+}
+html[data-theme='dark']:has(.site-nav) .theme-sun {
+  display: block;
+}
+html[data-theme='dark']:has(.site-nav) .theme-moon {
+  display: none;
+}
+html[data-theme='dark']:has(.site-nav) body:has(.site-nav) {
+  --foreground: #e8efe5;
+  background: #101b16;
+  color: #e8efe5;
+  color-scheme: dark;
+}
+html[data-theme='dark']:has(.site-nav) .site-nav {
+  background: rgba(16, 27, 22, 0.82);
+  box-shadow: 0 1px 0 #b4d5a31f;
+}
+html[data-theme='dark']:has(.site-nav) .theme-toggle {
+  border-color: #425543;
+  color: #c8e7ab;
+}
+html[data-theme='dark']:has(.site-nav) .theme-toggle:hover {
+  background: #293b2c;
+}
+html[data-theme='dark']:has(.site-nav) .site-nav .button.dark {
+  background: #c8f092;
+  color: #173e2f;
+}
+html[data-theme='dark']:has(.site-nav) .site-nav .button.dark:hover {
+  background: #d8f6b3;
+}
+html[data-theme='dark']:has(.site-nav)
+  :is(
+    .wallet-preview,
+    .receipt-float,
+    .flow-board,
+    .merchant-ticket,
+    .buffer-lab,
+    .proof-diagrams article,
+    .transparency-table,
+    .readiness-grid article,
+    .cycle-panel,
+    .charge-sequence li
+  ) {
+  background: #1a2921;
+}
+html[data-theme='dark']:has(.site-nav)
+  :is(
+    .floating-label,
+    .avatar,
+    .preview-actions svg,
+    .round-check,
+    .video-placeholder,
+    .architecture-status > span,
+    .money-nodes li,
+    .payout-lane,
+    .settlement-lane,
+    .arch-callout,
+    .arch-callout.neutral,
+    .merchant-explanation article > span,
+    .lab-controls,
+    .buffer-notes code,
+    .receipt-chain > div,
+    .transparency-table th,
+    .reconcile-strip,
+    .charge-step-icon,
+    .charge-step-icon > span,
+    .charge-sequence .charge-highlight,
+    .charge-boundary,
+    .ideology-closing,
+    .ideology-card-story,
+    .market-scenario
+  ) {
+  background: #26392a;
+}
+html[data-theme='dark']:has(.site-nav)
+  :is(.planned-badge, .architecture-status > span + span) {
+  background: #3b3526;
+  color: #e3cd92;
+}
+html[data-theme='dark']:has(.site-nav) .implemented-badge {
+  background: #2c4430;
+  color: #c3e0a8;
+}
+html[data-theme='dark']:has(.site-nav) .video-placeholder > svg {
+  background: #354b37;
+}
+html[data-theme='dark']:has(.site-nav)
+  body:has(.site-nav)
+  :where(main, footer)
+  * {
+  border-color: #3c4c3c;
+}
+/* The transit card and landscape keep their original artwork palette. */
+html[data-theme='dark']:has(.site-nav) .wallet-card {
+  color: #16452c;
+}
+html[data-theme='dark']:has(.site-nav) .ideology-landscape {
+  background: #eff3e8;
+}
+html[data-theme='dark']:has(.site-nav)
+  :is(.cycle-scroll, .claim-tree-scroll, .chart-scroll) {
+  background: #f5f8f0;
+  border-radius: 14px;
+  color-scheme: light;
+}
+html[data-theme='dark']:has(.site-nav) .chart-scroll {
+  padding: 12px;
+}
+html[data-theme='dark']:has(.site-nav) :is(.technology, .contract-section) {
+  background: #183d2d;
+}
+@media (max-width: 1150px) {
+  .site-nav nav {
+    gap: 16px;
+    font-size: 13px;
+  }
+  .site-nav {
+    gap: 18px;
+  }
+}
+@media (min-width: 701px) and (max-width: 1000px) {
+  .site-nav {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 110px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    row-gap: 14px;
+  }
+  .site-nav nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-width: 600px) {
+  .header-actions {
+    gap: 7px;
+  }
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+  }
+  .site-nav {
+    gap: 8px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .site-nav .small {
+    gap: 7px;
+    padding: 10px;
+  }
+}
+@media (max-width: 390px) {
+  .site-nav .header-actions .button svg {
+    display: none;
+  }
+  .site-nav .wordmark {
+    font-size: 23px;
+  }
+}
+
+html[data-theme='dark']:has(.site-nav) .arch-callout p,
+html[data-theme='dark']:has(.site-nav) .arch-footnote,
+html[data-theme='dark']:has(.site-nav) .arch-hero > .eyebrow,
+html[data-theme='dark']:has(.site-nav) .arch-kicker,
+html[data-theme='dark']:has(.site-nav) .arch-lead,
+html[data-theme='dark']:has(.site-nav) .arch-merkle-leaves span,
+html[data-theme='dark']:has(.site-nav) .arch-merkle-parents span,
+html[data-theme='dark']:has(.site-nav) .arch-scope,
+html[data-theme='dark']:has(.site-nav) .arch-section-heading > p,
+html[data-theme='dark']:has(.site-nav) .arch-sources > p,
+html[data-theme='dark']:has(.site-nav) .buffer-notes p,
+html[data-theme='dark']:has(.site-nav) .charge-boundary,
+html[data-theme='dark']:has(.site-nav) .charge-sequence li p,
+html[data-theme='dark']:has(.site-nav) .charge-status,
+html[data-theme='dark']:has(.site-nav) .chart-assumptions,
+html[data-theme='dark']:has(.site-nav) .chart-heading span,
+html[data-theme='dark']:has(.site-nav) .chart-key,
+html[data-theme='dark']:has(.site-nav) .film > div > p,
+html[data-theme='dark']:has(.site-nav) .floating-label,
+html[data-theme='dark']:has(.site-nav) .flow-board-title > span:last-child,
+html[data-theme='dark']:has(.site-nav) .hero-copy .hero-detail,
+html[data-theme='dark']:has(.site-nav) .hero-copy > p,
+html[data-theme='dark']:has(.site-nav) .hero-foot,
+html[data-theme='dark']:has(.site-nav) .ideology-hero-grid p,
+html[data-theme='dark']:has(.site-nav) .ideology-inflation span,
+html[data-theme='dark']:has(.site-nav) .ideology-lead,
+html[data-theme='dark']:has(.site-nav) .ideology-note,
+html[data-theme='dark']:has(.site-nav) .ideology-origin .ideology-payout-note,
+html[data-theme='dark']:has(.site-nav) .ideology-origin p,
+html[data-theme='dark']:has(.site-nav) .ideology-reading,
+html[data-theme='dark']:has(.site-nav) .ideology-symbol p,
+html[data-theme='dark']:has(.site-nav) .ideology-values p,
+html[data-theme='dark']:has(.site-nav) .ideology-values span,
+html[data-theme='dark']:has(.site-nav) .lab-controls > p,
+html[data-theme='dark']:has(.site-nav) .lab-slider label,
+html[data-theme='dark']:has(.site-nav) .lab-stats > div > span,
+html[data-theme='dark']:has(.site-nav) .lab-stats small,
+html[data-theme='dark']:has(.site-nav) .lane-heading span,
+html[data-theme='dark']:has(.site-nav) .lane-steps small,
+html[data-theme='dark']:has(.site-nav) .market-intro,
+html[data-theme='dark']:has(.site-nav) .market-scenario p,
+html[data-theme='dark']:has(.site-nav) .market-source,
+html[data-theme='dark']:has(.site-nav) .market-stats span,
+html[data-theme='dark']:has(.site-nav) .market-wallet p,
+html[data-theme='dark']:has(.site-nav) .merchant-explanation p,
+html[data-theme='dark']:has(.site-nav) .merchant-ticket > p,
+html[data-theme='dark']:has(.site-nav) .merchant-ticket dt,
+html[data-theme='dark']:has(.site-nav) .model-details th,
+html[data-theme='dark']:has(.site-nav) .money-nodes li:not(:last-child):after,
+html[data-theme='dark']:has(.site-nav) .money-nodes p,
+html[data-theme='dark']:has(.site-nav) .money-nodes small,
+html[data-theme='dark']:has(.site-nav) .payment-lanes p,
+html[data-theme='dark']:has(.site-nav) .preview-balance > span,
+html[data-theme='dark']:has(.site-nav) .preview-balance h2 span,
+html[data-theme='dark']:has(.site-nav) .preview-heading small,
+html[data-theme='dark']:has(.site-nav) .preview-list small,
+html[data-theme='dark']:has(.site-nav) .product-caption,
+html[data-theme='dark']:has(.site-nav) .project-strip > span,
+html[data-theme='dark']:has(.site-nav) .project-strip a,
+html[data-theme='dark']:has(.site-nav) .project-strip b,
+html[data-theme='dark']:has(.site-nav) .proof-diagrams p,
+html[data-theme='dark']:has(.site-nav) .readiness-grid ul,
+html[data-theme='dark']:has(.site-nav) .receipt-chain small,
+html[data-theme='dark']:has(.site-nav) .receipt-float div > span,
+html[data-theme='dark']:has(.site-nav) .reconcile-strip p,
+html[data-theme='dark']:has(.site-nav) .section-heading p,
+html[data-theme='dark']:has(.site-nav) .site-nav nav,
+html[data-theme='dark']:has(.site-nav) .split-connector,
+html[data-theme='dark']:has(.site-nav) .step-number,
+html[data-theme='dark']:has(.site-nav) .steps p,
+html[data-theme='dark']:has(.site-nav) .transparency-table td,
+html[data-theme='dark']:has(.site-nav) .transparency-table th,
+html[data-theme='dark']:has(.site-nav) .trust-note,
+html[data-theme='dark']:has(.site-nav) .video-placeholder > span,
+html[data-theme='dark']:has(.site-nav) .video-placeholder p,
+html[data-theme='dark']:has(.site-nav) .wordmark-kanji {
+  color: #b8c9ad;
+}
+
+html[data-theme='dark']:has(.site-nav) .arch-callout > svg,
+html[data-theme='dark']:has(.site-nav) .arch-callout a,
+html[data-theme='dark']:has(.site-nav) .arch-callout b,
+html[data-theme='dark']:has(.site-nav) .arch-hero h1 em,
+html[data-theme='dark']:has(.site-nav) .arch-merkle > div:first-child,
+html[data-theme='dark']:has(.site-nav) .arch-nav a,
+html[data-theme='dark']:has(.site-nav) .arch-sources a,
+html[data-theme='dark']:has(.site-nav) .architecture-status > span,
+html[data-theme='dark']:has(.site-nav) .architecture-status > span + span,
+html[data-theme='dark']:has(.site-nav) .avatar,
+html[data-theme='dark']:has(.site-nav) .buffer-notes code,
+html[data-theme='dark']:has(.site-nav) .buffer-notes svg,
+html[data-theme='dark']:has(.site-nav) .charge-boundary b,
+html[data-theme='dark']:has(.site-nav) .charge-highlight .charge-status,
+html[data-theme='dark']:has(.site-nav) .charge-highlight .charge-step-icon,
+html[data-theme='dark']:has(.site-nav)
+  .charge-sequence
+  li:not(:last-child):after,
+html[data-theme='dark']:has(.site-nav) .charge-step-icon,
+html[data-theme='dark']:has(.site-nav) .contract-checks li svg,
+html[data-theme='dark']:has(.site-nav) .contract-flow > svg,
+html[data-theme='dark']:has(.site-nav) .contract-flow p,
+html[data-theme='dark']:has(.site-nav) .contract-flow small,
+html[data-theme='dark']:has(.site-nav) .contract-links > p,
+html[data-theme='dark']:has(.site-nav) .contract-links code,
+html[data-theme='dark']:has(.site-nav) .contract-section .arch-footnote,
+html[data-theme='dark']:has(.site-nav) .contract-section .arch-kicker,
+html[data-theme='dark']:has(.site-nav) .double-spend-grid p,
+html[data-theme='dark']:has(.site-nav) .failure-strip,
+html[data-theme='dark']:has(.site-nav) .failure-strip > span:last-child,
+html[data-theme='dark']:has(.site-nav) .hero h1 em,
+html[data-theme='dark']:has(.site-nav) .ideology h1 em,
+html[data-theme='dark']:has(.site-nav) .ideology-inflation strong,
+html[data-theme='dark']:has(.site-nav) .ideology-source,
+html[data-theme='dark']:has(.site-nav) .ideology-values svg,
+html[data-theme='dark']:has(.site-nav) .implemented-badge,
+html[data-theme='dark']:has(.site-nav) .lab-reset,
+html[data-theme='dark']:has(.site-nav) .lab-slider label b,
+html[data-theme='dark']:has(.site-nav) .lab-stats .warning-stat strong,
+html[data-theme='dark']:has(.site-nav) .lane-heading svg,
+html[data-theme='dark']:has(.site-nav) .lane-steps > svg,
+html[data-theme='dark']:has(.site-nav) .market-scenario b,
+html[data-theme='dark']:has(.site-nav) .market-stats strong,
+html[data-theme='dark']:has(.site-nav) .market-wallet > svg,
+html[data-theme='dark']:has(.site-nav) .merchant-explanation article > span,
+html[data-theme='dark']:has(.site-nav) .merchant-ticket dd,
+html[data-theme='dark']:has(.site-nav)
+  .model-details
+  [data-slot='accordion-trigger'],
+html[data-theme='dark']:has(.site-nav) .money-nodes svg,
+html[data-theme='dark']:has(.site-nav) .planned-badge,
+html[data-theme='dark']:has(.site-nav) .preview-balance small,
+html[data-theme='dark']:has(.site-nav) .receipt-chain > div,
+html[data-theme='dark']:has(.site-nav) .receipt-chain svg,
+html[data-theme='dark']:has(.site-nav) .receipt-float > svg,
+html[data-theme='dark']:has(.site-nav) .reconcile-strip > svg,
+html[data-theme='dark']:has(.site-nav) .round-check,
+html[data-theme='dark']:has(.site-nav) .site-nav nav a:hover,
+html[data-theme='dark']:has(.site-nav) .source-link,
+html[data-theme='dark']:has(.site-nav) .steps article > svg,
+html[data-theme='dark']:has(.site-nav) .tech-list svg,
+html[data-theme='dark']:has(.site-nav) .technology .eyebrow,
+html[data-theme='dark']:has(.site-nav) .transparency-table td:first-child,
+html[data-theme='dark']:has(.site-nav) .video-placeholder > svg {
+  color: #b9dc96;
+}
+
+html[data-theme='dark']:has(.site-nav) .site-nav .button.dark {
+  color: #173e2f;
+}
+
+html[data-theme='dark']:has(.site-nav) .charge-highlight .charge-step-icon {
+  background: #344f30;
+}
+
+/* Download panel styles live beside the demo styles in the base stylesheet. */
+html[data-theme='dark']:has(.site-nav) .download-card {
+  background: #1a2921;
+  border-color: #3c4c3c;
+}
+html[data-theme='dark']:has(.site-nav) .download-card h3 {
+  color: #e8efe5;
+}
+html[data-theme='dark']:has(.site-nav) .download-card p {
+  color: #b8c9ad;
+}
+html[data-theme='dark']:has(.site-nav) .download-card > svg {
+  color: #b9dc96;
+}
+html[data-theme='dark']:has(.site-nav) .coming-badge {
+  background: #2c4430;
+  color: #c3e0a8;
+}
+html[data-theme='dark']:has(.site-nav) footer {
+  border-color: #3c4c3c;
+}
+html[data-theme='dark']:has(.site-nav) footer :is(p, span) {
+  color: #b8c9ad;
+}
+
+.site-nav .get-app-button {
+  border: 1px solid #9bac96;
+  background: transparent;
+  color: #274f36;
+  white-space: nowrap;
+}
+.site-nav .get-app-button:hover {
+  background: #e7efdf;
+}
+.site-nav .header-actions .button {
+  gap: 10px;
+  white-space: nowrap;
+}
+html[data-theme='dark']:has(.site-nav) .site-nav .get-app-button {
+  border-color: #647c52;
+  color: #c9e7b0;
+}
+html[data-theme='dark']:has(.site-nav) .site-nav .get-app-button:hover {
+  background: #293b2c;
+}
+@media (min-width: 701px) and (max-width: 1200px) {
+  .site-nav {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 110px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    row-gap: 14px;
+  }
+  .site-nav nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-width: 700px) {
+  .site-nav {
+    height: auto;
+    min-height: 120px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    gap: 10px;
+  }
+  .site-nav .header-actions {
+    width: 100%;
+  }
+  .site-nav .header-actions .theme-toggle {
+    margin-right: auto;
+  }
+}
