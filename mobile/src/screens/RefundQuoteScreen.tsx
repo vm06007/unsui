@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import {
+  RefundQuote,
+  applyMarketQuote,
   amountError,
   createDemoQuote,
   PAYOUT_NETWORKS,
@@ -19,6 +21,8 @@ import {
   recipientError,
 } from '../lib/refundQuote';
 
+import { backendRequest } from '../lib/backendLedger';
+import { BACKEND_URL } from '../config';
 import { verifyRefundHuman } from '../lib/worldId';
 import ScanSheet from '../components/ScanSheet';
 import { showScanError } from '../lib/scanFeedback';
@@ -60,6 +64,65 @@ export default function RefundQuoteScreen({
     useState<Destination>(manualDestination);
   const [recipientBusy, setRecipientBusy] = useState(false);
   const recipient = destination.address;
+  const useMarket = network === 'sui' && !isSample;
+  const [marketQuote, setMarketQuote] = useState<RefundQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState('');
+  const [quoteRefresh, setQuoteRefresh] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setMarketQuote(null);
+    setQuoteError('');
+    setQuoteLoading(false);
+    if (!useMarket || destination.blocked || recipientError(recipient, network))
+      return;
+    setQuoteLoading(true);
+    {
+      backendRequest(BACKEND_URL, '/quotes/sui', {
+        cardId,
+        scannedBalanceJpy,
+        amountJpy: balanceJpy,
+        recipient,
+      })
+        .then(result => {
+          const base = createDemoQuote(
+            String(balanceJpy),
+            balanceJpy,
+            'sui',
+            recipient,
+          );
+          const quote = applyMarketQuote(base, result.quote);
+          if (
+            !quote.pricing ||
+            quote.recipient !== recipient ||
+            quote.amountJpy !== balanceJpy ||
+            quote.pricing.cardId !== cardId.toLowerCase() ||
+            quote.pricing.expiresAt <= Date.now()
+          )
+            throw Error('Invalid market quote. Please refresh.');
+          if (alive) setMarketQuote(quote);
+        })
+        .catch(error => {
+          if (alive)
+            setQuoteError(error.message || 'Could not fetch a current quote.');
+        })
+        .finally(() => {
+          if (alive) setQuoteLoading(false);
+        });
+    }
+    return () => {
+      alive = false;
+    };
+  }, [
+    useMarket,
+    network,
+    recipient,
+    destination.blocked,
+    cardId,
+    balanceJpy,
+    scannedBalanceJpy,
+    quoteRefresh,
+  ]);
   const [attempted, setAttempted] = useState(false);
   const [networkOpen, setNetworkOpen] = useState(false);
   const scroll = useRef<ScrollView>(null);
@@ -97,7 +160,18 @@ export default function RefundQuoteScreen({
     if (active.current || recipientBusy || amountIssue || recipientIssue)
       return;
     Keyboard.dismiss();
-    const quote = createDemoQuote(amount, balanceJpy, network, recipient);
+    const quote = useMarket
+      ? marketQuote
+      : createDemoQuote(amount, balanceJpy, network, recipient);
+    if (
+      !quote ||
+      (useMarket && quote.pricing!.expiresAt <= Date.now() && !request.current)
+    ) {
+      setQuoteError(
+        'Quote expired or unavailable. Refresh and review the new amount.',
+      );
+      return;
+    }
     active.current = true;
     cancelled.current = false;
     saving.current = false;
@@ -210,7 +284,9 @@ export default function RefundQuoteScreen({
     return () => subscription.remove();
   }, [onClose]);
   const payout = PAYOUT_NETWORKS[network];
-  const estimate = !amountIssue
+  const estimate = useMarket
+    ? marketQuote
+    : !amountIssue
     ? createDemoQuote(
         amount,
         balanceJpy,
@@ -271,7 +347,11 @@ export default function RefundQuoteScreen({
           </Pressable>
           <Pressable
             accessibilityRole="tab"
-            disabled={locked || recipientBusy}
+            disabled={
+              locked ||
+              recipientBusy ||
+              (useMarket && (!marketQuote || quoteLoading))
+            }
             onPress={onHistory}
             style={styles.tab}
           >
@@ -290,7 +370,11 @@ export default function RefundQuoteScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Change payout network"
-              disabled={locked || recipientBusy}
+              disabled={
+                locked ||
+                recipientBusy ||
+                (useMarket && (!marketQuote || quoteLoading))
+              }
               onPress={() => setNetworkOpen(!networkOpen)}
             >
               <Text style={styles.network}>{payout.name} ⌄</Text>
@@ -300,11 +384,13 @@ export default function RefundQuoteScreen({
             ¥{balanceJpy.toLocaleString('en-US')}
           </Text>
           <Text style={styles.rate}>
-            ≈{' '}
-            {(balanceJpy / payout.yenPerAsset).toFixed(
-              network === 'sui' ? 4 : 6,
-            )}{' '}
-            {payout.asset}
+            {useMarket
+              ? marketQuote
+                ? `${marketQuote.estimatedCrypto} SUI after fee`
+                : 'Market quote on confirmation'
+              : `≈ ${(balanceJpy / payout.yenPerAsset).toFixed(6)} ${
+                  payout.asset
+                }`}
           </Text>
           <Text style={styles.physical}>
             On your card · {yen(scannedBalanceJpy)}
@@ -322,7 +408,13 @@ export default function RefundQuoteScreen({
                   setNetwork(key);
                   setDestination(previous =>
                     key !== 'sui' && previous.connection
-                      ? { ...previous, signed: undefined, blocked: previous.connection.chainId !== (key === 'ethereum' ? 1 : 6497) }
+                      ? {
+                          ...previous,
+                          signed: undefined,
+                          blocked:
+                            previous.connection.chainId !==
+                            (key === 'ethereum' ? 1 : 6497),
+                        }
                       : manualDestination(),
                   );
                   setRecipientBusy(false);
@@ -362,9 +454,34 @@ export default function RefundQuoteScreen({
             Sample card selected. Confirmation uses the sample card without NFC.
           </Text>
         )}
+        {useMarket && (
+          <View>
+            {quoteLoading && <ActivityIndicator color="#173E35" />}
+            {!!quoteError && <Text style={styles.error}>{quoteError}</Text>}
+            {marketQuote?.pricing && (
+              <Text style={styles.note}>
+                CoinGecko · ¥
+                {Number(marketQuote.pricing.jpyPerSuiMicros) / 1000000} / SUI ·
+                quote valid for 5 minutes
+              </Text>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Refresh quote"
+              disabled={locked || quoteLoading}
+              onPress={() => {
+                request.current = null;
+                setQuoteRefresh(v => v + 1);
+              }}
+            >
+              <Text style={styles.link}>Refresh quote</Text>
+            </Pressable>
+          </View>
+        )}
         {estimate && (
           <Text testID="quote-payout" style={styles.note}>
-            Receive ≈ {estimate.estimatedCrypto} {payout.asset} · fee{' '}
+            Receive {useMarket ? '' : '≈ '}
+            {estimate.estimatedCrypto} {payout.asset} · fee{' '}
             {yen(estimate.feeJpy)} (2%)
           </Text>
         )}
@@ -376,7 +493,11 @@ export default function RefundQuoteScreen({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Confirm refund"
-          disabled={locked || recipientBusy}
+          disabled={
+            locked ||
+            recipientBusy ||
+            (useMarket && (!marketQuote || quoteLoading))
+          }
           onPress={confirm}
           style={[styles.button, (locked || recipientBusy) && styles.disabled]}
         >

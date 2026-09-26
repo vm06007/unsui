@@ -14,7 +14,7 @@ function fingerprint(input) {
     .digest('hex');
 }
 
-function createLivePayouts({ file, pay, authorize, networks = ['sui'] }) {
+function createLivePayouts({ file, pay, authorize, validate, networks = ['sui'] }) {
   let queue = Promise.resolve();
   return input => {
     const work = queue.then(async () => {
@@ -50,6 +50,7 @@ function createLivePayouts({ file, pay, authorize, networks = ['sui'] }) {
           throw Error(
             'Refunds above ¥1,000 require a completed World ID check.',
           );
+        await validate?.(input);
         order = {
           binding,
           cardId: input.cardId.toLowerCase(),

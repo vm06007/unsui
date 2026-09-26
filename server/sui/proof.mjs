@@ -99,10 +99,11 @@ export function verifyReceipt(receipt) {
   const merkle = claimProofs(receipt.data);
   const computedHash = hex(hash(ReceiptData.serialize(receipt.data).toBytes()));
   const valid =
-    Buffer.from(receipt.data.domain).toString() === 'UNSUI_RECEIPT_V2' &&
+    ['UNSUI_RECEIPT_V2', 'UNSUI_RECEIPT_V3'].includes(Buffer.from(receipt.data.domain).toString()) &&
     computedHash === hex(receipt.hash) &&
     merkle.root === hex(receipt.data.claim_root) &&
-    BigInt(receipt.data.amount_mist) ===
-      BigInt(receipt.data.amount_jpy) * 98000n;
+    (Buffer.from(receipt.data.domain).toString() === 'UNSUI_RECEIPT_V2'
+      ? BigInt(receipt.data.amount_mist) === BigInt(receipt.data.amount_jpy) * 98000n
+      : BigInt(receipt.data.amount_mist) > 0n && BigInt(receipt.data.amount_mist) <= 200000000000n);
   return { valid, hash: computedHash, merkle };
 }

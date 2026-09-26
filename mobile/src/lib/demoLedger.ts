@@ -1,4 +1,9 @@
-import { createDemoQuote, PAYOUT_NETWORKS, RefundQuote } from './refundQuote';
+import {
+  applyMarketQuote,
+  createDemoQuote,
+  PAYOUT_NETWORKS,
+  RefundQuote,
+} from './refundQuote';
 
 export type DemoReceipt = RefundQuote & {
   id: string;
@@ -48,7 +53,8 @@ function sameQuote(a: RefundQuote, b: RefundQuote) {
     a.amountJpy === b.amountJpy &&
     a.feeJpy === b.feeJpy &&
     a.netJpy === b.netJpy &&
-    a.estimatedCrypto === b.estimatedCrypto
+    a.estimatedCrypto === b.estimatedCrypto &&
+    JSON.stringify(a.pricing) === JSON.stringify(b.pricing)
   );
 }
 export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
@@ -80,7 +86,9 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
             (r.network === 'sui'
               ? !/^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(
                   r.transactionDigest || '',
-                ) || r.amountMist !== String(r.amountJpy * 98000)
+                ) ||
+                r.amountMist !==
+                  (r.pricing?.amountMist ?? String(r.amountJpy * 98000))
               : r.network === 'ethereum'
               ? !/^0x[0-9a-f]{64}$/.test(r.transactionDigest || '') ||
                 r.amountWei !==
@@ -103,12 +111,19 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
         r.cardId,
         r.scannedBalanceJpy,
       );
-      const quote = createDemoQuote(
+      let quote = createDemoQuote(
         String(r.amountJpy),
         available,
         r.network,
         r.recipient,
       );
+      quote = applyMarketQuote(quote, r);
+      if (
+        r.pricing &&
+        (r.pricing.cardId !== r.cardId ||
+          r.pricing.scannedBalanceJpy !== r.scannedBalanceJpy)
+      )
+        throw Error();
       if (
         r.network === 'mizuhiki' &&
         !r.payoutAsset &&
@@ -195,12 +210,13 @@ export function createDemoLedger(
           cardId,
           input.scannedBalanceJpy,
         );
-        const quote = createDemoQuote(
+        let quote = createDemoQuote(
           String(input.quote.amountJpy),
           available,
           input.quote.network,
           input.quote.recipient,
         );
+        quote = applyMarketQuote(quote, input.quote);
         if (!sameQuote(quote, input.quote))
           throw Error('The quote changed. Please review it again.');
         const receipt: DemoReceipt = {

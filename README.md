@@ -60,8 +60,8 @@ enabled. An Android emulator can show the layout, but it cannot read a card.
 
 In Sui mainnet mode, a confirmed refund sends real SUI from the prefunded
 treasury and includes its transaction hash and explorer link. NFC scanning does
-not debit the physical card or prove a merchant charge. The conversion is fixed
-at 0.0001 SUI per yen, less a 2% fee (¥1,100 pays 0.1078 SUI), not market pricing.
+not debit the physical card or prove a merchant charge. The backend fetches SUI/JPY from CoinGecko, deducts a 2% fee and issues an
+authenticated five-minute quote. The contract pays the exact quoted MIST amount.
 The operator backend is for a trusted USB-connected device and binds to loopback.
 Ethereum mainnet payouts are enabled with `ETHEREUM_LIVE_PAYOUTS=true`; Awaji MJPY payouts are enabled with `AWAJI_LIVE_PAYOUTS=true` and require MJPY treasury funding.
 
@@ -80,7 +80,7 @@ Prize forms accept one link. These are the lines behind the World, Sui, and Curv
 ### Sui
 
 - Mainnet gRPC client: [`server/sui/client.mjs`](https://github.com/vm06007/unsui/blob/master/server/sui/client.mjs#L31)
-- Backend submits `unsui::refunds::refund`: [`server/sui/client.mjs`](https://github.com/vm06007/unsui/blob/master/server/sui/client.mjs#L109)
+- Backend submits `unsui::refunds::refund_market`: [`server/sui/client.mjs`](https://github.com/vm06007/unsui/blob/master/server/sui/client.mjs#L109)
 - Contract transfers SUI and freezes the receipt: [`unsui.move`](https://github.com/vm06007/unsui/blob/master/contracts/unsui/sources/unsui.move#L139)
 - `.sui` names resolve through Sui mainnet GraphQL: [`server/server.cjs`](https://github.com/vm06007/unsui/blob/master/server/server.cjs#L80)
 
@@ -92,13 +92,15 @@ Prize forms accept one link. These are the lines behind the World, Sui, and Curv
 
 ## Sui mainnet deployment
 
-- Package: [`0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541`](https://suivision.xyz/package/0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541)
+- Active package (v2): [`0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8`](https://suivision.xyz/package/0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8)
+- Original package/type origin: `0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541`
 - Treasury Ledger: [`0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535`](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535)
 - Publish transaction: [`CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW`](https://suivision.xyz/txblock/CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW)
 - Deployment gas: **0.0275816 SUI**.
-- Source-to-chain verification: **passed** using Sui CLI 1.80.0. Explorer-hosted source verification is not confirmed; SuiVision currently shows bytecode.
-- Treasury funded with **0.5 SUI**: [deposit transaction](https://suivision.xyz/txblock/B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx).
-- Mobile payout integration is enabled locally via `SUI_LIVE_PAYOUTS=true`; the contract retains a fixed conversion policy.
+- Source-to-chain verification: **passed** using Sui CLI 1.80.0. This verifies local source against deployed bytecode; an explorer-hosted verified-source badge is not confirmed.
+- Initial treasury funding of **0.5 SUI**: [deposit transaction](https://suivision.xyz/txblock/B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx).
+- Additional **8 SUI** treasury funding: [deposit transaction](https://suivision.xyz/txblock/ANBK4QDdN5VjyJMsksdwcp49HDsvPKEKzcVV2wadkYQH).
+- Mobile payout integration is enabled locally via `SUI_LIVE_PAYOUTS=true`; live Sui payouts use CoinGecko market quotes.
 
 Full object IDs and reproducibility metadata: [deployment record](contracts/deployments/sui-mainnet.json).
 
@@ -124,3 +126,14 @@ Full object IDs and reproducibility metadata: [deployment record](contracts/depl
 - Contract accepts prefunded ERC-20 payouts, not native MIZU payouts. Fund it with MJPY; keep MIZU in the operator wallet for gas.
 - Backend persists signed transactions before submission through MultiBaas, waits for two confirmations, and verifies token-bound receipts. `/multibaas-feed` provides indexed events.
 - [Deployment metadata](contracts/deployments/awaji-mjpy.json). Treasury currently awaits MJPY funding.
+
+### Sui market-rate payouts
+
+Sui refunds use a CoinGecko SUI/JPY quote with a 2% service fee. The backend authenticates a five-minute quote bound to the card, observed balance, recipient and exact MIST amount. Move trusts the authorized operator's quote, enforces expiry and replay protection, and records the exact payout. This is backend pricing, not an on-chain price oracle. Stale/unavailable prices fail closed.
+
+- [Upgraded Move package](https://suivision.xyz/package/0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8)
+- [Upgrade transaction](https://suivision.xyz/txblock/DGsF4hDFBkfHrLirHrc9d7L4frxGbsXaKWchwRYFfULr)
+- [Market policy](https://suivision.xyz/object/0xa0b187430f713383cb6b5b112024732aa3c4cbef962c0402e73bb34ad95d0a42)
+- [Existing treasury and refund history](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535) are preserved.
+
+The legacy Ledger pause flag stays **true** to block old fixed-rate calls. Market payouts use the separate MarketPolicy pause flag; administer it with `pause_market`. Keep the legacy pause flag true. Quote amounts are capped at 200 SUI per refund. Fund the treasury for market prices before testing: the previous fixed rate is no longer used for live Sui refunds. Old receipts retain their original amounts.

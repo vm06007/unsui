@@ -87,7 +87,7 @@ in the mobile bundle. Select a separate `LEDGER_FILE` for live receipts, such as
 its `.orders` journal, along with the commitment secret. Never change the secret
 for an existing treasury: it defines each card's on-chain identity.
 
-Run one backend process. Mainnet mode rejects sample cards and non-Sui payouts. Reset is disabled by default. Quotes and same-card readings are checked before authorization.
+Run one backend process. Live mode rejects sample cards and networks that are not enabled. Reset is disabled by default. Quotes and same-card readings are checked before authorization.
 Requests are durably reserved before submission. An uncertain transaction result
 must be retried with the same request; another request for that card is blocked.
 Retries recover the immutable on-chain receipt and validate its hash, amount,
@@ -95,8 +95,9 @@ recipient and request before recording confirmation. No successful receipt is
 shown from submission alone. On-chain card totals and request IDs also prevent
 replays. The 0.05 SUI gas budget is a maximum, not a fixed charge.
 
-The contract pays 98,000 MIST per yen after its 2% fee. These are fixed contract
-rates, not a price feed. The initial treasury deposit is 0.5 SUI. Funds are real;
+The upgraded contract pays the exact backend-quoted MIST amount using CoinGecko
+SUI/JPY after a 2% fee. Quotes expire after five minutes; legacy fixed-rate calls
+are paused. The initial treasury deposit was 0.5 SUI; fund for current market rates. Funds are real;
 card readings remain operator attestations, not evidence of a Suica debit.
 `WORLD_ALLOW_TEST_BYPASS` is still a separate local test option and retains a
 `bypassed` audit label; it does not constitute World ID verification.
@@ -112,3 +113,5 @@ Mobile success and history show the transaction hash and Etherscan link. Local r
 ## MultiBaas event feed
 
 `GET /multibaas-feed` reads Awaji status, linked contract balance, and indexed refund events through the official SDK. Responses are cached for five seconds. Set `MULTIBAAS_DEPLOYMENT_URL`, `MULTIBAAS_API_KEY`, and, after deployment, `AWAJI_PAYOUT_CONTRACT`. Until a contract is linked, the endpoint reports `awaiting-contract` instead of inventing transactions. Cloud Wallets are optional; our deployment scripts sign locally.
+
+Sui market quotes: `POST /quotes/sui` accepts `cardId`, `scannedBalanceJpy`, `amountJpy` and `recipient`. It fetches CoinGecko SUI/JPY with a 30-second cache, rejects prices older than three minutes, and signs a five-minute quote using the existing server-only card commitment secret. Optional `COINGECKO_API_KEY` supplies a CoinGecko Demo API key. The complete quote must accompany `/refunds`. A new request is checked for expiry and treasury funding before its payout reservation is saved. Confirmed on-chain retries remain recoverable after quote expiry.

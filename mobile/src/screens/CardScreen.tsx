@@ -103,11 +103,11 @@ export default function CardScreen({
                 ¥{available.toLocaleString('en-US')}
               </Text>
               <Text style={styles.rate}>
-                ≈{' '}
-                {(available / payout.yenPerAsset).toFixed(
-                  network === 'sui' ? 4 : 6,
-                )}{' '}
-                {payout.asset}
+                {network === 'sui'
+                  ? 'SUI · market rate quoted next'
+                  : `≈ ${(available / payout.yenPerAsset).toFixed(6)} ${
+                      payout.asset
+                    }`}
               </Text>
               <Text
                 accessibilityLabel={`${card.balanceJpy} yen`}

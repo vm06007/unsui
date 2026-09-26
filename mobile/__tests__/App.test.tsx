@@ -1,3 +1,33 @@
+jest.mock('../src/lib/backendLedger', () => ({
+  backendRequest: jest.fn(async (_url, _path, input) => {
+    const { createDemoQuote, marketAmountMist, formatMist } =
+      jest.requireActual('../src/lib/refundQuote');
+    const quote = createDemoQuote(
+      String(input.amountJpy),
+      input.scannedBalanceJpy,
+      'sui',
+      input.recipient,
+    );
+    const amountMist = marketAmountMist(input.amountJpy, '200000000');
+    return {
+      quote: {
+        ...quote,
+        estimatedCrypto: formatMist(amountMist),
+        pricing: {
+          source: 'coingecko',
+          jpyPerSuiMicros: '200000000',
+          priceTimestamp: Math.floor(Date.now() / 1000),
+          issuedAt: Date.now(),
+          expiresAt: Date.now() + 300000,
+          amountMist,
+          cardId: input.cardId,
+          scannedBalanceJpy: input.scannedBalanceJpy,
+          signature: 'a'.repeat(64),
+        },
+      },
+    };
+  }),
+}));
 jest.mock('../src/lib/worldId', () => ({
   verifyRefundHuman: jest.fn().mockResolvedValue(undefined),
 }));

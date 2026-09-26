@@ -1,3 +1,33 @@
+jest.mock('../src/lib/backendLedger', () => ({
+  backendRequest: jest.fn(async (_url, _path, input) => {
+    const { createDemoQuote, marketAmountMist, formatMist } =
+      jest.requireActual('../src/lib/refundQuote');
+    const quote = createDemoQuote(
+      String(input.amountJpy),
+      input.scannedBalanceJpy,
+      'sui',
+      input.recipient,
+    );
+    const amountMist = marketAmountMist(input.amountJpy, '200000000');
+    return {
+      quote: {
+        ...quote,
+        estimatedCrypto: formatMist(amountMist),
+        pricing: {
+          source: 'coingecko',
+          jpyPerSuiMicros: '200000000',
+          priceTimestamp: Math.floor(Date.now() / 1000),
+          issuedAt: Date.now(),
+          expiresAt: Date.now() + 300000,
+          amountMist,
+          cardId: input.cardId,
+          scannedBalanceJpy: input.scannedBalanceJpy,
+          signature: 'a'.repeat(64),
+        },
+      },
+    };
+  }),
+}));
 jest.mock('../src/lib/worldId', () => ({
   verifyRefundHuman: jest.fn().mockResolvedValue(undefined),
 }));
@@ -51,7 +81,7 @@ test('invalid recipient cannot start confirmation', async () => {
 });
 test('shows the fee and payout inline, and closes without recording', async () => {
   await act(async () => input('refund-recipient').props.onChangeText(address));
-  expect(JSON.stringify(view.toJSON())).toContain('0.05635');
+  expect(JSON.stringify(view.toJSON())).toContain('2.8175');
   expect(JSON.stringify(view.toJSON())).toContain('11.5');
   await act(async () => button('Back to card').props.onPress());
   expect(onClose).toHaveBeenCalledTimes(1);

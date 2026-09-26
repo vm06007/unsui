@@ -141,6 +141,62 @@ public fun refund(
     transfer::freeze_object(receipt);
 }
 
+/// Market payouts use a separate pause switch; legacy refund stays paused.
+public struct MarketPolicy has key { id: UID, ledger: ID, paused: bool }
+public fun enable_market(cap: &AdminCap, ledger: &mut Ledger, ctx: &mut TxContext) {
+    assert!(cap.ledger == object::id(ledger), EUnauthorized);
+    ledger.paused = true;
+    transfer::share_object(MarketPolicy { id: object::new(ctx), ledger: object::id(ledger), paused: false });
+}
+public fun pause_market(cap: &AdminCap, policy: &mut MarketPolicy, paused: bool) {
+    assert!(cap.ledger == policy.ledger, EUnauthorized);
+    policy.paused = paused;
+}
+
+public fun refund_market(
+    policy: &MarketPolicy, ledger: &mut Ledger, amount_mist: u64, card: vector<u8>, request: vector<u8>,
+    recipient: address, amount_jpy: u64, observed_jpy: u64,
+    expected_sequence: u64, expires_ms: u64, clock: &Clock, ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == ledger.operator, EUnauthorized);
+    assert!(policy.ledger == object::id(ledger) && !policy.paused && ledger.paused, EPaused);
+    assert!(amount_mist > 0 && amount_mist <= 200000000000, EInvalid);
+    assert!(card.length() == 32 && request.length() == 32 && amount_jpy > 0, EInvalid);
+    // A bounded hackathon treasury policy, not a fiat conversion oracle.
+    assert!(observed_jpy <= 20000 && recipient != @0x0, EInvalid);
+    let now = clock::timestamp_ms(clock);
+    assert!(now <= expires_ms && expires_ms - now <= 300000, EExpired);
+    assert!(!ledger.requests.contains(request), EReplay);
+    if (!ledger.cards.contains(card)) {
+        ledger.cards.add(card, CardState { redeemed_jpy: 0, sequence: 0, head: vector[], latest: @0x0 });
+    };
+    let ledger_id = object::id(ledger);
+    let state = ledger.cards.borrow_mut(card);
+    assert!(expected_sequence == state.sequence, ESequence);
+    assert!(state.redeemed_jpy <= observed_jpy && amount_jpy <= observed_jpy - state.redeemed_jpy, EBalance);
+
+    let data = ReceiptData {
+        domain: b"UNSUI_RECEIPT_V3", ledger: ledger_id,
+        card, request, recipient, amount_jpy, amount_mist, observed_jpy,
+        redeemed_jpy: state.redeemed_jpy + amount_jpy,
+        sequence: state.sequence + 1, previous_receipt: state.latest,
+        previous_hash: state.head, claim_root: claim_root(card, recipient, amount_jpy, observed_jpy),
+        timestamp_ms: now,
+    };
+    let digest = hash::sha2_256(bcs::to_bytes(&data));
+    let receipt = Receipt { id: object::new(ctx), data, hash: digest };
+    let receipt_id = object::id(&receipt);
+    state.redeemed_jpy = data.redeemed_jpy;
+    state.sequence = data.sequence;
+    state.head = digest;
+    state.latest = object::id_address(&receipt);
+    ledger.requests.add(request, receipt_id);
+    let payout = coin::from_balance(ledger.pool.split(amount_mist), ctx);
+    transfer::public_transfer(payout, recipient);
+    event::emit(Refunded { receipt: receipt_id, card, sequence: data.sequence, hash: digest });
+    transfer::freeze_object(receipt);
+}
+
 #[test_only]
 public fun init_for_testing(ctx: &mut TxContext) { init(ctx) }
 
@@ -195,3 +251,57 @@ fun rejects_paused() { exercise(@0xA, 1500, 0, false, 1000, true) }
 
 #[test]
 fun small_payout_keeps_fractional_yen_fee() { exercise(@0xA, 123, 0, false, 1000, false) }
+
+#[test_only]
+fun exercise_market(amount_mist: u64, repeat: bool, legacy: bool, paused: bool, expiry: u64) {
+    use sui::test_scenario as ts;
+    let mut s = ts::begin(@0xA);
+    init(s.ctx());
+    s.next_tx(@0xA);
+    {
+        let cap = s.take_from_sender<AdminCap>();
+        let mut ledger = s.take_shared<Ledger>();
+        deposit(&mut ledger, coin::mint_for_testing<SUI>(10000000000, s.ctx()));
+        enable_market(&cap, &mut ledger, s.ctx());
+        ts::return_to_sender(&s, cap);
+        ts::return_shared(ledger);
+    };
+    s.next_tx(@0xA);
+    {
+        let mut policy = s.take_shared<MarketPolicy>();
+        policy.paused = paused;
+        let mut ledger = s.take_shared<Ledger>();
+        let clock = clock::create_for_testing(s.ctx());
+        let card = hash::sha2_256(b"market-card");
+        let request = hash::sha2_256(b"market-request");
+        if (legacy) refund(&mut ledger, card, request, @0xB, 1112, 1112, 0, expiry, &clock, s.ctx());
+        refund_market(&policy, &mut ledger, amount_mist, card, request, @0xB, 1112, 1112, 0, expiry, &clock, s.ctx());
+        if (repeat) refund_market(&policy, &mut ledger, amount_mist, card, request, @0xB, 1112, 1112, 1, expiry, &clock, s.ctx());
+        assert!(ledger.pool.value() == 10000000000 - amount_mist);
+        assert!(ledger.cards.borrow(card).redeemed_jpy == 1112);
+        clock::destroy_for_testing(clock);
+        ts::return_shared(policy);
+        ts::return_shared(ledger);
+    };
+    s.next_tx(@0xB);
+    {
+        let payout = s.take_from_sender<Coin<SUI>>();
+        assert!(payout.value() == amount_mist);
+        coin::burn_for_testing(payout);
+    };
+    s.end();
+}
+#[test]
+fun market_pays_exact_quote() { exercise_market(5852317286, false, false, false, 1000) }
+#[test, expected_failure(abort_code = EPaused)]
+fun market_disables_legacy_refund() { exercise_market(5852317286, false, true, false, 1000) }
+#[test, expected_failure(abort_code = EReplay)]
+fun market_rejects_replay() { exercise_market(5852317286, true, false, false, 1000) }
+#[test, expected_failure(abort_code = EInvalid)]
+fun market_rejects_zero() { exercise_market(0, false, false, false, 1000) }
+#[test, expected_failure(abort_code = EInvalid)]
+fun market_rejects_excessive_payout() { exercise_market(200000000001, false, false, false, 1000) }
+#[test, expected_failure(abort_code = EPaused)]
+fun market_pause_works() { exercise_market(5852317286, false, false, true, 1000) }
+#[test, expected_failure(abort_code = EExpired)]
+fun market_rejects_long_expiry() { exercise_market(5852317286, false, false, false, 300001) }

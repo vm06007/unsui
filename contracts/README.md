@@ -7,7 +7,7 @@
 
 The operator submits a 32-byte keyed card commitment, unique request commitment, recipient, gross yen amount, observed balance, expected sequence and five-minute expiry. The treasury transfers SUI and creates an immutable receipt atomically. Admin capability holders can pause payouts and rotate the operator. Anyone can deposit SUI. Request IDs prevent replay; card sequences reject stale requests.
 
-The Sui package uses receipt domain `UNSUI_RECEIPT_V2` and pays `gross JPY × 100,000 MIST × 98 / 100`, matching the mobile application's 2% fee. Fractional yen fees are retained in the conversion calculation. The conversion rate is a fixed test policy, not a live exchange rate. The earlier V1 receipt verifier must be updated before integration.
+Market payouts use receipt domain `UNSUI_RECEIPT_V3` and an exact backend-quoted MIST amount, calculated as `floor(gross JPY × 0.98 / JPY-per-SUI × 1,000,000,000)`. The backend authenticates the quote; Move trusts the authorized operator for pricing. Existing `UNSUI_RECEIPT_V2` fixed-rate receipts remain readable, but legacy payouts are paused.
 
 The EVM contract uses `UNSUI_EVM_RECEIPT_V2` and deducts a 2% fee from its immutable gross `weiPerJpy` rate. Ethereum uses 2,000,000,000,000 wei/JPY; The separate `UnSuiMJPY` contract on Awaji uses 1,000,000 atomic MJPY/JPY (6 decimals), with a token-bound `UNSUI_MJPY_RECEIPT_V1` domain. Neither is a market price feed.
 
@@ -20,12 +20,13 @@ forge test --offline --root contracts/evm
 
 ## Sui mainnet deployment
 
-- Package: [`0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541`](https://suivision.xyz/package/0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541)
+- Active package (v2): [`0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8`](https://suivision.xyz/package/0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8)
+- Original package/type origin: `0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541`
 - Treasury Ledger: [`0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535`](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535)
 - Publish transaction: [`CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW`](https://suivision.xyz/txblock/CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW)
 - Deployment gas: **0.0275816 SUI**.
-- Source-to-chain verification: **passed** using Sui CLI 1.80.0. Explorer-hosted source verification is not confirmed; SuiVision currently shows bytecode.
-- Sui treasury funded with 0.5 SUI and enabled locally; see the root README for the deposit transaction. The contract retains a fixed conversion policy.
+- Source-to-chain verification: **passed** using Sui CLI 1.80.0. This verifies local source against deployed bytecode; an explorer-hosted verified-source badge is not confirmed.
+- Sui treasury funded with 0.5 SUI and enabled locally; see the root README for the deposit transaction. Live Sui payouts use CoinGecko market quotes.
 
 Full object IDs and reproducibility metadata: [deployment record](deployments/sui-mainnet.json).
 
@@ -89,3 +90,14 @@ Ethereum treasury initial funding: **0.0045 ETH**, confirmed in [this deposit tr
 - Compiler: Solidity **0.8.30**, Cancun, optimizer enabled with **200 runs**.
 - Constructor: admin and operator `0x20025F78da2b65D2b1cfa7FC411e1dA3F56f3BB3`, token `0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`.
 - [Deployment metadata](deployments/awaji-mjpy.json). Fund the treasury with MJPY on Awaji, not the token contract itself.
+
+### Sui market-rate payouts
+
+Sui refunds use a CoinGecko SUI/JPY quote with a 2% service fee. The backend authenticates a five-minute quote bound to the card, observed balance, recipient and exact MIST amount. Move trusts the authorized operator's quote, enforces expiry and replay protection, and records the exact payout. This is backend pricing, not an on-chain price oracle. Stale/unavailable prices fail closed.
+
+- [Upgraded Move package](https://suivision.xyz/package/0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8)
+- [Upgrade transaction](https://suivision.xyz/txblock/DGsF4hDFBkfHrLirHrc9d7L4frxGbsXaKWchwRYFfULr)
+- [Market policy](https://suivision.xyz/object/0xa0b187430f713383cb6b5b112024732aa3c4cbef962c0402e73bb34ad95d0a42)
+- [Existing treasury and refund history](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535) are preserved.
+
+The legacy Ledger pause flag stays **true** to block old fixed-rate calls. Market payouts use the separate MarketPolicy pause flag; administer it with `pause_market`. Keep the legacy pause flag true. Quote amounts are capped at 200 SUI per refund. Fund the treasury for market prices before testing: the previous fixed rate is no longer used for live Sui refunds. Old receipts retain their original amounts.

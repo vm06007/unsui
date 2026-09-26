@@ -18,6 +18,7 @@ function createServer({
   liveClient = null,
   multibaasFeed = null,
   allowLiveReset = false,
+  marketQuotes = null,
 } = {}) {
   const baseFile = file;
   let round = null,
@@ -36,6 +37,7 @@ function createServer({
       ? createLivePayouts({
           file: roundFile + '.orders',
           networks: liveClient.networks || ['sui'],
+          validate: input => liveClient.preflight?.({ ...input, demoRound: roundId }),
           pay: input => liveClient.pay({ ...input, demoRound: roundId }),
           authorize: input =>
             worldId.allows({
@@ -388,6 +390,15 @@ function createServer({
         }
         return reply(200, { reset: true });
       }
+      if (req.method === 'POST' && req.url === '/quotes/sui') {
+        if (!marketQuotes) return reply(503, { error: 'Market quotes are unavailable.' });
+        let body = '';
+        for await (const chunk of req) {
+          body += chunk;
+          if (Buffer.byteLength(body) > 4096) return reply(413, { error: 'Request too large' });
+        }
+        return reply(200, { quote: await marketQuotes.issue(JSON.parse(body)) });
+      }
       if (req.method === 'POST' && req.url === '/refunds') {
         if (resetBusy)
           return reply(409, {
@@ -512,12 +523,14 @@ if (require.main === module) {
     throw Error('Live development payouts must bind to loopback only');
   const setup = async () => {
     const clients = {};
+    const marketQuotes = suiLive ? require('./market-quotes.cjs').createMarketQuotes({ secret: process.env.CARD_COMMITMENT_SECRET }) : null;
     if (suiLive) {
       const { createSuiPayoutClient } = await import('./sui/client.mjs');
       clients.sui = createSuiPayoutClient({
         deployment: require('../contracts/deployments/sui-mainnet.json'),
         secret: process.env.CARD_COMMITMENT_SECRET,
         binary: process.env.SUI_BINARY,
+        marketQuotes,
       });
     }
     if (ethereumLive) {
@@ -554,6 +567,7 @@ if (require.main === module) {
     const liveClient = live
       ? {
           networks: Object.keys(clients),
+          preflight(input) { return clients[input.quote.network]?.preflight?.(input); },
           pay(input) {
             const client = clients[input.quote.network];
             if (!client)
@@ -565,6 +579,7 @@ if (require.main === module) {
     const { createMultiBaasFeed } = await import('./multibaas.mjs');
     const server = createServer({
       multibaasFeed: createMultiBaasFeed(),
+      marketQuotes,
       file: process.env.LEDGER_FILE,
       liveClient,
       allowLiveReset:

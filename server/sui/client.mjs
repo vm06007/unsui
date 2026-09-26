@@ -21,7 +21,7 @@ const Ledger = bcs.struct('Ledger', {
   requests: Table,
 });
 
-export function createSuiPayoutClient({ deployment, secret, binary }) {
+export function createSuiPayoutClient({ deployment, secret, binary, marketQuotes }) {
   if (
     !secret ||
     secret.length < 32 ||
@@ -33,14 +33,15 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
     network: 'mainnet',
     baseUrl: 'https://fullnode.mainnet.sui.io:443',
   });
-  const { packageId, ledgerId, publisher } = deployment;
+  const { packageId, ledgerId, publisher, marketPolicyId } = deployment;
+  const typePackageId = deployment.originalPackageId || packageId;
 
   async function ledger() {
     const { object } = await client.getObject({
       objectId: ledgerId,
       include: { content: true },
     });
-    if (object.type !== `${packageId}::refunds::Ledger`)
+    if (object.type !== `${typePackageId}::refunds::Ledger`)
       throw Error('Wrong treasury type');
     return Ledger.parse(object.content);
   }
@@ -76,7 +77,7 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
       include: { content: true, previousTransaction: true },
     });
     if (
-      object.type !== `${packageId}::refunds::Receipt` ||
+      object.type !== `${typePackageId}::refunds::Receipt` ||
       object.owner.$kind !== 'Immutable'
     )
       throw Error('Invalid payout receipt');
@@ -89,6 +90,7 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
       hex(d.request) !== hex(request) ||
       d.recipient !== input.quote.recipient.toLowerCase() ||
       Number(d.amount_jpy) !== input.quote.amountJpy ||
+      (input.quote.pricing && d.amount_mist !== input.quote.pricing.amountMist) ||
       Number(d.observed_jpy) !== input.scannedBalanceJpy
     )
       throw Error('Payout receipt does not match this request');
@@ -104,6 +106,7 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
   }
 
   async function pay(input) {
+    if (input.quote.pricing) marketQuotes.verify(input, { allowExpired: true });
     const card = [
         ...cardCommitment(
           input.demoRound ? `${input.demoRound}:${input.cardId}` : input.cardId,
@@ -122,14 +125,15 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
     const l = await ledger();
     const prior = await field(l.requests.id, request, bcs.Address);
     if (prior) return receipt(prior, input, card, request);
-    if (l.operator !== publisher || l.paused)
+    await preflight(input);
+    if (l.operator !== publisher || !l.paused)
       throw Error('Treasury operator mismatch or payouts paused');
     const state = await field(l.cards.id, card, CardState);
     const redeemed = BigInt(state?.redeemed_jpy || 0),
       amount = BigInt(input.quote.amountJpy);
     if (redeemed + amount > BigInt(input.scannedBalanceJpy))
       throw Error('This card balance has already been refunded on chain');
-    if (BigInt(l.pool) < amount * 98000n)
+    if (BigInt(l.pool) < BigInt(input.quote.pricing.amountMist))
       throw Error('Treasury needs more SUI. No payout was submitted.');
     let output;
     try {
@@ -145,16 +149,18 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
           '--module',
           'refunds',
           '--function',
-          'refund',
+          'refund_market',
           '--args',
+          marketPolicyId,
           ledgerId,
+          input.quote.pricing.amountMist,
           JSON.stringify(card),
           JSON.stringify(request),
           input.quote.recipient,
           String(input.quote.amountJpy),
           String(input.scannedBalanceJpy),
           String(state?.sequence || 0),
-          String(Date.now() + 120000),
+          String(input.quote.pricing.expiresAt),
           '0x6',
           '--sender',
           publisher,
@@ -174,7 +180,7 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
       throw Error('Sui rejected the payout. Retry to check its status.');
     await client.waitForTransaction({ digest: result.digest });
     const id = result.objectChanges?.find(
-      x => x.objectType === `${packageId}::refunds::Receipt`,
+      x => x.objectType === `${typePackageId}::refunds::Receipt`,
     )?.objectId;
     if (!id)
       throw Error(
@@ -182,5 +188,17 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
       );
     return receipt(id, input, card, request);
   }
-  return { pay, ledger };
+  async function preflight(input) {
+    if (!marketPolicyId || !marketQuotes) throw Error('SUI market payouts are not configured.');
+    marketQuotes.verify(input);
+    const l = await ledger();
+    const { object } = await client.getObject({ objectId: marketPolicyId, include: { content: true } });
+    const Policy = bcs.struct('MarketPolicy', { id: bcs.Address, ledger: bcs.Address, paused: bcs.bool() });
+    const policy = Policy.parse(object.content);
+    if (object.type !== `${deployment.marketTypePackageId || packageId}::refunds::MarketPolicy` || policy.ledger !== ledgerId || policy.paused || !l.paused || l.operator !== publisher)
+      throw Error('Market payouts are paused or misconfigured.');
+    if (BigInt(l.pool) < BigInt(input.quote.pricing.amountMist))
+      throw Error('Treasury needs more SUI. No payout was submitted.');
+  }
+  return { pay, ledger, preflight };
 }
