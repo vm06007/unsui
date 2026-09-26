@@ -55,6 +55,9 @@ export default function RecipientEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const epoch = useRef(0);
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const running = useRef(false);
   const abort = useRef<AbortController | null>(null);
   const evm = isEvmNetwork(network);
@@ -63,6 +66,7 @@ export default function RecipientEditor({
     value.connection &&
     value.connection.chainId !== WALLET_CHAINS[network];
   const invalidate = useCallback(() => {
+    clearTimeout(lookupTimer.current);
     epoch.current++;
     abort.current?.abort();
     if (running.current) cancelDeviceWallet().catch(() => {});
@@ -78,6 +82,7 @@ export default function RecipientEditor({
     };
   }, [invalidate]);
   const cancel = () => {
+    clearTimeout(lookupTimer.current);
     epoch.current++;
     abort.current?.abort();
     cancelDeviceWallet().catch(() => {});
@@ -106,8 +111,8 @@ export default function RecipientEditor({
         if (current === epoch.current)
           onChange({
             input: result.name,
-            address: '',
-            blocked: true,
+            address: result.address,
+            blocked: false,
             resolved: result,
           });
       } else if (isEvmNetwork(network)) {
@@ -148,7 +153,13 @@ export default function RecipientEditor({
     }
   };
   const edit = (text: string) => {
+    clearTimeout(lookupTimer.current);
     setError('');
+    if (network === 'sui' && text.trim().toLowerCase().endsWith('.sui')) {
+      lookupTimer.current = setTimeout(() => {
+        run('resolve', text);
+      }, 500);
+    }
     onChange(
       network === 'sui' && !text.trim().startsWith('0x')
         ? { input: text, address: '', blocked: true }
@@ -159,7 +170,7 @@ export default function RecipientEditor({
     <View style={styles.group}>
       <Text style={styles.label}>
         {network === 'sui'
-          ? 'Sui wallet address or .sui name'
+          ? 'Send to'
           : `${PAYOUT_NETWORKS[network].name} wallet address`}
       </Text>
       <TextInput
@@ -177,53 +188,26 @@ export default function RecipientEditor({
       />
       {network === 'sui' ? (
         <>
-          <Text style={styles.note}>
-            Enter a .sui name or wallet address. Review the resolved address
-            before continuing.
-          </Text>
-          <View style={styles.actions}>
-            <Action
-              label="Resolve .sui name"
-              disabled={
-                disabled ||
-                busy ||
-                !value.input.trim().toLowerCase().endsWith('.sui')
-              }
-              onPress={() => run('resolve')}
-            />
-            <Action
-              label="Use example name"
-              disabled={busy || disabled}
-              onPress={() => run('resolve', randomDemoName())}
-            />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Use developer address"
+            disabled={busy || disabled}
+            onPress={() => {
+              clearTimeout(lookupTimer.current);
+              run('resolve', randomDemoName());
+            }}
+            style={styles.prefill}
+          >
+            <Text style={styles.prefillText}>Use developer address</Text>
+          </Pressable>
           {value.resolved && (
-            <View style={styles.panel}>
-              <Text style={styles.label}>
-                {value.resolved.name} · Sui mainnet
-              </Text>
-              <Text selectable style={styles.note}>
-                {value.resolved.address}
-              </Text>
-              {value.blocked ? (
-                <Action
-                  label="Use resolved address"
-                  disabled={disabled}
-                  onPress={() =>
-                    onChange({
-                      ...value,
-                      address: value.resolved!.address,
-                      blocked: false,
-                    })
-                  }
-                />
-              ) : (
-                <Text style={styles.note}>
-                  Resolved address selected. This does not verify wallet
-                  ownership.
-                </Text>
-              )}
-            </View>
+            <Text
+              selectable
+              style={styles.note}
+              accessibilityLabel="Resolved recipient address"
+            >
+              {value.resolved.address}
+            </Text>
           )}
         </>
       ) : (
@@ -352,6 +336,12 @@ const styles = StyleSheet.create({
     color: '#173E35',
     backgroundColor: '#FFFFFF',
     fontSize: 14,
+  },
+  prefill: { alignSelf: 'flex-start', paddingVertical: 6 },
+  prefillText: {
+    fontSize: 13,
+    color: '#24856B',
+    textDecorationLine: 'underline',
   },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   panel: { padding: 16, gap: 12, backgroundColor: '#E9EFDD', borderRadius: 12 },

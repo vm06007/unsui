@@ -52,7 +52,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => view?.unmount());
 });
-test('demo name resolves but must be selected before it becomes a recipient', async () => {
+test('developer name resolves directly into the recipient without a second confirmation', async () => {
   const address = `0x${'1'.repeat(64)}`;
   (randomDemoName as jest.Mock).mockReturnValue('kartik.sui');
   (resolveSuiName as jest.Mock).mockResolvedValue({
@@ -61,11 +61,8 @@ test('demo name resolves but must be selected before it becomes a recipient', as
     network: 'mainnet',
   });
   await mount('sui');
-  await act(async () => button('Use example name').props.onPress());
+  await act(async () => button('Use developer address').props.onPress());
   expect(props().value.input).toBe('kartik.sui');
-  expect(props().value.address).toBe('');
-  expect(props().value.blocked).toBe(true);
-  await act(async () => button('Use resolved address').props.onPress());
   expect(props().value.address).toBe(address);
   expect(props().value.blocked).toBe(false);
 });
@@ -80,7 +77,7 @@ test('cancelled lookup cannot fill a recipient when its late response arrives', 
   );
   await mount('sui');
   await act(async () => {
-    button('Use example name').props.onPress();
+    button('Use developer address').props.onPress();
   });
   await act(async () => button('Cancel recipient request').props.onPress());
   await act(async () =>
@@ -123,4 +120,38 @@ test('handles dGen1 mismatch, network switching, optional signature and manual e
   );
   expect(props().value.signed).toBeUndefined();
   expect(props().value.connection).toBeUndefined();
+});
+
+test('typing a name resolves automatically and editing clears its destination', async () => {
+  jest.useFakeTimers();
+  try {
+    const address = `0x${'2'.repeat(64)}`;
+    (resolveSuiName as jest.Mock).mockResolvedValue({
+      name: 'kartik.sui',
+      address,
+      network: 'mainnet',
+    });
+    await mount('sui');
+    await act(async () =>
+      view.root
+        .findByProps({ testID: 'refund-recipient' })
+        .props.onChangeText('kartik.sui'),
+    );
+    expect(props().value.blocked).toBe(true);
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(props().value.address).toBe(address);
+    expect(props().value.blocked).toBe(false);
+    await act(async () =>
+      view.root
+        .findByProps({ testID: 'refund-recipient' })
+        .props.onChangeText('another.sui'),
+    );
+    expect(props().value.address).toBe('');
+    expect(props().value.blocked).toBe(true);
+    await act(async () => view.unmount());
+  } finally {
+    jest.useRealTimers();
+  }
 });

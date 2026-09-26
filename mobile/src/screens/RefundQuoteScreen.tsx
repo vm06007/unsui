@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import {
@@ -55,7 +54,7 @@ export default function RefundQuoteScreen({
   onClose,
   onRecorded,
 }: Props) {
-  const [amount, setAmount] = useState(String(balanceJpy));
+  const amount = String(balanceJpy);
   const [network, setNetwork] = useState<PayoutNetwork>(initialNetwork);
   const [destination, setDestination] =
     useState<Destination>(manualDestination);
@@ -63,7 +62,6 @@ export default function RefundQuoteScreen({
   const recipient = destination.address;
   const [attempted, setAttempted] = useState(false);
   const [networkOpen, setNetworkOpen] = useState(false);
-  const [amountOpen, setAmountOpen] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const [phase, setPhase] = useState<
     'idle' | 'human' | 'confirming' | 'cancelling' | 'saving'
@@ -182,7 +180,7 @@ export default function RefundQuoteScreen({
   };
   const amountIssue = amountError(amount, balanceJpy);
   const recipientIssue = destination.blocked
-    ? 'Resolve and select the name, or reconnect the wallet on the selected network.'
+    ? 'Wait for the name to resolve, or check the recipient address.'
     : recipientError(recipient, network);
   const back = () => {
     if (active.current) {
@@ -335,39 +333,16 @@ export default function RefundQuoteScreen({
             {recipientIssue}
           </Text>
         )}
-        <Pressable
-          disabled={locked}
-          style={styles.fill}
-          accessibilityLabel="Change refund amount"
-          onPress={() => setAmountOpen(!amountOpen)}
-        >
-          <Text style={styles.link}>
-            {amountOpen
-              ? 'Use full balance / edit amount'
-              : 'Change refund amount'}
-          </Text>
-        </Pressable>
-        {amountOpen && (
-          <TextInput
-            testID="refund-amount"
-            accessibilityLabel="Refund amount in yen"
-            value={amount}
-            onChangeText={setAmount}
-            editable={!locked}
-            keyboardType="number-pad"
-            style={styles.input}
-          />
-        )}
         {attempted && amountIssue && (
           <Text accessibilityRole="alert" style={styles.error}>
             {amountIssue}
           </Text>
         )}
-        <Text style={styles.note}>
-          {isSample
-            ? 'Sample card selected. Confirmation uses the sample card without NFC.'
-            : 'Scan this card once more to confirm your refund.'}
-        </Text>
+        {isSample && (
+          <Text style={styles.note}>
+            Sample card selected. Confirmation uses the sample card without NFC.
+          </Text>
+        )}
         {estimate && (
           <Text testID="quote-payout" style={styles.note}>
             Receive ≈ {estimate.estimatedCrypto} {payout.asset} · fee{' '}
@@ -388,7 +363,7 @@ export default function RefundQuoteScreen({
         >
           <Text style={styles.buttonText}>
             {phase === 'saving'
-              ? 'Saving refund…'
+              ? 'Submitting and confirming…'
               : phase === 'cancelling'
               ? 'Closing scanner…'
               : isSample

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Text, TouchableOpacity, View } from 'react-native';
 import type { DemoReceipt } from '../lib/demoLedger';
 import { PAYOUT_NETWORKS } from '../lib/refundQuote';
 import HistoryIcon from './HistoryIcon';
@@ -50,9 +50,11 @@ export default function RefundHistory({
                     style={[styles.itemTitle, refund && styles.refundAmount]}
                   >
                     {refund
-                      ? Number(receipt.estimatedCrypto).toFixed(
-                          receipt.network === 'ethereum' ? 6 : 4,
-                        )
+                      ? receipt.status === 'confirmed'
+                        ? receipt.estimatedCrypto
+                        : Number(receipt.estimatedCrypto).toFixed(
+                            receipt.network === 'ethereum' ? 6 : 4,
+                          )
                       : `−¥${receipt.amountJpy.toLocaleString('en-US')}`}
                   </Text>
                   <Text style={styles.date}>
@@ -79,6 +81,26 @@ export default function RefundHistory({
                       </Text>
                     </>
                   )}
+                  {refund &&
+                    receipt.status === 'confirmed' &&
+                    receipt.transactionDigest && (
+                      <TouchableOpacity
+                        accessibilityRole="link"
+                        accessibilityLabel="View payout transaction"
+                        onPress={() =>
+                          Linking.openURL(
+                            `https://suivision.xyz/txblock/${receipt.transactionDigest}`,
+                          ).catch(() => {})
+                        }
+                      >
+                        <Text style={styles.note}>
+                          Sui mainnet · View transaction ↗
+                        </Text>
+                        <Text selectable style={styles.note}>
+                          {receipt.transactionDigest}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   <Text style={styles.note}>
                     Recorded in your refund history.
                   </Text>

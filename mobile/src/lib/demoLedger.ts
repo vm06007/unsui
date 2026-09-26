@@ -7,7 +7,11 @@ export type DemoReceipt = RefundQuote & {
   scannedBalanceJpy: number;
   remainingDemoJpy: number;
   createdAt: string;
-  status: 'simulated';
+  status: 'simulated' | 'confirmed';
+  transactionDigest?: string;
+  chainReceiptId?: string;
+  chainNetwork?: 'mainnet';
+  amountMist?: string;
   humanCheck?: 'verified' | 'bypassed' | 'not_required';
 };
 type Storage = {
@@ -64,7 +68,13 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
         typeof r.cardId !== 'string' ||
         cardKey(r.cardId) !== r.cardId ||
         !validBalance(r.scannedBalanceJpy) ||
-        r.status !== 'simulated' ||
+        !['simulated', 'confirmed'].includes(r.status) ||
+        (r.status === 'confirmed' &&
+          (r.network !== 'sui' ||
+            r.chainNetwork !== 'mainnet' ||
+            !/^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(r.transactionDigest || '') ||
+            !/^0x[0-9a-f]{64}$/.test(r.chainReceiptId || '') ||
+            r.amountMist !== String(r.amountJpy * 98000))) ||
         typeof r.createdAt !== 'string' ||
         !Number.isFinite(Date.parse(r.createdAt)) ||
         !Object.prototype.hasOwnProperty.call(PAYOUT_NETWORKS, r.network) ||
@@ -97,7 +107,20 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
     );
   }
 }
-export function createDemoLedger(storage: Storage) {
+export type RecordInput = {
+  requestId: string;
+  quote: RefundQuote;
+  cardId: string;
+  scannedBalanceJpy: number;
+  confirmedCardId: string;
+  confirmedBalanceJpy: number;
+  worldVerificationId?: string;
+  humanCheck?: DemoReceipt['humanCheck'];
+};
+export function createDemoLedger(
+  storage: Storage,
+  payout?: (input: RecordInput) => Promise<Partial<DemoReceipt>>,
+) {
   // Serialize read/modify/write operations across all cards and networks.
   let queue: Promise<unknown> = Promise.resolve();
   function serial<T>(work: () => Promise<T>): Promise<T> {
@@ -123,15 +146,7 @@ export function createDemoLedger(storage: Storage) {
           JSON.stringify({ version: 1, receipts: [] }),
         ),
       ),
-    record: (input: {
-      requestId: string;
-      quote: RefundQuote;
-      cardId: string;
-      scannedBalanceJpy: number;
-      confirmedCardId: string;
-      confirmedBalanceJpy: number;
-      humanCheck?: DemoReceipt['humanCheck'];
-    }) =>
+    record: (input: RecordInput) =>
       serial(async () => {
         const cardId = cardKey(input.cardId);
         if (cardKey(input.confirmedCardId) !== cardId)
@@ -174,6 +189,7 @@ export function createDemoLedger(storage: Storage) {
           status: 'simulated',
           ...(input.humanCheck ? { humanCheck: input.humanCheck } : {}),
         };
+        if (payout) Object.assign(receipt, await payout(input));
         try {
           await storage.setItem(
             LEDGER_KEY,

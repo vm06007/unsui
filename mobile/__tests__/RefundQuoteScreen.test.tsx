@@ -43,11 +43,9 @@ afterEach(async () => {
   jest.clearAllMocks();
 });
 
-test('invalid amount and recipient cannot start confirmation', async () => {
-  await act(async () => button('Change refund amount').props.onPress());
-  await act(async () => input('refund-amount').props.onChangeText('1000'));
+test('invalid recipient cannot start confirmation', async () => {
   await act(async () => button('Confirm refund').props.onPress());
-  expect(JSON.stringify(view.toJSON())).toContain('cannot exceed');
+  expect(view.root.findAllByProps({ testID: 'refund-amount' })).toHaveLength(0);
   expect(readCard).not.toHaveBeenCalled();
   expect(demoLedger.record).not.toHaveBeenCalled();
 });

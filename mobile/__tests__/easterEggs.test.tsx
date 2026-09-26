@@ -90,3 +90,38 @@ test('three checkmark taps remount the original confetti', async () => {
   await act(async () => tap());
   expect(view.root.findByType(SuccessConfetti)).not.toBe(original);
 });
+
+test('confirmed payout shows exact amount and opens its mainnet transaction', async () => {
+  const { Linking } = require('react-native');
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+  const digest = 'B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx';
+  const receipt = {
+    ...createDemoQuote('123', 1000, 'sui', `0x${'1'.repeat(64)}`),
+    id: 'GM-000001',
+    requestId: 'confirmed-request',
+    cardId: '0123456789abcdef',
+    scannedBalanceJpy: 1000,
+    remainingDemoJpy: 877,
+    createdAt: '2026-09-26T00:00:00Z',
+    status: 'confirmed' as const,
+    transactionDigest: digest,
+    chainNetwork: 'mainnet' as const,
+    chainReceiptId: `0x${'2'.repeat(64)}`,
+    amountMist: '12054000',
+  };
+  await act(async () => {
+    view = Renderer.create(
+      <DemoReceiptScreen receipt={receipt} onClose={() => {}} />,
+    );
+  });
+  const text = JSON.stringify(view.toJSON());
+  expect(text).toContain('TRANSFER CONFIRMED');
+  expect(text).toContain('0.012054');
+  expect(text).toContain(digest);
+  const link = view.root
+    .findAllByProps({ accessibilityLabel: 'View transaction on SuiVision' })
+    .find(n => typeof n.props.onPress === 'function');
+  expect(link).toBeDefined();
+  await act(async () => link!.props.onPress());
+  expect(open).toHaveBeenCalledWith(`https://suivision.xyz/txblock/${digest}`);
+});

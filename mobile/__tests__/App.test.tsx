@@ -148,9 +148,7 @@ test('opens and closes the refund flow without changing the scanned card', async
       .find(node => typeof node.props.onPress === 'function')!
       .props.onPress();
   await act(async () => press('Preview refund'));
-  expect(JSON.stringify(view.toJSON())).toContain(
-    'Sui wallet address or .sui name',
-  );
+  expect(JSON.stringify(view.toJSON())).toContain('Send to');
   await act(async () => press('Back to card'));
   expect(JSON.stringify(view.toJSON())).toContain('575');
   expect(JSON.stringify(view.toJSON())).toContain('Scan again');
@@ -189,12 +187,12 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
   });
   const recipient = `0x${'1'.repeat(64)}`;
   const receipt = {
-    ...createDemoQuote('575', 1000, 'sui', recipient),
+    ...createDemoQuote('1000', 1000, 'sui', recipient),
     id: 'DEMO-000001',
     requestId: 'request',
     cardId: '0123456789abcdef',
     scannedBalanceJpy: 1000,
-    remainingDemoJpy: 425,
+    remainingDemoJpy: 0,
     createdAt: '2026-09-25T12:00:00.000Z',
     status: 'simulated',
   };
@@ -222,18 +220,14 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
       .find(n => typeof n.props.onChangeText === 'function')!
       .props.onChangeText(value);
   await act(async () => press('Preview refund'));
-  await act(async () => press('Change refund amount'));
   await act(async () => {
-    edit('refund-amount', '575');
     edit('refund-recipient', recipient);
   });
   await act(async () => press('Confirm refund'));
   expect(JSON.stringify(view.toJSON())).toContain('A little goes further.');
   expect(JSON.stringify(view.toJSON())).toContain('DEMO-000001');
   await act(async () => press('Close receipt'));
-  expect(JSON.stringify(view.toJSON())).toContain(
-    'Available for refunds: ¥425',
-  );
+  expect(JSON.stringify(view.toJSON())).toContain('Available for refunds: ¥0');
   expect(
     view.root.findAllByProps({ accessibilityLabel: '1000 yen' }).length,
   ).toBeGreaterThan(0);
@@ -242,7 +236,7 @@ test('records a refund, shows its receipt and reduces only the demo allowance', 
   expect(JSON.stringify(view.toJSON())).toContain('SUI refund');
   await act(async () => press('SUI refund DEMO-000001'));
   expect(JSON.stringify(view.toJSON())).toContain(recipient);
-  expect(JSON.stringify(view.toJSON())).toContain('425');
+  expect(JSON.stringify(view.toJSON())).toContain('Available after');
   await act(async () => press('Open menu'));
   await act(async () => press('Open receipts'));
   await act(async () => press('View DEMO-000001'));

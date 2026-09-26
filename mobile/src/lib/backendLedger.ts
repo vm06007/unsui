@@ -15,7 +15,10 @@ export async function backendRequest(
   body?: unknown,
 ) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(
+    () => controller.abort(),
+    path === '/refunds' ? 110000 : 12000,
+  );
   try {
     const response = await fetch(normalizeBackendUrl(url) + path, {
       method: body === undefined ? 'GET' : 'POST',
@@ -42,7 +45,7 @@ export async function checkBackend(url: string) {
   if (
     result.service !== 'unsui-dev-ledger' ||
     result.version !== 1 ||
-    result.mode !== 'demo'
+    !['demo', 'sui-mainnet'].includes(result.mode)
   )
     throw Error('This is not a compatible UnSui demo ledger.');
   await listBackend(url);

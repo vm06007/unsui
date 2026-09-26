@@ -2,12 +2,11 @@
 
 Shared refund records for the mobile app and dashboard integration. The service
 persists receipts, tracks remaining allowances, prevents duplicate requests, and
-verifies World ID proofs for refunds above ¥1,000. Merchant payments and
-blockchain payouts are not connected yet.
+verifies World ID proofs for refunds above ¥1,000. Sui mainnet payouts use the deployed treasury; merchant payments are not connected.
 
 ## Run
 
-Requires Node 22.11+ and `npm ci` in `../mobile`. No separate server dependencies.
+Requires Node 22.11+ and `npm ci` in `../mobile`. Run `npm ci` in this directory too.
 
 ```sh
 npm start
@@ -28,13 +27,13 @@ security settings; debug Android permits it. A hosted service should use HTTPS.
 
 This is an unauthenticated development service, bound to loopback by default.
 It accepts client-reported card readings, which are not proof of a debit. Do not
-expose it publicly or fund payouts from these requests. Browser origins are
+expose it publicly. Mainnet mode is restricted to loopback and a trusted USB phone. Browser origins are
 restricted to the existing local dashboard ports. Authentication, attestation
 and production storage are a later backend step.
 
 ## API
 
-- `GET /health`: protocol identity and demo mode.
+- `GET /health`: protocol identity and `demo` or `sui-mainnet` mode.
 - `GET /ledger`: versioned receipts for mobile balance/history. Contains card IDs
   and recipients; for the development client only.
 - `POST /refunds`: confirmed card, quote and stable request ID. Revalidates the
@@ -42,8 +41,8 @@ and production storage are a later backend step.
   changing its quote is rejected. Data survives app and backend restarts.
 - `GET /merchant-feed`: merchant-shaped demo purchases for dashboard integration.
   Excludes card IDs and wallet addresses. Includes gross yen purchase, 2% fee,
-  net crypto estimate, chain, reference and demo designation. There is no live
-  processor connection or transaction hash. Configure the dashboard to use this
+  net crypto estimate, chain, reference and demo designation. Confirmed Sui receipts include the transaction hash. There is no live
+  processor connection. Configure the dashboard to use this
   endpoint when its code is added; existing dashboard URLs are not changed here.
 
 `ffffffffffffffff` is the sample card ID. Its shared ¥1,500 allowance is tracked
@@ -77,3 +76,28 @@ Development uses World staging verification. Automated provider responses are te
 The verification page supports a QR code for another phone and a same-device link. After cancellation, completion, or expiry, **Return to UnSui** opens the mobile app. Android must include the `unsui://world/return` intent filter.
 
 For local flow testing only, `WORLD_ALLOW_TEST_BYPASS=true` enables **Skip check for testing**. It is disabled by default and rejected when either Node or World ID uses production. Bypassed requests remain bound and single-use; receipts persist `humanCheck: bypassed`, never a verified claim. Disable this option when demonstrating actual World ID verification.
+
+## Sui mainnet payouts
+
+Set `SUI_LIVE_PAYOUTS=true`, `SUI_BINARY` to the installed Sui CLI, and a stable,
+random `CARD_COMMITMENT_SECRET` of at least 32 characters in the ignored `.env`.
+The CLI signs with the existing operator keystore; no wallet private key belongs
+in the mobile bundle. Select a separate `LEDGER_FILE` for live receipts, such as
+`/absolute/path/to/unsui/server/data/live-ledger.json`. Back up both that file and
+its `.orders` journal, along with the commitment secret. Never change the secret
+for an existing treasury: it defines each card's on-chain identity.
+
+Run one backend process. Mainnet mode rejects sample cards, non-Sui payouts and
+ledger reset. Quotes and same-card readings are checked before authorization.
+Requests are durably reserved before submission. An uncertain transaction result
+must be retried with the same request; another request for that card is blocked.
+Retries recover the immutable on-chain receipt and validate its hash, amount,
+recipient and request before recording confirmation. No successful receipt is
+shown from submission alone. On-chain card totals and request IDs also prevent
+replays. The 0.05 SUI gas budget is a maximum, not a fixed charge.
+
+The contract pays 98,000 MIST per yen after its 2% fee. These are fixed contract
+rates, not a price feed. The initial treasury deposit is 0.5 SUI. Funds are real;
+card readings remain operator attestations, not evidence of a Suica debit.
+`WORLD_ALLOW_TEST_BYPASS` is still a separate local test option and retains a
+`bypassed` audit label; it does not constitute World ID verification.

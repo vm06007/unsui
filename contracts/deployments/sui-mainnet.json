@@ -12,5 +12,7 @@
   "sourceSha256": "969dd9c5c3fe35f28c750e1df9aaa3fad06a5f6b6a4d8a06d549c51acd035aca",
   "sourceVerification": "sui client verify-source succeeded",
   "explorerSourceVerification": "Not confirmed; explorer currently displays bytecode",
-  "treasuryFunded": false
+  "treasuryFunded": true,
+  "initialDepositMist": "500000000",
+  "depositDigest": "B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx"
 }

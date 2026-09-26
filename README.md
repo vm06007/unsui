@@ -8,8 +8,8 @@ submit a refund request. A shared development ledger stores the receipt, tracks
 the remaining allowance, and blocks duplicate requests.
 
 Scanning works offline. Refunds need the local backend. Refunds above ¥1,000
-require a server-verified World ID proof. Merchant charges, contract payouts,
-and the dedicated dashboard are not connected yet.
+require a server-verified World ID proof. Sui mainnet payouts are available through the local operator backend. Merchant
+charges and the dedicated dashboard are not connected yet.
 
 ## Project structure
 
@@ -54,9 +54,12 @@ enabled. An Android emulator can show the layout, but it cannot read a card.
 
 ## Limits
 
-Refunds are development records. No funds are sent, the physical card balance
-does not change, and no transaction hash is created. The conversion rates and
-2% demo fee are local constants, not market quotes.
+In Sui mainnet mode, a confirmed refund sends real SUI from the prefunded
+treasury and includes its transaction hash and explorer link. NFC scanning does
+not debit the physical card or prove a merchant charge. The conversion is fixed
+at 0.0001 SUI per yen, less a 2% fee (¥1,100 pays 0.1078 SUI), not market pricing.
+The operator backend is for a trusted USB-connected device and binds to loopback.
+Ethereum and Mizuhiki payouts are not enabled.
 
 See [mobile setup](mobile/README.md) and [backend setup and API](server/README.md).
 
@@ -67,6 +70,7 @@ See [mobile setup](mobile/README.md) and [backend setup and API](server/README.m
 - Publish transaction: [`CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW`](https://suivision.xyz/txblock/CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW)
 - Deployment gas: **0.0275816 SUI**.
 - Source-to-chain verification: **passed** using Sui CLI 1.80.0. Explorer-hosted source verification is not confirmed; SuiVision currently shows bytecode.
-- Treasury funding and mobile payout integration: **not enabled**. The contract retains a fixed conversion policy; deployment does not turn it into live market pricing.
+- Treasury funded with **0.5 SUI**: [deposit transaction](https://suivision.xyz/txblock/B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx).
+- Mobile payout integration is enabled locally via `SUI_LIVE_PAYOUTS=true`; the contract retains a fixed conversion policy.
 
 Full object IDs and reproducibility metadata: [deployment record](contracts/deployments/sui-mainnet.json).

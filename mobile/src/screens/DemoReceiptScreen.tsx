@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  BackHandler,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { styles } from './DemoReceiptScreen.styles';
 import SuccessConfetti from '../components/SuccessConfetti';
 import { DemoReceipt } from '../lib/demoLedger';
@@ -41,18 +48,26 @@ export default function DemoReceiptScreen({
           >
             <Text style={styles.checkText}>✓</Text>
           </Pressable>
-          <Text style={styles.eyebrow}>REFUND REQUEST RECORDED</Text>
+          <Text style={styles.eyebrow}>
+            {receipt.status === 'confirmed'
+              ? 'TRANSFER CONFIRMED'
+              : 'REFUND REQUEST RECORDED'}
+          </Text>
           <Text accessibilityRole="header" style={styles.title}>
             A little goes further.
           </Text>
           <Text style={styles.amount}>
-            {Number(receipt.estimatedCrypto).toFixed(
-              receipt.network === 'ethereum' ? 6 : 4,
-            )}{' '}
+            {receipt.status === 'confirmed'
+              ? receipt.estimatedCrypto
+              : Number(receipt.estimatedCrypto).toFixed(
+                  receipt.network === 'ethereum' ? 6 : 4,
+                )}{' '}
             {PAYOUT_NETWORKS[receipt.network].asset}
           </Text>
           <Text style={styles.payoutNote}>
-            Estimated payout · after the 2% service fee
+            {receipt.status === 'confirmed'
+              ? 'Sent on Sui mainnet · after the 2% service fee'
+              : 'Estimated payout · after the 2% service fee'}
           </Text>
         </View>
         <View style={styles.reference}>
@@ -61,6 +76,25 @@ export default function DemoReceiptScreen({
             {receipt.id}
           </Text>
         </View>
+        {receipt.status === 'confirmed' && receipt.transactionDigest && (
+          <View style={styles.reference}>
+            <Text style={styles.receiptLabel}>TRANSACTION HASH</Text>
+            <Text selectable style={styles.digest}>
+              {receipt.transactionDigest}
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="View transaction on SuiVision"
+              onPress={() =>
+                Linking.openURL(
+                  `https://suivision.xyz/txblock/${receipt.transactionDigest}`,
+                ).catch(() => {})
+              }
+            >
+              <Text style={styles.label}>View on SuiVision ↗</Text>
+            </Pressable>
+          </View>
+        )}
         <View style={styles.panel}>
           <Row
             label="Human check"

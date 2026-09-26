@@ -1,11 +1,13 @@
 const {createHash}=require('node:crypto');
+const {createLivePayouts}=require('./live-payouts.cjs');
 const {createWorldId}=require('./world-id.cjs');
 const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const {createDemoLedger} = require('./build/demoLedger');
 
-function createServer({file = path.join(__dirname, 'data/ledger.json'), allowReset = process.env.NODE_ENV !== 'production', worldId = createWorldId()} = {}) {
+function createServer({file = path.join(__dirname, 'data/ledger.json'), allowReset = process.env.NODE_ENV !== 'production', worldId = createWorldId(), liveClient = null} = {}) {
+  const livePayout=liveClient?createLivePayouts({file:file+'.orders',pay:liveClient.pay,authorize:input=>worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId})}):undefined;
   const ledger = createDemoLedger({
     async getItem() {
       try {return await fs.readFile(file, 'utf8');}
@@ -18,12 +20,12 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
       try {await handle.writeFile(value); await handle.sync();} finally {await handle.close();}
       await fs.rename(temp, file);
     }
-  });
+  },livePayout);
   return http.createServer(async(req,res)=>{
     res.setHeader('Content-Type','application/json');
     res.setHeader('Cache-Control','no-store');
     const origin = req.headers.origin;
-    // Development-only: no internet-facing deployment or real payouts.
+    // Trusted local operator service: do not expose payout endpoints publicly.
     if(origin && origin !== process.env.WORLD_PUBLIC_BASE_URL && !/^http:\/\/(localhost|127\.0\.0\.1):(3010|3012)$/.test(origin)) {
       res.writeHead(403); res.end(JSON.stringify({error:'Origin not allowed'})); return;
     }
@@ -55,20 +57,20 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
           if(req.url==='/world/public/complete')return reply(200,await worldId.complete(input.verificationId,input.proof));
         }
       }
-      if(req.method==='GET' && req.url==='/health') return reply(200,{service:'unsui-dev-ledger',version:1,mode:'demo'});
+      if(req.method==='GET' && req.url==='/health') return reply(200,{service:'unsui-dev-ledger',version:1,mode:liveClient?'sui-mainnet':'demo'});
       if(req.method==='GET' && req.url==='/ledger') return reply(200,{version:1,receipts:await ledger.list()});
       if(req.method==='GET' && req.url==='/merchant-feed') {
         const records=(await ledger.list()).map(r=>({
           id:r.id,date:r.createdAt,amount:r.amountJpy,card:'Transit card',service:'transit',method:'transit',
-          state:'settled',status:'settled',payout:'Simulated',customer:r.cardId==='ffffffffffffffff'?'Sample card':'Phone scan',
+          state:'settled',status:'settled',payout:r.status==='confirmed'?'Confirmed':'Simulated',customer:r.cardId==='ffffffffffffffff'?'Sample card':'Phone scan',
           returning:false,flagged:false,source:'mobile-ledger',chain:r.network,
           asset:r.network==='ethereum'?'ETH':r.network==='mizuhiki'?'MIZU':'SUI',cryptoAmount:Number(r.estimatedCrypto),
-          feeJpy:r.feeJpy,reference:r.id,digest:null,mode:'demo',receiptId:r.id
+          feeJpy:r.feeJpy,reference:r.id,digest:r.transactionDigest||null,mode:r.status==='confirmed'?'mainnet':'demo',receiptId:r.id
         })).reverse();
         return reply(200,{source:'mobile-ledger',processorConnected:false,feeBps:200,updatedAt:Date.now(),records});
       }
       if(req.method==='POST' && req.url==='/ledger/reset') {
-        if(!allowReset) return reply(403,{error:'Reset is disabled'});
+        if(liveClient || !allowReset) return reply(403,{error:'Reset is disabled'});
         let body='';
         for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>1024)return reply(413,{error:'Request too large'});}
         if(JSON.parse(body).confirm!=='reset-demo-ledger') return reply(400,{error:'Reset confirmation required'});
@@ -85,7 +87,7 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
           return reply(400,{error:'Invalid refund request'});
         const existing=(await ledger.list()).find(receipt=>receipt.requestId===input.requestId);
         const checkStatus=worldId.status(input.worldVerificationId).status;
-        if(!existing && !worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId}))
+        if(!liveClient && !existing && !worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId}))
           return reply(403,{error:'Refunds above ¥1,000 require a completed World ID check.',code:'WORLD_ID_REQUIRED'});
         return reply(200,{receipt:await ledger.record({...input,humanCheck:input.quote.amountJpy<=1000?'not_required':checkStatus==='bypassed'?'bypassed':'verified'})});
       }
@@ -102,7 +104,13 @@ if(require.main===module) {
   try { process.loadEnvFile(path.join(__dirname,'.env')); } catch(error) {if(error.code!=='ENOENT')throw error;}
   const host=process.env.HOST || '127.0.0.1';
   const port=Number(process.env.PORT || 4100);
-  const server=createServer({file:process.env.LEDGER_FILE});
-  server.listen(port,host,()=>console.log(`UnSui demo ledger: http://${host}:${port} (no real payouts)`));
+  const live=process.env.SUI_LIVE_PAYOUTS==='true';
+  if(live && host!=='127.0.0.1')throw Error('Live development payouts must bind to loopback only');
+  const setup=async()=>{
+  let liveClient=null;
+  if(live){const {createSuiPayoutClient}=await import('./sui/client.mjs');liveClient=createSuiPayoutClient({deployment:require('../contracts/deployments/sui-mainnet.json'),secret:process.env.CARD_COMMITMENT_SECRET,binary:process.env.SUI_BINARY});}
+  const server=createServer({file:process.env.LEDGER_FILE,liveClient});
+  server.listen(port,host,()=>console.log(`UnSui ledger: http://${host}:${port} (${live?'SUI MAINNET PAYOUTS':'record only'})`));
   server.on('error',e=>{console.error(e.message);process.exitCode=1;});
+  };setup().catch(e=>{console.error(e.message);process.exitCode=1;});
 }
