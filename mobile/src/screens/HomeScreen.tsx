@@ -49,8 +49,8 @@ export default function HomeScreen({
       if (cleared === false) throw Error('New refund rounds are disabled on this backend.');
       onReset();
       if (Platform.OS === 'android')
-        ToastAndroid.show('New refund round ready. Scan your card again.', ToastAndroid.SHORT);
-      else Alert.alert('UnSui', 'New refund round ready. Scan your card again.');
+        ToastAndroid.show('ETHGlobal 2026', ToastAndroid.SHORT);
+      else Alert.alert('UnSui', 'ETHGlobal 2026');
     } catch (error) {
       const text =
         error instanceof Error
