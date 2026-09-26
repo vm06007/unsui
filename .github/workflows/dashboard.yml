@@ -15,9 +15,11 @@ jobs:
           node-version: 24
       - run: npm ci
         working-directory: server
-      - run: node --test server/test/dashboard-agent.test.mjs
       - run: npm ci
         working-directory: web
+      - run: npm run build
+        working-directory: server
+      - run: node --test server/test/dashboard-agent.test.mjs
       - run: npx tsc --noEmit --incremental false
         working-directory: web
       - run: npm run build

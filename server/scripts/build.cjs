@@ -1,6 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const ts = require('../../mobile/node_modules/typescript');
+const ts = require(require.resolve('typescript', {
+  paths: [path.resolve(__dirname, '../../mobile'), path.resolve(__dirname, '../../web')],
+}));
 // Both platforms execute the same balance, fee and idempotency rules.
 const output = path.resolve(__dirname, '../build');
 fs.mkdirSync(output, { recursive: true });
