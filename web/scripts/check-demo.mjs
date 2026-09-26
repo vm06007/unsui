@@ -1,0 +1,27 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+const source=fs.readFileSync(new URL('../lib/demo-engine.ts',import.meta.url),'utf8');
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const engine=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const a=await engine.issueDemoReceipt('sui',engine.DEMO_ADDRESSES.sui,500);
+assert.equal(a.amount,.05);
+assert.equal(await engine.verifyDemoReceipt(a),true);
+const b=await engine.issueDemoReceipt('sui',engine.DEMO_ADDRESSES.sui,1000,a);
+assert.equal(b.sequence,2);
+assert.equal(await engine.verifyDemoReceipt(b,a),true);
+assert.equal(await engine.verifyDemoReceipt({...b,amountJpy:1001},a),false);
+assert.equal(await engine.verifyDemoReceipt(b),false);
+const eth=await engine.issueDemoReceipt('ethereum',engine.DEMO_ADDRESSES.ethereum,1500);
+assert.equal(eth.amount,.003);
+assert.equal(await engine.verifyDemoReceipt(eth),true);
+await assert.rejects(engine.issueDemoReceipt('sui','invalid',100));
+await assert.rejects(engine.issueDemoReceipt('sui',engine.DEMO_ADDRESSES.sui,-10));
+console.log('PASS: Sui and Ethereum preview amounts, receipt verification, hash-chain link, tamper detection and invalid input.');
+
+const mizu=await engine.issueDemoReceipt('mizuhiki',engine.DEMO_ADDRESSES.mizuhiki,575,eth);
+assert.equal(mizu.amount,.0575);
+assert.equal(await engine.verifyDemoReceipt(mizu,eth),true);
+assert.equal(await engine.verifyDemoReceipt({...mizu,chain:'ethereum'},eth),false);
+await assert.rejects(engine.issueDemoReceipt('mizuhiki',engine.DEMO_ADDRESSES.sui,500));
+console.log('PASS: Awaji MIZU amount, EVM address validation, chain-bound receipt verification.');
