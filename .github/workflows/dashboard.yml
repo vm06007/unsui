@@ -15,7 +15,8 @@ jobs:
           node-version: 24
       - run: npm ci
         working-directory: server
-      - run: npm ci
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
         working-directory: web
       - run: npm run build
         working-directory: server
