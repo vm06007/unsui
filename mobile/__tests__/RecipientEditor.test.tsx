@@ -105,14 +105,14 @@ test('handles dGen1 mismatch, network switching, optional signature and manual e
     signature: 'signature',
   });
   await mount('mizuhiki');
-  await act(async () => button('Connect dGen1 wallet').props.onPress());
-  expect(props().value.blocked).toBe(true);
-  await act(async () => button('Switch dGen1 network').props.onPress());
+  await act(async () => button('Use dGen1 wallet').props.onPress());
+  expect(switchDeviceWallet).toHaveBeenCalledWith('mizuhiki');
   expect(props().value.blocked).toBe(false);
-  await act(async () =>
-    button('Sign destination message (optional)').props.onPress(),
-  );
   expect(props().value.signed).toBeDefined();
+  expect(button('Reconnect dGen1 wallet')).toBeUndefined();
+  expect(button('Use manual entry')).toBeUndefined();
+  await act(async () => button('Sign again').props.onPress());
+  expect(signDeviceWallet).toHaveBeenCalledTimes(2);
   await act(async () =>
     view.root
       .findAllByProps({ testID: 'refund-recipient' })
@@ -187,7 +187,7 @@ test.each(['ethereum', 'mizuhiki'] as const)(
   },
 );
 
-test('optional signing failure uses a toast and keeps the connected recipient usable', async () => {
+test('declined automatic signing uses a toast and blocks the wallet recipient until retry', async () => {
   Object.defineProperty(Platform, 'OS', {
     value: 'android',
     configurable: true,
@@ -199,17 +199,17 @@ test('optional signing failure uses a toast and keeps the connected recipient us
     Error('Wallet signing declined.'),
   );
   await mount('ethereum');
-  await act(async () => button('Connect dGen1 wallet').props.onPress());
-  await act(async () =>
-    button('Sign destination message (optional)').props.onPress(),
-  );
+  await act(async () => button('Use dGen1 wallet').props.onPress());
   expect(toast).toHaveBeenCalledWith(
     'Wallet signing declined.',
     ToastAndroid.LONG,
   );
   expect(props().value.address).toBe(address);
-  expect(props().value.blocked).toBe(false);
+  expect(props().value.blocked).toBe(true);
   expect(props().value.signed).toBeUndefined();
+  (signDeviceWallet as jest.Mock).mockResolvedValueOnce({ address, chainId: 1 });
+  await act(async () => button('Sign again').props.onPress());
+  expect(props().value.blocked).toBe(false);
   toast.mockRestore();
 });
 
@@ -232,3 +232,16 @@ test.each<PayoutNetwork>(['ethereum', 'mizuhiki'])(
     expect(props().value.signed).toBeUndefined();
   },
 );
+
+
+test('changing networks with a connected wallet requests the selected chain automatically', async () => {
+  const address = `0x${'1'.repeat(40)}`;
+  (connectDeviceWallet as jest.Mock).mockResolvedValue({ address, chainId: 1 });
+  (switchDeviceWallet as jest.Mock).mockResolvedValue({ address, chainId: 6497 });
+  await mount('ethereum');
+  await act(async () => button('Use dGen1 wallet').props.onPress());
+  await act(async () => view.update(<Harness network="mizuhiki" />));
+  expect(switchDeviceWallet).toHaveBeenCalledWith('mizuhiki');
+  expect(props().value.connection.chainId).toBe(6497);
+  expect(props().value.blocked).toBe(false);
+});

@@ -1,0 +1,243 @@
+@media (min-width: 1450px) {
+    .ops .activity-chart svg {
+        max-height: 245px;
+    }
+}
+@media (max-width: 1250px) {
+    .ops .sidebar {
+        width: 208px;
+        padding: 28px 16px;
+    }
+    .ops .main-shell {
+        margin-left: 208px;
+    }
+    .ops main {
+        padding: 28px 25px;
+    }
+    .ops .topbar {
+        padding: 0 25px;
+    }
+    .ops .metric {
+        padding: 17px;
+    }
+    .ops .metric strong {
+        font-size: 1.625rem;
+    }
+    .ops .bottom-grid {
+        grid-template-columns: 1fr;
+    }
+    .ops .journey {
+        display: block;
+    }
+    .ops .journey h2 {
+        max-width: none;
+    }
+    .ops .journey-steps {
+        margin-top: 22px;
+    }
+    .ops .chart-legend {
+        gap: 12px;
+    }
+    .ops .chart-legend small {
+        display: none;
+    }
+}
+@media (max-width: 980px) {
+    .ops .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .ops .overview-grid,
+    .ops .forecast-grid {
+        grid-template-columns: 1fr;
+    }
+    .ops .buffer-card > strong {
+        font-size: 2.5rem;
+    }
+    .ops .connections-grid {
+        grid-template-columns: 1fr;
+    }
+    .ops .page-heading h1 {
+        font-size: 1.6875rem;
+    }
+    .ops .journey-steps {
+        flex-wrap: wrap;
+    }
+    .ops .flow-arrow {
+        display: none;
+    }
+    .ops .journey-steps > div {
+        min-width: 40%;
+        margin-bottom: 10px;
+    }
+    .ops .heading-actions {
+        flex-direction: column;
+    }
+    .ops .responsibilities {
+        gap: 20px;
+    }
+}
+@media (max-width: 720px) {
+    .ops .sidebar {
+        transform: translateX(-100%);
+        width: 235px;
+    }
+    .ops .sidebar.show {
+        transform: translateX(0);
+    }
+    .ops .mobile-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: #0005;
+        z-index: 20;
+    }
+    .ops .main-shell {
+        margin-left: 0;
+    }
+    .ops .mobile-toggle {
+        display: inline-flex;
+    }
+    .ops .topbar {
+        height: 62px;
+        padding: 0 15px;
+        gap: 8px;
+    }
+    .ops .breadcrumb {
+        margin-right: auto;
+        font-size: 0.625rem;
+        gap: 7px;
+    }
+    .ops .top-actions {
+        gap: 7px;
+    }
+    .ops .connection {
+        font-size: 0;
+        gap: 0;
+    }
+    .ops .avatar {
+        display: none;
+    }
+    .ops main {
+        padding: 25px 16px;
+    }
+    .ops .page-heading {
+        gap: 12px;
+        align-items: flex-start;
+    }
+    .ops .page-heading h1 {
+        font-size: 1.625rem;
+        max-width: 250px;
+    }
+    .ops .heading-actions {
+        gap: 7px;
+    }
+    .ops .primary,
+    .ops .secondary {
+        padding: 9px 10px;
+        font-size: 0.625rem;
+    }
+    .ops .page-heading .eyebrow {
+        font-size: 0.5rem;
+    }
+    .ops .page-heading p:not(.eyebrow) {
+        font-size: 0.6875rem;
+    }
+    .ops .filterbar {
+        gap: 12px;
+    }
+    .ops .source-tabs {
+        width: 100%;
+    }
+    .ops .source-tabs button {
+        flex: 1;
+    }
+    .ops .searchbox {
+        width: 100%;
+        flex: auto;
+    }
+    .ops .date-range {
+        width: 100%;
+    }
+    .ops .date-range input {
+        flex: 1;
+        width: 0;
+    }
+    .ops .metric-grid {
+        gap: 10px;
+    }
+    .ops .metric {
+        padding: 15px;
+    }
+    .ops .metric strong {
+        font-size: 1.5625rem;
+    }
+    .ops .metric > div {
+        font-size: 0.625rem;
+    }
+    .ops .metric i svg {
+        width: 16px;
+    }
+    .ops .metric small {
+        font-size: 0.5rem;
+    }
+    .ops .card {
+        padding: 19px;
+    }
+    .ops .section-head {
+        gap: 10px;
+    }
+    .ops .section-head h2 {
+        font-size: 0.875rem;
+    }
+    .ops .section-head > .subtle {
+        font-size: 0.5625rem;
+    }
+    .ops .chart-legend {
+        font-size: 0.5rem;
+    }
+    .ops .responsibilities {
+        grid-template-columns: 1fr;
+    }
+    .ops .treasury-controls {
+        gap: 12px;
+    }
+    .ops .treasury-controls label {
+        flex: 1;
+    }
+    .ops .treasury-controls select {
+        max-width: 160px;
+    }
+    .ops footer {
+        flex-direction: column;
+        line-height: 1.7;
+    }
+    .ops .order-dialog {
+        padding: 25px 20px;
+    }
+    .ops .order-amount {
+        font-size: 1.5rem;
+        gap: 12px;
+    }
+    .ops .order-amount > span {
+        font-size: 1.0625rem;
+    }
+    .ops .detail-columns {
+        gap: 10px;
+    }
+    .ops .detail-columns section {
+        padding: 12px;
+    }
+    .ops .toast {
+        width: 90%;
+        font-size: 0.6875rem;
+    }
+    .ops .forecast-end strong {
+        font-size: 1.75rem;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ops * {
+        animation: none !important;
+        transition: none !important;
+    }
+}

@@ -1,0 +1,417 @@
+.ops {
+    font-family: 'DM Sans', sans-serif;
+    color: #21382e;
+    background: #f7f8f5;
+    font-synthesis: none;
+    --bg: #f7f8f5;
+    --surface: #fff;
+    --ink: #21382e;
+    --muted: #859086;
+    --line: #e7ebe3;
+    --soft: #f1f4ee;
+    --green: #254c39;
+    --lime: #d1eca2;
+}
+.ops * {
+    box-sizing: border-box;
+}
+.ops {
+    margin: 0;
+}
+.ops button,
+.ops input,
+.ops select {
+    font: inherit;
+}
+.ops button,
+.ops a,
+.ops input,
+.ops select {
+    outline-offset: 4px;
+}
+.ops button,
+.ops a {
+    cursor: pointer;
+}
+.ops button {
+    color: inherit;
+}
+.ops button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+.ops a {
+    color: inherit;
+    text-decoration: none;
+}
+.ops button {
+    border: 0;
+    background: none;
+}
+.ops h1,
+.ops h2,
+.ops h3,
+.ops p {
+    margin: 0;
+}
+.ops h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.4px;
+}
+.ops h3 {
+    font-size: 0.875rem;
+}
+.ops small,
+.ops .subtle {
+    color: var(--muted);
+    font-size: 0.6875rem;
+}
+.ops svg {
+    flex-shrink: 0;
+}
+.ops button {
+    transition: background 0.15s;
+}
+.ops button:hover {
+    filter: brightness(0.96);
+}
+.ops .sidebar {
+    width: 232px;
+    position: fixed;
+    inset: 0 auto 0 0;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 33px 22px;
+    z-index: 30;
+}
+.ops .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.ops .brand img {
+    width: 36px;
+}
+.ops .brand b {
+    font-size: 2.1875rem;
+    letter-spacing: -2px;
+}
+.ops .brand > span {
+    font: 17px serif;
+    color: var(--muted);
+}
+.ops .workspace-tag {
+    margin: 25px 0 35px;
+    font-size: 0.6875rem;
+}
+.ops .workspace-tag small {
+    display: block;
+    font-size: 0.5rem;
+    letter-spacing: 1.8px;
+    margin: 7px 0 0 14px;
+}
+.ops .tiny-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #83a759;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+.ops .nav-label,
+.ops .eyebrow {
+    font-size: 0.5625rem;
+    letter-spacing: 1.7px;
+    color: var(--muted);
+    font-weight: 600;
+}
+.ops .nav-label {
+    margin: 0 10px 15px;
+}
+.ops nav {
+    display: grid;
+    gap: 7px;
+}
+.ops nav button {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 11px;
+    font-size: 0.75rem;
+    padding: 13px 11px;
+    border-radius: 7px;
+    color: var(--muted);
+}
+.ops nav button.active {
+    background: var(--soft);
+    color: var(--ink);
+}
+.ops nav em {
+    margin-left: auto;
+    background: var(--lime);
+    color: #254c39;
+    font-size: 0.5625rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-style: normal;
+}
+.ops .sidebar-bottom {
+    margin-top: auto;
+    padding: 24px 7px;
+}
+.ops .source-icon {
+    color: #709451;
+    margin-bottom: 12px;
+}
+.ops .sidebar-bottom strong {
+    font-size: 0.6875rem;
+}
+.ops .sidebar-bottom p {
+    font-size: 0.6875rem;
+    line-height: 1.7;
+    color: var(--muted);
+    margin: 8px 0;
+}
+.ops .sidebar-bottom button {
+    display: flex;
+    gap: 9px;
+    font-size: 0.625rem;
+    padding: 0;
+}
+.ops .account {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.6875rem;
+}
+.ops .account > span,
+.ops .avatar {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    font-size: 0.6875rem;
+}
+.ops .account small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.5625rem;
+}
+.ops .account > svg {
+    margin-left: auto;
+    color: var(--muted);
+}
+.ops .main-shell {
+    margin-left: 232px;
+}
+.ops .topbar {
+    height: 76px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 38px;
+    background: var(--surface);
+}
+.ops .breadcrumb,
+.ops .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.6875rem;
+    color: var(--muted);
+}
+.ops .breadcrumb b {
+    color: var(--ink);
+    font-weight: 500;
+}
+.ops .connection {
+    font-size: 0.625rem;
+    display: flex;
+    gap: 7px;
+    align-items: center;
+}
+.ops .connection i {
+    width: 6px;
+    height: 6px;
+    background: #b9a06b;
+    border-radius: 50%;
+}
+.ops .connection.connected i {
+    background: #83a759;
+}
+.ops .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: var(--muted);
+}
+.ops .icon-button:hover {
+    background: var(--soft);
+}
+.ops main {
+    padding: 34px 38px;
+    max-width: 1720px;
+    margin: auto;
+}
+.ops .page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 28px;
+}
+.ops .page-heading h1 {
+    font-size: 2rem;
+    letter-spacing: -1.4px;
+    font-weight: 500;
+    margin: 10px 0;
+}
+.ops .title-dot {
+    display: none;
+}
+.ops .page-heading p:not(.eyebrow) {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.7;
+}
+.ops .heading-actions {
+    display: flex;
+    gap: 9px;
+}
+.ops .primary,
+.ops .secondary {
+    padding: 11px 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}
+.ops .primary {
+    background: var(--green);
+    color: #fff;
+}
+.ops .secondary {
+    background: var(--surface);
+    border: 1px solid var(--line);
+}
+.ops .filterbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+.ops .source-tabs {
+    display: flex;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: 4px;
+    border-radius: 7px;
+}
+.ops .source-tabs button {
+    font-size: 0.625rem;
+    padding: 8px 11px;
+    color: var(--muted);
+    border-radius: 4px;
+}
+.ops .source-tabs .selected {
+    background: var(--soft);
+    color: var(--ink);
+}
+.ops .searchbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 190px;
+    color: var(--muted);
+}
+.ops .searchbox input {
+    background: none;
+    border: 0;
+    font-size: 0.6875rem;
+    color: var(--ink);
+    width: 100%;
+    padding: 10px 0;
+}
+.ops .date-range {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.625rem;
+    color: var(--muted);
+}
+.ops input,
+.ops select {
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 0.6875rem;
+    min-width: 0;
+}
+.ops .date-range input {
+    width: 120px;
+}
+.ops .notice {
+    font-size: 0.75rem;
+    background: #fff3dc;
+    color: #8b6828;
+    padding: 14px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+.ops .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+}
+.ops .metric {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 21px;
+}
+.ops .metric > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.6875rem;
+}
+.ops .metric i {
+    color: var(--muted);
+    font-style: normal;
+}
+.ops .metric strong {
+    display: block;
+    font-size: 1.875rem;
+    font-weight: 500;
+    letter-spacing: -1px;
+    margin: 16px 0 10px;
+}
+.ops .metric small {
+    font-size: 0.5625rem;
+    line-height: 1.6;
+    display: block;
+}
+.ops .metric.accent {
+    background: var(--soft);
+}

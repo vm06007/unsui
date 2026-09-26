@@ -58,6 +58,7 @@ export default function RecipientEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const epoch = useRef(0);
+  const automaticSwitch = useRef('');
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -108,6 +109,7 @@ export default function RecipientEditor({
     if (action === 'resolve')
       onChange({ input: name, address: '', blocked: true });
     else onChange({ ...value, signed: undefined, blocked: true });
+    let walletDestination = value;
     try {
       if (action === 'resolve') {
         abort.current = new AbortController();
@@ -127,17 +129,25 @@ export default function RecipientEditor({
           if (current === epoch.current)
             onChange({ ...value, signed, blocked: false });
         } else {
-          const connection =
+          let connection =
             action === 'switch'
               ? await switchDeviceWallet(network)
               : await connectDeviceWallet();
+          if (current !== epoch.current) return;
+          if (connection.chainId !== WALLET_CHAINS[network]) {
+            connection = await switchDeviceWallet(network);
+          }
+          if (current !== epoch.current) return;
+          walletDestination = {
+            input: connection.address,
+            address: connection.address,
+            blocked: true,
+            connection,
+          };
+          onChange(walletDestination);
+          const signed = await signDeviceWallet(network, connection.address);
           if (current === epoch.current)
-            onChange({
-              input: connection.address,
-              address: connection.address,
-              blocked: connection.chainId !== WALLET_CHAINS[network],
-              connection,
-            });
+            onChange({ ...walletDestination, signed, blocked: false });
         }
       }
     } catch (failure) {
@@ -149,9 +159,8 @@ export default function RecipientEditor({
         if (Platform.OS === 'android' && action !== 'resolve') {
           ToastAndroid.show(message, ToastAndroid.LONG);
         } else setError(message);
-        if (action === 'sign') onChange({ ...value, signed: undefined });
-        else if (action === 'switch')
-          onChange({ ...value, signed: undefined, blocked: true });
+        if (action !== 'resolve')
+          onChange({ ...walletDestination, signed: undefined, blocked: true });
       }
     } finally {
       if (current === epoch.current) {
@@ -161,6 +170,14 @@ export default function RecipientEditor({
       }
     }
   };
+  useEffect(() => {
+    if (!mismatch || disabled || running.current) return;
+    const attempt = `${network}:${value.connection?.address}`;
+    if (automaticSwitch.current === attempt) return;
+    automaticSwitch.current = attempt;
+    void run('switch');
+  }, [network, mismatch, disabled, value.connection?.address]);
+
   const edit = (text: string) => {
     clearTimeout(lookupTimer.current);
     if (
@@ -281,22 +298,20 @@ export default function RecipientEditor({
               ? 'Or use your dGen1 wallet address.'
               : 'Enter a full address or resolve any .eth name above.'}
           </Text>
-          <Action
-            label={
-              value.connection
-                ? 'Reconnect dGen1 wallet'
-                : 'Connect dGen1 wallet'
-            }
-            disabled={disabled || busy || !available}
-            onPress={() => run('connect')}
-          />
+          {!value.connection && (
+            <Action
+              label="Use dGen1 wallet"
+              disabled={disabled || busy || !available}
+              onPress={() => run('connect')}
+            />
+          )}
           {value.connection && (
             <View style={styles.panel}>
               <View style={styles.walletRow}>
                 <Text style={styles.label}>
                   dGen1 wallet / chain {value.connection.chainId}
                 </Text>
-                {(mismatch || value.blocked) && (
+                {mismatch && (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Switch dGen1 network"
@@ -322,21 +337,13 @@ export default function RecipientEditor({
                 </Text>
               )}
 
-              {!mismatch && !value.blocked && !value.signed && (
+              {!mismatch && (
                 <Action
-                  label="Sign destination message (optional)"
+                  label="Sign again"
                   disabled={busy || disabled}
                   onPress={() => run('sign')}
                 />
               )}
-              <Action
-                label="Use manual entry"
-                disabled={busy || disabled}
-                onPress={() => {
-                  onChange(manualDestination());
-                  setError('');
-                }}
-              />
             </View>
           )}
         </>

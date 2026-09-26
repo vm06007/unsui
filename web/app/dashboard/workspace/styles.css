@@ -1,0 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import './styles/chrome.css';
+@import './styles/overview.css';
+@import './styles/treasury.css';
+@import './styles/responsive.css';
+@import './styles/session.css';
+@import './styles/explorer.css';
+@import './styles/loaders.css';
+@import './styles/controls.css';

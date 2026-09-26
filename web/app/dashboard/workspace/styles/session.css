@@ -1,0 +1,307 @@
+.ops .login-shell {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    background: radial-gradient(ellipse at 50% 0%, #d7e9ba40, transparent 65%);
+    max-width: none;
+}
+.ops .login-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 42px;
+    width: 100%;
+    max-width: 430px;
+    box-shadow: 0 20px 70px #21382e08;
+}
+.ops .login-card .brand {
+    margin-bottom: 40px;
+}
+.ops .login-card h1 {
+    font-size: 2rem;
+    letter-spacing: -1px;
+    font-weight: 500;
+    margin: 12px 0;
+}
+.ops .login-intro {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.7;
+}
+.ops .login-card form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 28px;
+}
+.ops .login-card label {
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+}
+.ops .login-card input {
+    padding: 13px;
+    font-size: 0.875rem;
+    margin-bottom: 20px;
+    width: 100%;
+    border-radius: 6px;
+}
+.ops .login-card .primary {
+    margin-top: 6px;
+    padding: 14px;
+    font-size: 0.8125rem;
+    justify-content: space-between;
+}
+.ops .login-note {
+    font-size: 0.625rem;
+    line-height: 1.8;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+    margin-top: 28px;
+}
+.ops .login-error {
+    color: #b44d3d;
+    background: #fbeee9;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+.ops .login-footer {
+    font: 12px serif;
+    color: var(--muted);
+    margin-top: 24px;
+}
+@media (max-width: 480px) {
+    .ops .login-card {
+        padding: 30px 25px;
+    }
+}
+.ops .login-or {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin: 24px 0 16px;
+    color: var(--muted);
+    font-size: 0.625rem;
+}
+.ops .login-or span {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+.ops .wallet-login {
+    width: 100%;
+    padding: 13px;
+}
+.ops .wallet-hint {
+    font-size: 0.625rem;
+    color: var(--muted);
+    line-height: 1.8;
+    text-align: center;
+    margin: 12px 0;
+}
+.ops .preferences-dialog {
+    width: 480px;
+    max-width: 94vw;
+    max-height: 88dvh;
+    overflow: auto;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    padding: 24px;
+}
+.ops .preferences-dialog::backdrop {
+    background: #10211788;
+    backdrop-filter: blur(5px);
+}
+.ops .preferences-dialog:has(.expanded-chart) {
+    width: 1100px;
+}
+.ops .expanded-chart {
+    min-height: 300px;
+}
+.ops .expanded-chart .activity-chart svg {
+    max-height: 65vh;
+}
+.ops .settings-search {
+    width: 100%;
+    margin-bottom: 15px;
+}
+.ops .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 7px 0;
+    position: relative;
+}
+.ops .drag-handle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 1;
+    touch-action: none;
+    text-align: left;
+    padding: 8px 0;
+    font-size: 0.75rem;
+    cursor: grab;
+}
+.ops .drag-handle svg {
+    color: var(--muted);
+}
+.ops .setting-row + .secondary {
+    margin-top: 20px;
+}
+.ops .layout-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    margin: 25px 0;
+}
+.ops .header-sticky .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: blur(16px);
+}
+.ops .header-floating .topbar {
+    position: sticky;
+    top: 12px;
+    z-index: 15;
+    margin: 12px 20px 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 30px #0001;
+}
+.ops .sidebar-floating .sidebar {
+    inset: 12px auto 12px 12px;
+    width: 220px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    box-shadow: 0 8px 30px #0001;
+}
+.ops .sidebar-static .sidebar {
+    position: absolute;
+    height: 100dvh;
+    min-height: 680px;
+}
+.ops .sidebar-compact .sidebar {
+    width: 78px;
+    padding: 25px 12px;
+}
+.ops .sidebar-compact .main-shell {
+    margin-left: 78px;
+}
+.ops .sidebar-compact .brand b,
+.ops .sidebar-compact .brand > span,
+.ops .sidebar-compact .workspace-tag,
+.ops .sidebar-compact .nav-label,
+.ops .sidebar-compact .sidebar-bottom,
+.ops .sidebar-compact .account {
+    display: none;
+}
+.ops .sidebar-compact nav {
+    margin-top: 35px;
+}
+.ops .sidebar-compact nav button {
+    font-size: 0;
+    gap: 0;
+    justify-content: center;
+}
+.ops .sidebar-compact nav em {
+    position: absolute;
+    margin-left: 30px;
+    margin-top: -20px;
+}
+.ops .top-actions {
+    flex-wrap: wrap;
+}
+.ops .overview-customize {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.ops .custom-card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+.ops .widget {
+    min-width: 0;
+}
+.ops .widget-wide {
+    grid-column: span 2;
+}
+.ops .widget .metric,
+.ops .widget > .card,
+.ops .widget > .buffer-card {
+    height: 100%;
+    margin: 0;
+}
+.ops .widget .metric strong {
+    font-size: 1.75rem;
+}
+.ops .panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.ops .panel-heading h2 {
+    font-size: 0.875rem;
+}
+.ops .breakdown > strong {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin: 10px 0 25px;
+}
+.ops .breakdown strong small {
+    display: block;
+    font-size: 0.625rem;
+    margin-top: 6px;
+}
+.ops .breakdown-row {
+    margin: 17px 0;
+}
+.ops .breakdown-row > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.625rem;
+    text-transform: capitalize;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+.ops .breakdown-row b {
+    font-weight: 500;
+}
+.ops .breakdown-track {
+    height: 7px;
+    background: var(--soft);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.ops .breakdown-track span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+}
+.ops .expanded-chart .breakdown {
+    max-width: 700px;
+    margin: 30px auto;
+}
+.ops .expanded-chart .breakdown-track {
+    height: 18px;
+}

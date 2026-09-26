@@ -320,7 +320,11 @@ export default function RefundQuoteScreen({
                 style={styles.networkOption}
                 onPress={() => {
                   setNetwork(key);
-                  setDestination(manualDestination());
+                  setDestination(previous =>
+                    key !== 'sui' && previous.connection
+                      ? { ...previous, signed: undefined, blocked: previous.connection.chainId !== (key === 'ethereum' ? 1 : 6497) }
+                      : manualDestination(),
+                  );
                   setRecipientBusy(false);
                   setAttempted(false);
                   setNetworkOpen(false);
