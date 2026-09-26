@@ -12,7 +12,7 @@ import { TransparencySection } from './transparency-section';
 export const metadata: Metadata = {
     title: 'How UnSui works — Payments, liquidity & proof',
     description:
-        'Explore live Sui and Ethereum payouts, MJPY on Awaji, the hosted ledger, and the proposed merchant settlement integration.',
+        'Explore live Sui and Ethereum payouts, MJPY on Awaji, the hosted ledger, and the sandbox merchant settlement integration.',
 };
 
 export default function HowItWorks() {

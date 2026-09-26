@@ -22,12 +22,12 @@ const records = [
     ],
     [
         'Payment status and processor reference',
-        'Proposed merchant backend',
+        'Sandbox merchant backend',
         'Verified purchase entitlement, based on authenticated processor data.',
     ],
     [
         'Yen settlement and conversion execution',
-        'Proposed bank / provider reconciliation',
+        'Sandbox bank / provider reconciliation',
         'What arrived, fees and reversals, and how much crypto was acquired.',
     ],
     [

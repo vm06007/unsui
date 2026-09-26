@@ -11,7 +11,7 @@ export function MerchantSection() {
                     The payment record identifies the money.
                 </h2>
                 <p>
-                    Our proposed SBPS integration uses the identifiers supplied for
+                    Our sandbox SBPS integration uses the identifiers supplied for
                     the contracted service, with a backend that verifies payment
                     results. The browser cannot authorize payouts by reporting
                     “payment successful.”

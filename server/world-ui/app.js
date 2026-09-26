@@ -5,11 +5,16 @@
   const status = document.getElementById('status');
   const link = document.getElementById('verify');
   const bypass = document.getElementById('bypass');
+  const simulator = document.getElementById('simulator');
+  const simulatorNote = document.getElementById('simulator-note');
   const returnApp = document.getElementById('return-app');
   const cancel = document.getElementById('cancel');
   const crossDevice = document.getElementById('cross-device');
   const hideVerification = () => {
     link.hidden = true;
+    simulator.hidden = true;
+    simulator.removeAttribute('href');
+    simulatorNote.hidden = true;
     bypass.hidden = true;
     crossDevice.hidden = true;
     document.getElementById('qr').replaceChildren();
@@ -82,6 +87,13 @@
       margin: 16,
       scalable: true,
     });
+    if (config.environment === 'staging' && credential === 'proof_of_human') {
+      const simulatorUrl = new URL('https://simulator.worldcoin.org/');
+      simulatorUrl.searchParams.set('connect_url', request.connectorURI);
+      simulator.href = simulatorUrl.href;
+      simulator.hidden = false;
+      simulatorNote.hidden = false;
+    }
     crossDevice.hidden = false;
     status.textContent = 'Scan with another phone, or verify on this device.';
     const completion = await request.pollUntilCompletion({ timeout: 300000 });

@@ -72,7 +72,7 @@ Proofs are bound to the card, recipient, amount, scanned balance, network and st
 
 Development uses World staging verification. Automated provider responses are test fixtures; successful real credential verification still requires an end-to-end user test. The browser handoff and official SDK initialization have been checked on dGen1.
 
-The verification page supports a QR code for another phone and a same-device link. After cancellation, completion, or expiry, **Return to UnSui** opens the mobile app. Android must include the `unsui://world/return` intent filter.
+The verification page supports a QR code for another phone and a same-device link. For staging Proof of Human requests, **Simulate scan — World ID staging** opens the [official browser simulator](https://simulator.worldcoin.org/) beneath the QR. Approve its test request, return to the verification page, then return to UnSui. The backend still verifies the returned proof; the button does not bypass verification. This option is hidden for production and Selfie Check. These hosted-page changes require a deployment, not an APK reinstall or USB connection. After cancellation, completion, or expiry, **Return to UnSui** opens the mobile app. Android must include the `unsui://world/return` intent filter.
 
 For local flow testing only, `WORLD_ALLOW_TEST_BYPASS=true` enables **Skip check for testing**. It is disabled by default and rejected when either Node or World ID uses production. Bypassed requests remain bound and single-use; receipts persist `humanCheck: bypassed`, never a verified claim. Disable this option when demonstrating actual World ID verification.
 

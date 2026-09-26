@@ -50,7 +50,7 @@ export function MoneyCycle() {
           <span className="arch-kicker">THE MONEY CYCLE</span>
           <h3>Pay ahead. Settle. Refill. Repeat.</h3>
         </div>
-        <span className="planned-badge">TARGET PAYMENT FLOW</span>
+        <span className="planned-badge">SANDBOX PAYMENT FLOW</span>
       </div>
       <div
         className="cycle-scroll"

@@ -25,8 +25,8 @@ export function ReadinessSection() {
                     </ul>
                 </article>
                 <article>
-                    <span className="planned-badge">PROPOSED</span>
-                    <h3>Connect the merchant rail</h3>
+                    <span className="planned-badge">SANDBOX</span>
+                    <h3>Explore the sandbox merchant rail</h3>
                     <ul>
                         <li>Provider acceptance of this specific use case</li>
                         <li>Contracted merchant ID and supported acceptance channel</li>

@@ -252,7 +252,7 @@ The legacy Ledger pause flag stays **true** to block old fixed-rate calls. Marke
 
 ### Website presentation mode
 
-Select **Present the project** on the homepage for a seven-slide introduction: the problem, experience, payout architecture, dashboard, confirmed transaction and demo handoff. Use Left/Right arrows or the slide dots to navigate, the fullscreen control when supported, and Escape to close. The final slide links directly to the browser demo, dashboard and Android APK.
+Select **Present the project** on the homepage for an eight-slide introduction: the problem, a standalone video meme with looping audio, experience, payout architecture, dashboard, confirmed transaction and demo handoff. Use Left/Right arrows or the slide dots to navigate, the fullscreen control when supported, and Escape to close. The final slide links directly to the browser demo, dashboard and Android APK. A separate **How it works — detailed slides** link opens nine architecture slides covering the five-step refund flow, quote, treasury cycle, sandbox money cycle, interactive buffer model, receipt commitments, merchant references, operations and explorer evidence. A persistent **Back to main slides** control returns to the original deck. The merchant and workspace slides include SB and UnSui dashboard screenshots. Click either screenshot or **Enlarge screenshot** to open a full-screen viewer. Close it with the close button or Escape to return to the same slide.
 
 ### Merchant identity and API reference
 

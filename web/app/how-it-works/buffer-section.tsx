@@ -10,7 +10,7 @@ export function BufferSection() {
                 <p>
                     UnSui prefunds a crypto treasury using operator capital. User
                     payouts reduce it; operators currently replenish it directly.
-                    The proposed merchant integration would replenish it after bank
+                    The sandbox merchant integration would replenish it after bank
                     settlement and conversion. Pending yen is not spendable crypto.
                 </p>
             </div>
@@ -31,7 +31,7 @@ export function BufferSection() {
                     <ShieldCheck />
                     <h3>Stop before empty</h3>
                     <p>
-                        The proposed service queues or pauses new authorizations below
+                        The sandbox service queues or pauses new authorizations below
                         its reserve threshold. The current Move contract aborts if its
                         SUI pool cannot cover a payout; it does not implement this
                         model’s 3 SUI floor or queue.

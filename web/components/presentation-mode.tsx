@@ -14,11 +14,13 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
+import { PresentationDetails, detailChapters, type PresentationScreenshots } from './presentation-details';
 import { transactionLink } from '@/app/how-it-works/deployed-records';
 
-const chapters = [
+const mainChapters = [
   'The idea',
   'The problem',
+  'Suica refunds',
   'The experience',
   'The payout',
   'The workspace',
@@ -31,9 +33,36 @@ export function PresentationMode() {
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
+  const [detailed, setDetailed] = useState(false);
+  const [screenshots] = useState<PresentationScreenshots>({ merchant: '/images/sb-dashboard.jpg', workspace: '/images/unsui-dashboard.jpg' });
+  const chapters = detailed ? detailChapters : mainChapters;
+  function switchDeck(details: boolean) {
+    memeVideo.current?.pause();
+    setDetailed(details);
+    setIndex(details ? 0 : mainChapters.length - 1);
+    setDirection(details ? 1 : -1);
+    setPlaybackError(false);
+  }
   const [direction, setDirection] = useState(1);
   const [fullscreenError, setFullscreenError] = useState('');
+  const memeVideo = useRef<HTMLVideoElement>(null);
+  const [playbackError, setPlaybackError] = useState(false);
+  useEffect(() => {
+    if (!open || detailed || index !== 2) return;
+    const video = memeVideo.current;
+    if (!video) return;
+    video.muted = false;
+    void video.play().catch(() => setPlaybackError(true));
+    return () => video.pause();
+  }, [open, index, detailed]);
+  function advance() {
+    go(index + 1);
+  }
   function go(next: number) {
+    if (next !== index) {
+      memeVideo.current?.pause();
+      setPlaybackError(false);
+    }
     setDirection(next >= index ? 1 : -1);
     setIndex(Math.max(0, Math.min(chapters.length - 1, next)));
   }
@@ -66,25 +95,43 @@ export function PresentationMode() {
       </p>
       <span className="pitch-tag">Built at ETHGlobal Tokyo 2026</span>
     </div>,
-    <div key="problem">
-      <p className="pitch-kicker">THE PROBLEM</p>
-      <h2>
-        The trip ends.
-        <br />
-        <em>The balance stays.</em>
-      </h2>
-      <div className="pitch-problem">
-        <div className="pitch-yen">
-          ¥280<span>A small balance. Still yours.</span>
-        </div>
+    <div className="pitch-problem-slide" key="problem">
+      <div>
+        <p className="pitch-kicker">THE PROBLEM</p>
+        <h2>
+          The trip ends.
+          <br />
+          <em>The balance stays.</em>
+        </h2>
         <div className="pitch-statements">
           <p>A visitor leaves Japan with yen still on a transit card.</p>
-          <p>
-            For someone with no return trip planned, that value can sit unused.
-          </p>
+          <p>For someone with no return trip planned, that value can sit unused.</p>
           <p>We want the last tap to open a next step.</p>
         </div>
       </div>
+      <img
+        className="pitch-problem-meme"
+        src="/images/suica-refunds-meme.png"
+        alt="Two-panel reaction meme: When JR East promises Suica refunds"
+        width="1090"
+        height="1443"
+      />
+    </div>,
+    <div className="pitch-meme-slide" key="suica-refunds">
+      <h2>When you ask JR East for Suica refund</h2>
+      <video
+        ref={memeVideo}
+        className="pitch-meme-video"
+        src="/videos/how-to-think-about-it.mp4"
+        autoPlay
+        loop
+        playsInline
+        controls
+        preload="auto"
+        aria-label="Suica refund meme video"
+      />
+      <p className="pitch-meme-quote">Can somebody get these beggars out of here!</p>
+      {playbackError && <p role="status">Press Play on the video to start the audio.</p>}
     </div>,
     <div key="experience">
       <p className="pitch-kicker">THE EXPERIENCE</p>
@@ -230,6 +277,9 @@ export function PresentationMode() {
           Get Android app <Wallet />
         </a>
       </div>
+      <button className="pitch-details-link" onClick={() => switchDeck(true)}>
+        How it works — detailed slides <ArrowRight size={20} />
+      </button>
       <p className="pitch-note">
         Browser walkthrough uses sample receipts. The Android app performs
         on-chain payouts.
@@ -243,6 +293,7 @@ export function PresentationMode() {
         className="button outline"
         onClick={() => {
           setIndex(0);
+          setDetailed(false);
           setDirection(1);
           setFullscreenError('');
           dialog.current?.showModal();
@@ -260,9 +311,10 @@ export function PresentationMode() {
           close();
         }}
         onKeyDown={(event) => {
+          if ((event.target as HTMLElement).closest('input, textarea, select, [role=slider], video')) return;
           if (event.key === 'ArrowRight' || event.key === 'PageDown') {
             event.preventDefault();
-            go(index + 1);
+            advance();
           }
           if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
             event.preventDefault();
@@ -283,6 +335,7 @@ export function PresentationMode() {
             unsui <small>雲水</small>
           </span>
           <div>
+            {detailed && <button className="pitch-back-to-main" onClick={() => switchDeck(false)}><ArrowLeft size={18} /> Back to main slides</button>}
             <button
               aria-label="Toggle presentation fullscreen"
               onClick={async () => {
@@ -304,13 +357,13 @@ export function PresentationMode() {
             </button>
           </div>
         </header>
-        <div className="pitch-stage">
+        <div className="pitch-stage" key={`stage-${detailed}-${index}`}>
           <section
-            key={index}
-            className={`pitch-slide ${direction < 0 ? 'pitch-backward' : ''}`}
+            key={`${detailed}-${index}`}
+            className={`pitch-slide ${detailed ? 'pitch-detailed' : ''} ${direction < 0 ? 'pitch-backward' : ''}`}
             aria-label={`${index + 1} of ${chapters.length}: ${chapters[index]}`}
           >
-            {slides[index]}
+            {open ? detailed ? <PresentationDetails index={index} screenshots={screenshots} /> : slides[index] : null}
           </section>
         </div>
         <footer className="pitch-controls">
@@ -335,7 +388,7 @@ export function PresentationMode() {
             {index + 1} / {chapters.length} · {chapters[index]}
           </span>
           <button
-            onClick={() => go(index + 1)}
+            onClick={advance}
             disabled={index === chapters.length - 1}
             aria-label="Next slide"
           >
