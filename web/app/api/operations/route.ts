@@ -15,8 +15,15 @@ export async function GET(request: Request) {
       cache: 'no-store', signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) throw Error('Ledger unavailable');
-    const data = await response.json();
-    if (!Array.isArray(data.records)) throw Error('Invalid ledger response');
+    const data: unknown = await response.json();
+    if (
+      typeof data !== 'object' ||
+      data === null ||
+      !('records' in data) ||
+      !Array.isArray(data.records)
+    ) {
+      throw Error('Invalid ledger response');
+    }
     return Response.json({ records: data.records, treasury: null, multibaas: null }, {
       headers: { 'Cache-Control': 'no-store' },
     });
