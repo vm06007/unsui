@@ -5,3 +5,4 @@ node_modules/
 !.env.example
 unsui-extension/
 /extension
+web/tsconfig.tsbuildinfo
