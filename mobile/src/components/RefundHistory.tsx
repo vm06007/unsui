@@ -17,7 +17,13 @@ export default function RefundHistory({
         (['refund', 'service'] as const).map(kind => {
           const key = `${receipt.id}:${kind}`;
           const refund = kind === 'refund';
-          const payout = PAYOUT_NETWORKS[receipt.network];
+          const payout = {
+            ...PAYOUT_NETWORKS[receipt.network],
+            asset:
+              receipt.network === 'mizuhiki' && !receipt.payoutAsset
+                ? 'MIZU'
+                : PAYOUT_NETWORKS[receipt.network].asset,
+          };
           return (
             <View
               key={key}
@@ -92,13 +98,19 @@ export default function RefundHistory({
                             `https://${
                               receipt.network === 'ethereum'
                                 ? 'etherscan.io/tx'
+                                : receipt.network === 'mizuhiki'
+                                ? 'awaji.blockscout.com/tx'
                                 : 'suivision.xyz/txblock'
                             }/${receipt.transactionDigest}`,
                           ).catch(() => {})
                         }
                       >
                         <Text style={styles.note}>
-                          {payout.name} mainnet · View transaction ↗
+                          {payout.name}{' '}
+                          {receipt.network === 'mizuhiki'
+                            ? 'Awaji testnet'
+                            : 'mainnet'}{' '}
+                          · View transaction ↗
                         </Text>
                         <Text selectable style={styles.note}>
                           {receipt.transactionDigest}

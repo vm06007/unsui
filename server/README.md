@@ -108,3 +108,7 @@ Set `ETHEREUM_LIVE_PAYOUTS=true` with `ETHEREUM_RPC_URL`, the existing server-on
 The adapter checks chain ID, operator, rate, fee, card allowance, treasury balance, and gas before signing. Signed transactions are journaled next to the ledger in `ethereum-transactions/` before broadcast. Keep this directory with the ledger: retries reuse the same transaction and verify the contract receipt and event after two confirmations. No automatic replacement or duplicate payout is issued after a timeout. A reverted transaction requires operator review. Maximum transaction gas cost is capped at 0.0001 ETH.
 
 Mobile success and history show the transaction hash and Etherscan link. Local reset begins a new card-allowance round on both chains while retaining transaction journals; it remains explicitly opt-in.
+
+## MultiBaas event feed
+
+`GET /multibaas-feed` reads Awaji status, linked contract balance, and indexed refund events through the official SDK. Responses are cached for five seconds. Set `MULTIBAAS_DEPLOYMENT_URL`, `MULTIBAAS_API_KEY`, and, after deployment, `AWAJI_PAYOUT_CONTRACT`. Until a contract is linked, the endpoint reports `awaiting-contract` instead of inventing transactions. Cloud Wallets are optional; our deployment scripts sign locally.

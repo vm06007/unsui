@@ -1,7 +1,7 @@
 # UnSui payout contracts
 
 - `unsui/`: Sui Move treasury for native SUI payouts.
-- `evm/`: Solidity treasury deployed on Ethereum mainnet; Awaji deployment pending.
+- `evm/`: Solidity treasury deployed on Ethereum mainnet; MJPY treasury deployed on Awaji testnet.
 
 ## Sui accounting
 
@@ -9,7 +9,7 @@ The operator submits a 32-byte keyed card commitment, unique request commitment,
 
 The Sui package uses receipt domain `UNSUI_RECEIPT_V2` and pays `gross JPY × 100,000 MIST × 98 / 100`, matching the mobile application's 2% fee. Fractional yen fees are retained in the conversion calculation. The conversion rate is a fixed test policy, not a live exchange rate. The earlier V1 receipt verifier must be updated before integration.
 
-The EVM contract uses `UNSUI_EVM_RECEIPT_V2` and deducts a 2% fee from its immutable gross `weiPerJpy` rate. Ethereum uses 2,000,000,000,000 wei/JPY; Awaji uses 100,000,000,000,000 atomic MIZU/JPY to match mobile quotes. Neither is a market price feed.
+The EVM contract uses `UNSUI_EVM_RECEIPT_V2` and deducts a 2% fee from its immutable gross `weiPerJpy` rate. Ethereum uses 2,000,000,000,000 wei/JPY; The separate `UnSuiMJPY` contract on Awaji uses 1,000,000 atomic MJPY/JPY (6 decimals), with a token-bound `UNSUI_MJPY_RECEIPT_V1` domain. Neither is a market price feed.
 
 ## Validation
 
@@ -50,7 +50,7 @@ The contracts do not authenticate NFC data, debit transit cards or enforce cross
 
 ## EVM deployment preparation
 
-Ethereum mainnet deployment is recorded in `deployments/ethereum-mainnet.json`. Awaji awaits test MIZU funding. Ethereum payouts are connected through the backend operator. Awaji payouts remain disabled until deployment and integration are complete.
+Ethereum mainnet deployment is recorded in `deployments/ethereum-mainnet.json`. Awaji MJPY deployment is recorded in `deployments/awaji-mjpy.json`. Ethereum payouts are connected through the backend operator. Awaji payouts require MJPY treasury funding.
 Build with `forge build --root contracts/evm`. Run all contract tests before publishing.
 
 Awaji uses the official MultiBaas SDK. Configure the `AWAJI_*` public addresses,

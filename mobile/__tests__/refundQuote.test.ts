@@ -41,13 +41,14 @@ test('requires full-length nonzero chain-specific addresses', () => {
 test.each<[PayoutNetwork, string, string]>([
   ['sui', sui, '0.05635'],
   ['ethereum', evm, '0.001127'],
-  ['mizuhiki', evm, '0.05635'],
+  ['mizuhiki', evm, '563.5'],
 ])(
   'calculates the fee and net payout for %s',
   (network, recipient, expected) => {
     const quote = createDemoQuote('575', 1000, network, ` ${recipient} `);
     expect(quote).toEqual({
       network,
+      ...(network === 'mizuhiki' ? { payoutAsset: 'MJPY' } : {}),
       recipient,
       amountJpy: 575,
       feeJpy: 11.5,

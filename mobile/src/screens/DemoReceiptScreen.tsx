@@ -62,7 +62,9 @@ export default function DemoReceiptScreen({
               : Number(receipt.estimatedCrypto).toFixed(
                   receipt.network === 'ethereum' ? 6 : 4,
                 )}{' '}
-            {PAYOUT_NETWORKS[receipt.network].asset}
+            {receipt.network === 'mizuhiki' && !receipt.payoutAsset
+              ? 'MIZU'
+              : PAYOUT_NETWORKS[receipt.network].asset}
           </Text>
           <Text style={styles.payoutNote}>
             {receipt.status === 'confirmed'
@@ -87,13 +89,19 @@ export default function DemoReceiptScreen({
             <Pressable
               accessibilityRole="link"
               accessibilityLabel={`View transaction on ${
-                receipt.network === 'ethereum' ? 'Etherscan' : 'SuiVision'
+                receipt.network === 'ethereum'
+                  ? 'Etherscan'
+                  : receipt.network === 'mizuhiki'
+                  ? 'Blockscout'
+                  : 'SuiVision'
               }`}
               onPress={() =>
                 Linking.openURL(
                   `https://${
                     receipt.network === 'ethereum'
                       ? 'etherscan.io/tx'
+                      : receipt.network === 'mizuhiki'
+                      ? 'awaji.blockscout.com/tx'
                       : 'suivision.xyz/txblock'
                   }/${receipt.transactionDigest}`,
                 ).catch(() => {})
@@ -101,7 +109,12 @@ export default function DemoReceiptScreen({
             >
               <Text style={styles.label}>
                 View on{' '}
-                {receipt.network === 'ethereum' ? 'Etherscan' : 'SuiVision'} ↗
+                {receipt.network === 'ethereum'
+                  ? 'Etherscan'
+                  : receipt.network === 'mizuhiki'
+                  ? 'Blockscout'
+                  : 'SuiVision'}{' '}
+                ↗
               </Text>
             </Pressable>
           </View>

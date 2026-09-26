@@ -14,17 +14,24 @@ import {
   parseEventLogs,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains';
+import { mizuhikiTestnetAwaji as awaji } from 'viem/chains';
+import { multibaasClient, requireAwaji, sdkResult } from '../multibaas.mjs';
+export const MJPY = '0x78f5f0Ac4EF201618b97638ded959b155c4f4B04';
+const tokenAbi = parseAbi([
+  'function balanceOf(address) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+]);
 
 export const abi = parseAbi([
+  'function token() view returns (address)',
   'function operator() view returns (address)',
   'function paused() view returns (bool)',
-  'function weiPerJpy() view returns (uint256)',
+  'function atomicPerJpy() view returns (uint256)',
   'function FEE_BPS() view returns (uint256)',
   'function cards(bytes32) view returns (uint256 redeemedJpy, uint256 sequence, bytes32 head)',
-  'function getReceipt(bytes32) view returns ((bytes32 card, address recipient, uint256 amountJpy, uint256 amountWei, uint256 observedJpy, uint256 redeemedJpy, uint256 sequence, bytes32 previousHash, uint256 timestamp, bytes32 hash))',
+  'function getReceipt(bytes32) view returns ((bytes32 card, address recipient, uint256 amountJpy, uint256 amountAtomic, uint256 observedJpy, uint256 redeemedJpy, uint256 sequence, bytes32 previousHash, uint256 timestamp, bytes32 hash))',
   'function refund((bytes32 card, bytes32 request, address recipient, uint256 amountJpy, uint256 observedJpy, uint256 expectedSequence, uint256 expiresAt) claim) returns (bytes32)',
-  'event Refunded(bytes32 indexed request, bytes32 indexed card, address indexed recipient, uint256 amountJpy, uint256 amountWei, uint256 sequence, bytes32 receiptHash)',
+  'event Refunded(bytes32 indexed request, bytes32 indexed card, address indexed recipient, uint256 amountJpy, uint256 amountAtomic, uint256 sequence, bytes32 receiptHash)',
 ]);
 const equal = (
   a,
@@ -39,17 +46,18 @@ export function receiptHash(
   return keccak256(
     encodeAbiParameters(
       parseAbiParameters(
-        'bytes32,uint256,address,bytes32,bytes32,address,uint256,uint256,uint256,uint256,uint256,bytes32,uint256',
+        'bytes32,uint256,address,address,bytes32,bytes32,address,uint256,uint256,uint256,uint256,uint256,bytes32,uint256',
       ),
       [
-        keccak256(stringToHex('UNSUI_EVM_RECEIPT_V2')),
-        1n,
+        keccak256(stringToHex('UNSUI_MJPY_RECEIPT_V1')),
+        6497n,
         address,
+        MJPY,
         request,
         r.card,
         r.recipient,
         r.amountJpy,
-        r.amountWei,
+        r.amountAtomic,
         r.observedJpy,
         r.redeemedJpy,
         r.sequence,
@@ -60,7 +68,7 @@ export function receiptHash(
   );
 }
 
-export function createEthereumPayoutClient({
+export function createAwajiPayoutClient({
   deployment,
   secret,
   privateKey,
@@ -68,26 +76,51 @@ export function createEthereumPayoutClient({
   journalDir,
   publicClient,
   walletClient,
+  multiBaas,
 }) {
-  if (deployment.chainId !== 1 || !secret || secret.length < 32 || !journalDir)
-    throw Error('Missing Ethereum mainnet configuration');
+  if (
+    deployment.chainId !== 6497 ||
+    !secret ||
+    secret.length < 32 ||
+    !journalDir
+  )
+    throw Error('Missing Awaji testnet configuration');
   const account = privateKeyToAccount(privateKey);
   if (!equal(account.address, deployment.operator))
-    throw Error('Ethereum operator key mismatch');
+    throw Error('Awaji operator key mismatch');
   const client =
     publicClient ||
     createPublicClient({
-      chain: mainnet,
-      transport: http(rpcUrl, { timeout: 12000, retryCount: 1 }),
+      chain: awaji,
+      transport: http(rpcUrl || awaji.rpcUrls.default.http[0], {
+        timeout: 12000,
+        retryCount: 1,
+      }),
     });
   const wallet =
     walletClient ||
     createWalletClient({
       account,
-      chain: mainnet,
-      transport: http(rpcUrl, { timeout: 12000, retryCount: 0 }),
+      chain: awaji,
+      transport: http(rpcUrl || awaji.rpcUrls.default.http[0], {
+        timeout: 12000,
+        retryCount: 0,
+      }),
     });
+  const api =
+    multiBaas ||
+    multibaasClient(
+      process.env.MULTIBAAS_DEPLOYMENT_URL,
+      process.env.MULTIBAAS_API_KEY,
+    );
   const address = deployment.contract;
+  const treasuryBalance = () =>
+    client.readContract({
+      address: MJPY,
+      abi: tokenAbi,
+      functionName: 'balanceOf',
+      args: [address],
+    });
   const read = (
     functionName,
     args = []
@@ -95,25 +128,33 @@ export function createEthereumPayoutClient({
     client.readContract({ address, abi, functionName, args });
 
   async function check() {
-    if ((await client.getChainId()) !== 1)
-      throw Error('Ethereum RPC is not mainnet');
-    const [operator, paused, rate, fee] = await Promise.all([
+    if ((await client.getChainId()) !== 6497)
+      throw Error('Awaji RPC is not testnet 6497');
+    const [operator, paused, rate, fee, token, decimals] = await Promise.all([
       read('operator'),
       read('paused'),
-      read('weiPerJpy'),
+      read('atomicPerJpy'),
       read('FEE_BPS'),
+      read('token'),
+      client.readContract({
+        address: MJPY,
+        abi: tokenAbi,
+        functionName: 'decimals',
+      }),
     ]);
     if (
       !equal(operator, account.address) ||
       paused ||
-      rate !== 2000000000000n ||
-      fee !== 200n
+      rate !== 1000000n ||
+      fee !== 200n ||
+      !equal(token, MJPY) ||
+      decimals !== 6
     )
-      throw Error('Ethereum treasury configuration mismatch or paused');
+      throw Error('Awaji treasury configuration mismatch or paused');
     return {
       contract: address,
       operator: account.address,
-      treasuryWei: String(await client.getBalance({ address })),
+      treasuryAtomic: String(await treasuryBalance()),
     };
   }
   let queue = Promise.resolve();
@@ -126,11 +167,12 @@ export function createEthereumPayoutClient({
 
   async function execute(input) {
     if (
-      input.quote.network !== 'ethereum' ||
+      input.quote.network !== 'mizuhiki' ||
+      input.quote.payoutAsset !== 'MJPY' ||
       !/^[0-9a-f]{16}$/i.test(input.cardId) ||
       input.cardId.toLowerCase() === 'ffffffffffffffff'
     )
-      throw Error('Ethereum requires a physical card');
+      throw Error('Awaji requires a physical card');
     await check();
     const scoped = value =>
       input.demoRound ? `${input.demoRound}:${value}` : value;
@@ -153,20 +195,20 @@ export function createEthereumPayoutClient({
       if (e.code !== 'ENOENT') throw e;
     }
     if (saved && saved.binding !== binding)
-      throw Error('Ethereum request belongs to another payout');
+      throw Error('Awaji request belongs to another payout');
     const amount = BigInt(input.quote.amountJpy),
-      expectedWei = amount * 1960000000000n;
+      expectedAtomic = amount * 980000n;
     const prior = await read('getReceipt', [request]);
     if (!saved) {
       if (prior.sequence !== 0n)
         throw Error(
-          'Existing Ethereum receipt requires its original transaction journal',
+          'Existing Awaji receipt requires its original transaction journal',
         );
       const [redeemed, sequence] = await read('cards', [card]);
       if (redeemed + amount > BigInt(input.scannedBalanceJpy))
         throw Error('This card balance has already been refunded on chain');
-      if ((await client.getBalance({ address })) < expectedWei)
-        throw Error('Treasury needs more ETH. No payout was submitted.');
+      if ((await treasuryBalance()) < expectedAtomic)
+        throw Error('Treasury needs more MJPY. No payout was submitted.');
       const block = await client.getBlock();
       const claim = {
         card,
@@ -197,12 +239,12 @@ export function createEthereumPayoutClient({
       });
       const maxCost =
         prepared.gas * (prepared.maxFeePerGas ?? prepared.gasPrice);
-      if (maxCost > 100000000000000n)
+      if (maxCost > 20000000000000000n)
         throw Error(
-          'Ethereum gas exceeds the configured 0.0001 ETH limit. Retry later.',
+          'Awaji gas exceeds the configured 0.02 MIZU limit. Retry later.',
         );
       if ((await client.getBalance({ address: account.address })) < maxCost)
-        throw Error('Operator needs ETH for gas. No payout was submitted.');
+        throw Error('Operator needs MIZU for gas. No payout was submitted.');
       const raw = await wallet.signTransaction(prepared);
       saved = { binding, raw, hash: keccak256(raw) };
       await fs.mkdir(journalDir, { recursive: true });
@@ -221,13 +263,14 @@ export function createEthereumPayoutClient({
       tx = await client.getTransactionReceipt({ hash: saved.hash });
     } catch (e) {
       if (e.name !== 'TransactionReceiptNotFoundError')
-        throw Error(
-          'Cannot check Ethereum transaction. Retry the same request.',
-        );
+        throw Error('Cannot check Awaji transaction. Retry the same request.');
     }
     if (!tx) {
       try {
-        await client.sendRawTransaction({ serializedTransaction: saved.raw });
+        await requireAwaji(api);
+        sdkResult(
+          await api.chains.submitSignedTransaction({ signedTx: saved.raw }),
+        );
       } catch {
         /* Already known, or uncertain transport: reconcile the saved hash below. */
       }
@@ -240,7 +283,7 @@ export function createEthereumPayoutClient({
       });
     } catch {
       throw Error(
-        'Ethereum confirmation is pending. Retry the same request to check its transaction.',
+        'Awaji confirmation is pending. Retry the same request to check its transaction.',
       );
     }
     if (
@@ -249,7 +292,7 @@ export function createEthereumPayoutClient({
       !equal(tx.to, address)
     )
       throw Error(
-        'Ethereum payout failed; keep this request reference for review.',
+        'Awaji payout failed; keep this request reference for review.',
       );
     const r = await read('getReceipt', [request]);
     const hash = receiptHash(address, request, r);
@@ -264,7 +307,7 @@ export function createEthereumPayoutClient({
       !equal(r.recipient, input.quote.recipient) ||
       r.amountJpy !== amount ||
       r.observedJpy !== BigInt(input.scannedBalanceJpy) ||
-      r.amountWei !== expectedWei ||
+      r.amountAtomic !== expectedAtomic ||
       !equal(r.hash, hash) ||
       !events.some(
         e =>
@@ -273,18 +316,20 @@ export function createEthereumPayoutClient({
           equal(e.args.receiptHash, hash) &&
           equal(e.args.card, card) &&
           equal(e.args.recipient, input.quote.recipient) &&
-          e.args.amountWei === expectedWei &&
+          e.args.amountAtomic === expectedAtomic &&
           e.args.amountJpy === amount &&
           e.args.sequence === r.sequence,
       )
     )
-      throw Error('Ethereum receipt does not match this payout');
+      throw Error('Awaji receipt does not match this payout');
     return {
       status: 'confirmed',
       transactionDigest: saved.hash,
       chainReceiptId: r.hash,
-      chainNetwork: 'mainnet',
-      amountWei: String(r.amountWei),
+      chainNetwork: 'awaji',
+      tokenAddress: MJPY,
+      payoutAsset: 'MJPY',
+      amountAtomic: String(r.amountAtomic),
     };
   }
   return { pay, check };

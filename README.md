@@ -59,7 +59,7 @@ treasury and includes its transaction hash and explorer link. NFC scanning does
 not debit the physical card or prove a merchant charge. The conversion is fixed
 at 0.0001 SUI per yen, less a 2% fee (¥1,100 pays 0.1078 SUI), not market pricing.
 The operator backend is for a trusted USB-connected device and binds to loopback.
-Ethereum mainnet payouts are enabled with `ETHEREUM_LIVE_PAYOUTS=true`; Mizuhiki payouts are not enabled.
+Ethereum mainnet payouts are enabled with `ETHEREUM_LIVE_PAYOUTS=true`; Awaji MJPY payouts are enabled with `AWAJI_LIVE_PAYOUTS=true` and require MJPY treasury funding.
 
 See [mobile setup](mobile/README.md) and [backend setup and API](server/README.md).
 
@@ -108,4 +108,15 @@ Full object IDs and reproducibility metadata: [deployment record](contracts/depl
 - Treasury funded with **0.0045 ETH**: [deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). Ethereum mobile payouts use the backend operator, wait for two confirmations, and link receipts to Etherscan.
 - Source verified on [Etherscan](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52#code): matching bytecode and ABI (September 26, 2026).
 - Source verified on [Sourcify](https://repo.sourcify.dev/1/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52): **exact match**, creation and runtime bytecode (September 26, 2026).
-- [Deployment metadata](contracts/deployments/ethereum-mainnet.json). Awaji deployment still awaits test MIZU funding.
+- [Deployment metadata](contracts/deployments/ethereum-mainnet.json). Awaji MJPY deployment is recorded below.
+
+## Mizuhiki Awaji MJPY payouts
+
+- Chain: **Awaji testnet (6497)**. Gas: **MIZU**. Payout token: **MJPY**, 6 decimals.
+- Treasury: [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52). This is the same hexadecimal address as Ethereum, on a different chain with different contract code.
+- [Deployment transaction](https://awaji.blockscout.com/tx/0xe9db9ab93df06ce03958b7cf3bcddf69cc8fb56a6f831976fd80615553c11976), deployed and linked through the official MultiBaas SDK; source verified on Blockscout.
+- Token: [`0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`](https://awaji.blockscout.com/address/0x78f5f0Ac4EF201618b97638ded959b155c4f4B04).
+- Gross parity: **¥1 = 1 MJPY**; after the 2% fee, **¥1,112 pays 1,089.76 MJPY**. These are testnet assets.
+- Contract accepts prefunded ERC-20 payouts, not native MIZU payouts. Fund it with MJPY; keep MIZU in the operator wallet for gas.
+- Backend persists signed transactions before submission through MultiBaas, waits for two confirmations, and verifies token-bound receipts. `/multibaas-feed` provides indexed events.
+- [Deployment metadata](contracts/deployments/awaji-mjpy.json). Treasury currently awaits MJPY funding.

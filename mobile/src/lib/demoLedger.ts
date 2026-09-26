@@ -10,7 +10,9 @@ export type DemoReceipt = RefundQuote & {
   status: 'simulated' | 'confirmed';
   transactionDigest?: string;
   chainReceiptId?: string;
-  chainNetwork?: 'mainnet';
+  chainNetwork?: 'mainnet' | 'awaji';
+  amountAtomic?: string;
+  tokenAddress?: string;
   amountMist?: string;
   amountWei?: string;
   humanCheck?: 'verified' | 'bypassed' | 'not_required';
@@ -41,6 +43,7 @@ export function availableDemoBalance(
 function sameQuote(a: RefundQuote, b: RefundQuote) {
   return (
     a.network === b.network &&
+    a.payoutAsset === b.payoutAsset &&
     a.recipient === b.recipient &&
     a.amountJpy === b.amountJpy &&
     a.feeJpy === b.feeJpy &&
@@ -71,7 +74,8 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
         !validBalance(r.scannedBalanceJpy) ||
         !['simulated', 'confirmed'].includes(r.status) ||
         (r.status === 'confirmed' &&
-          (r.chainNetwork !== 'mainnet' ||
+          (r.chainNetwork !==
+            (r.network === 'mizuhiki' ? 'awaji' : 'mainnet') ||
             !/^0x[0-9a-f]{64}$/.test(r.chainReceiptId || '') ||
             (r.network === 'sui'
               ? !/^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(
@@ -81,6 +85,12 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
               ? !/^0x[0-9a-f]{64}$/.test(r.transactionDigest || '') ||
                 r.amountWei !==
                   (BigInt(r.amountJpy) * 1960000000000n).toString()
+              : r.network === 'mizuhiki'
+              ? r.payoutAsset !== 'MJPY' ||
+                !/^0x[0-9a-f]{64}$/.test(r.transactionDigest || '') ||
+                r.amountAtomic !== String(r.amountJpy * 980000) ||
+                r.tokenAddress?.toLowerCase() !==
+                  '0x78f5f0ac4ef201618b97638ded959b155c4f4b04'
               : true))) ||
         typeof r.createdAt !== 'string' ||
         !Number.isFinite(Date.parse(r.createdAt)) ||
@@ -99,6 +109,14 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
         r.network,
         r.recipient,
       );
+      if (
+        r.network === 'mizuhiki' &&
+        !r.payoutAsset &&
+        r.status === 'simulated'
+      ) {
+        delete quote.payoutAsset;
+        quote.estimatedCrypto = String((r.amountJpy * 98) / 100 / 10000);
+      }
       if (
         !sameQuote(quote, r) ||
         r.remainingDemoJpy !== available - r.amountJpy

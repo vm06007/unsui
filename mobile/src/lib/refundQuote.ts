@@ -9,9 +9,9 @@ export const PAYOUT_NETWORKS = {
   },
   mizuhiki: {
     name: 'Mizuhiki',
-    asset: 'MIZU',
-    unitsPerYen: 10000,
-    yenPerAsset: 10000,
+    asset: 'MJPY',
+    unitsPerYen: 100000000,
+    yenPerAsset: 1,
   },
 } as const;
 export type PayoutNetwork = keyof typeof PAYOUT_NETWORKS;
@@ -25,6 +25,7 @@ export type RefundQuote = {
   feeJpy: number;
   netJpy: number;
   estimatedCrypto: string;
+  payoutAsset?: 'MJPY';
 };
 
 export function amountError(value: string, balance: number): string | null {
@@ -75,6 +76,7 @@ export function createDemoQuote(
     .replace(/0+$/, '');
   return {
     network,
+    ...(network === 'mizuhiki' ? { payoutAsset: 'MJPY' as const } : {}),
     recipient: recipientText.trim(),
     amountJpy,
     feeJpy: (amountJpy * DEMO_FEE_BPS) / 10000,

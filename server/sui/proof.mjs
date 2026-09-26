@@ -1,7 +1,7 @@
-import { createHash, createHmac } from "node:crypto";
-import { bcs } from "@mysten/sui/bcs";
+import { createHash, createHmac } from 'node:crypto';
+import { bcs } from '@mysten/sui/bcs';
 
-export const ReceiptData = bcs.struct("ReceiptData", {
+export const ReceiptData = bcs.struct('ReceiptData', {
   domain: bcs.vector(bcs.u8()),
   ledger: bcs.Address,
   card: bcs.vector(bcs.u8()),
@@ -17,38 +17,51 @@ export const ReceiptData = bcs.struct("ReceiptData", {
   claim_root: bcs.vector(bcs.u8()),
   timestamp_ms: bcs.u64(),
 });
-export const Receipt = bcs.struct("Receipt", {
+export const Receipt = bcs.struct('Receipt', {
   id: bcs.Address,
   data: ReceiptData,
   hash: bcs.vector(bcs.u8()),
 });
-export const CardState = bcs.struct("CardState", {
+export const CardState = bcs.struct('CardState', {
   redeemed_jpy: bcs.u64(),
   sequence: bcs.u64(),
   head: bcs.vector(bcs.u8()),
   latest: bcs.Address,
 });
-export const hash = (bytes) => createHash("sha256").update(bytes).digest();
-export const hex = (bytes) => Buffer.from(bytes).toString("hex");
-export const cardCommitment = (idm, secret) =>
-  createHmac("sha256", secret)
-    .update("UNSUI_CARD_V1:")
+export const hash = bytes => createHash('sha256').update(bytes).digest();
+export const hex = bytes => Buffer.from(bytes).toString('hex');
+export const cardCommitment = (
+  idm,
+  secret
+) =>
+  createHmac('sha256', secret)
+    .update('UNSUI_CARD_V1:')
     .update(idm.toLowerCase())
     .digest();
-const leaf = (bytes) =>
+const leaf = bytes =>
   hash(Buffer.concat([Buffer.from([0]), Buffer.from(bytes)]));
-const node = (a, b) => hash(Buffer.concat([Buffer.from([1]), a, b]));
+const node = (
+  a,
+  b
+) => hash(Buffer.concat([Buffer.from([1]), a, b]));
+
 export function claimProofs(data) {
-  const names = ["card", "recipient", "amount_jpy", "observed_jpy"];
+  const names = ['card', 'recipient', 'amount_jpy', 'observed_jpy'];
   const types = [bcs.vector(bcs.u8()), bcs.Address, bcs.u64(), bcs.u64()];
-  const leaves = names.map((name, i) =>
-    leaf(types[i].serialize(data[name]).toBytes())
+  const leaves = names.map((
+    name,
+    i
+  ) =>
+    leaf(types[i].serialize(data[name]).toBytes()),
   );
   const parents = [node(leaves[0], leaves[1]), node(leaves[2], leaves[3])];
   const root = node(...parents);
   return {
     root: hex(root),
-    fields: names.map((name, i) => ({
+    fields: names.map((
+      name,
+      i
+    ) => ({
       name,
       value: data[name],
       leaf: hex(leaves[i]),
@@ -57,7 +70,11 @@ export function claimProofs(data) {
     })),
   };
 }
-export function verifyInclusion(proof, root) {
+
+export function verifyInclusion(
+  proof,
+  root
+) {
   const types = {
     card: bcs.vector(bcs.u8()),
     recipient: bcs.Address,
@@ -71,17 +88,18 @@ export function verifyInclusion(proof, root) {
   let index = proof.index;
   for (const sibling of proof.siblings) {
     if (!/^[a-f0-9]{64}$/.test(sibling)) return false;
-    const other = Buffer.from(sibling, "hex");
+    const other = Buffer.from(sibling, 'hex');
     digest = index & 1 ? node(other, digest) : node(digest, other);
     index >>= 1;
   }
   return hex(digest) === root;
 }
+
 export function verifyReceipt(receipt) {
   const merkle = claimProofs(receipt.data);
   const computedHash = hex(hash(ReceiptData.serialize(receipt.data).toBytes()));
   const valid =
-    Buffer.from(receipt.data.domain).toString() === "UNSUI_RECEIPT_V2" &&
+    Buffer.from(receipt.data.domain).toString() === 'UNSUI_RECEIPT_V2' &&
     computedHash === hex(receipt.hash) &&
     merkle.root === hex(receipt.data.claim_root) &&
     BigInt(receipt.data.amount_mist) ===
