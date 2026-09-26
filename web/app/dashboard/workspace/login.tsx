@@ -41,6 +41,24 @@ export function DemoLogin() {
             setSigningIn(false);
         }
     }
+    async function tryDemo() {
+        setSigningIn(true);
+        setError('');
+        setEmail('vitalik@bitcoin.com');
+        setPassword('ethglobal2026');
+        try {
+            const result = (await authRequest('password', {
+                email: 'vitalik@bitcoin.com',
+                password: 'ethglobal2026',
+            })) as { token: string; user: Admin };
+            setAdmin(saveSession(result));
+            setPassword('');
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Unable to open the demo.');
+        } finally {
+            setSigningIn(false);
+        }
+    }
     if (checking)
         return (
             <WorkspaceLoader
@@ -91,6 +109,14 @@ export function DemoLogin() {
                         {signingIn ? 'Signing in…' : 'Sign in'} <ArrowRight size={16} />
                     </button>
                 </form>
+                <button
+                    className="secondary try-demo"
+                    type="button"
+                    disabled={signingIn}
+                    onClick={tryDemo}
+                >
+                    Try demo <ArrowRight size={16} />
+                </button>
                 <WalletLogin onLogin={setAdmin} />
                 <p className="login-note">
                     UnSui hackathon demo · Demo credentials or an authorized wallet open

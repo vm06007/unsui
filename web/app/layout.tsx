@@ -4,7 +4,7 @@ import './presentation-theme.css';
 import './demo-theme.css';
 import './mobile-layout.css';
 export const metadata: Metadata = {
-  title: 'UnSui — Your journey goes on',
+  title: 'UnSui (雲水) — Your journey goes on',
   description:
     'A new destination for your leftover transit balance. Try UnSui, a Japan transit-card refund experience built on Sui.',
   icons: { icon: '/favicon.svg?v=monk-5' },

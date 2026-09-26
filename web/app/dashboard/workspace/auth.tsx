@@ -16,7 +16,13 @@ export async function authRequest(action: string, body?: object) {
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    const result = await response.json() as { error?: string; token: string; user: Admin; message: string; nonce: string };
+    const text = await response.text();
+    let result: { error?: string; token: string; user: Admin; message: string; nonce: string };
+    try {
+        result = JSON.parse(text);
+    } catch {
+        throw Error('Sign-in service is unavailable.');
+    }
     if (!response.ok) throw Error(result.error || 'Please sign in again.');
     return result;
 }

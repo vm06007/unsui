@@ -65,11 +65,16 @@ body:has(.ops) {
     width: 100%;
     border-radius: 6px;
 }
-.ops .login-card .primary {
+.ops .login-card .primary,
+.ops .try-demo {
     margin-top: 6px;
     padding: 14px;
     font-size: 0.8125rem;
     justify-content: space-between;
+}
+.ops .try-demo {
+    width: 100%;
+    margin-top: 12px;
 }
 .ops .login-note {
     font-size: 0.625rem;
