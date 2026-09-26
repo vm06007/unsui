@@ -27,5 +27,6 @@ jobs:
         working-directory: web
         env:
           VERCEL: '1'
+          NITRO_PRESET: vercel
       - name: Verify Vercel output exists
         run: test -d web/.vercel/output/functions
