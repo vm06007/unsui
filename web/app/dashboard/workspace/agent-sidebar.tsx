@@ -86,7 +86,16 @@ export function AgentSidebar({
           context: { ...context, currentPage: page },
         }),
       });
-      const data = (await res.json()) as {
+      if (res.status === 404)
+        throw Error(
+          'The assistant service is not available yet. No dashboard settings were changed.',
+        );
+      const data = (await res
+        .json()
+        .catch(() => ({
+          error:
+            'The assistant service returned an unreadable response. Please retry.',
+        }))) as {
         error?: string;
         reply: string;
         patch?: unknown;
@@ -106,13 +115,13 @@ export function AgentSidebar({
       }
       setMessages((old) => [...old, { role: 'assistant', content: reply }]);
     } catch (e) {
-      setError(
+      const message =
         e instanceof Error
           ? e.name === 'AbortError'
             ? 'Request stopped. No new settings were applied.'
             : e.message
-          : 'Unable to reach the assistant.',
-      );
+          : 'Unable to reach the assistant.';
+      setMessages((old) => [...old, { role: 'assistant', content: message }]);
       setInput(prompt);
     } finally {
       clearTimeout(timer);
