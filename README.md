@@ -15,22 +15,43 @@ require a server-verified World ID proof. Sui mainnet payouts are available thro
 
 ## Why World ID is part of the payout flow
 
-UnSui sends crypto from a prefunded treasury to the recipient’s wallet. Because
-this moves real value, the normal flow adds a World ID check for refunds above
-¥1,000 to help resist automated abuse. The server verifies the proof and binds
-approval to that specific refund’s card, recipient, amount and network. UnSui
-receives a proof of humanity without collecting identity documents through this
-check. See [World ID’s proof-of-human explanation](https://world.org/world-id).
+UnSui integrates World ID to support a Japan-focused compliance and eligibility
+workflow for crypto payouts. The aim is to check the person and the attributes
+required for a particular service before releasing funds, while requesting only
+the information that service needs.
 
-The intent is to support responsible operation in Japan as part of a broader
-compliance process. World ID alone does **not** establish compliance with Japanese
-law or replace legally required customer identification (KYC), anti-money-laundering
-controls or registration. Which obligations apply depends on the service’s actual
-activities and operating structure; see the [Japan FSA’s FinTech guidance](https://www.fsa.go.jp/en/news/2018/20180717.html)
+The current integration verifies **Proof of Human** for refunds above ¥1,000 and
+binds the approval to the card, recipient, amount and network. This establishes a
+human-check step in the payout flow. The ¥1,000 trigger is our per-request product
+rule, not a Japanese legal threshold.
+
+World ID’s **Proof of Attributes** provides a path to more specific eligibility
+checks. Users can add supported NFC-enabled passports or national IDs to World ID
+and prove attributes such as age or nationality without handing UnSui a passport
+copy. These credential features are described in [World’s credential guide](https://support.world.org/hc/en-us/articles/55499979675667-What-are-World-ID-Credentials-and-how-do-I-use-them-in-World-ID-app)
+and [Proof of Attributes overview](https://world.org/world-id).
+
+Potential extensions to UnSui include:
+
+- **Passport-based eligibility:** request a supported nationality or age proof
+  where an applicable service rule calls for it. A nationality condition could
+  distinguish Japanese and non-Japanese nationals where lawful and appropriate;
+  the current app does not enforce such a restriction.
+- **Visitor or resident eligibility:** add evidence appropriate to the actual
+  residency or visitor-status requirement. Nationality alone does not establish
+  whether someone is a tourist or resident of Japan.
+- **Required customer records:** where names or other identifying details must be
+  recorded, add a dedicated customer-identification flow with appropriate notice,
+  legal basis, access controls and retention. Proof of Human does not supply a
+  name, and UnSui does not currently collect passport details or legal names
+  through World ID.
+
+These are extensions to the existing human check, not features already implemented
+in UnSui. World ID is one component of the compliance design; applicable Japanese
+registration, KYC and AML obligations still depend on the operating model and
+must be met separately. The integration itself is not a certification of legal
+compliance. See the [Japan FSA’s FinTech guidance](https://www.fsa.go.jp/en/news/2018/20180717.html)
 and [crypto-service AML/CFT guidance](https://www.fsa.go.jp/inter/etc/20221207/01.pdf).
-The ¥1,000 trigger is UnSui’s per-request product rule, not a Japanese legal
-threshold or an exemption for smaller payouts. UnSui transfers existing assets;
-this payout flow does not mint a new cryptoasset.
 
 ## Payout contracts and funding
 

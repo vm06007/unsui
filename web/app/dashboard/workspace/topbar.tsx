@@ -68,9 +68,6 @@ export function WorkspaceTopbar({
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
-        <a className="secondary" href="/">
-          Welcome
-        </a>
         <button className="secondary" onClick={onLogout}>
           Sign out
         </button>
