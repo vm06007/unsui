@@ -6,6 +6,10 @@ const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { createDemoLedger } = require('./build/demoLedger');
+const {
+  createOperationsAuth,
+  readAuthBody,
+} = require('./operations-auth.cjs');
 
 function createServer({
   file = path.join(__dirname, 'data/ledger.json'),
@@ -70,6 +74,7 @@ function createServer({
     );
   }
   let ledger = makeLedger();
+  const operationsAuth = createOperationsAuth();
   return http.createServer(async (
     req,
     res
@@ -84,7 +89,7 @@ function createServer({
     if (
       origin &&
       origin !== process.env.WORLD_PUBLIC_BASE_URL &&
-      !/^http:\/\/(localhost|127\.0\.0\.1):(3010|3012)$/.test(origin) &&
+      !/^http:\/\/(localhost|127\.0\.0\.1):(3000|3001|3010|3012)$/.test(origin) &&
       !(
         merchantProjection &&
         /^chrome-extension:\/\/[a-p]{32}$/.test(origin)
@@ -103,6 +108,69 @@ function createServer({
       res.end(JSON.stringify(data));
     };
     try {
+      const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
+      if (pathname.startsWith('/auth/')) {
+        const action = pathname.slice('/auth/'.length);
+        const token = String(req.headers.authorization || '').replace(
+          /^Bearer /,
+          '',
+        );
+        try {
+          if (req.method === 'GET' && action === 'session') {
+            const user = operationsAuth.session(token);
+            if (!user) return reply(401, { error: 'Please sign in again.' });
+            return reply(200, {
+              user: {
+                email: user.email,
+                address: user.address,
+                role: user.role,
+                method: user.method,
+              },
+            });
+          }
+          if (req.method === 'POST' && action === 'logout') {
+            operationsAuth.logout(token);
+            return reply(200, { ok: true });
+          }
+          if (req.method !== 'POST')
+            return reply(404, { error: 'Not found' });
+          const body = await readAuthBody(req);
+          const requestOrigin = req.headers.origin || '';
+          if (action === 'password')
+            return reply(200, operationsAuth.password(body.email, body.password));
+          if (action === 'challenge')
+            return reply(
+              200,
+              operationsAuth.challenge(body.address, requestOrigin),
+            );
+          if (action === 'verify')
+            return reply(
+              200,
+              await operationsAuth.verify(
+                body.nonce,
+                body.signature,
+                requestOrigin,
+              ),
+            );
+          return reply(404, { error: 'Not found' });
+        } catch (error) {
+          return reply(401, {
+            error: error.message || 'Please sign in again.',
+          });
+        }
+      }
+      if (req.method === 'GET' && pathname === '/operations') {
+        if (!operationsAuth.session(
+          String(req.headers.authorization || '').replace(/^Bearer /, ''),
+        ))
+          return reply(401, { error: 'Please sign in again.' });
+        const records = (await ledger.list()).map(operationRecord).reverse();
+        return reply(200, {
+          records,
+          treasury: null,
+          multibaas: multibaasFeed ? await multibaasFeed.snapshot() : null,
+        });
+      }
       if (req.url.startsWith('/world/')) {
         res.setHeader('Referrer-Policy', 'no-referrer');
         const assets = {
@@ -386,6 +454,29 @@ function createServer({
       reply(400, { error: e.message || 'Ledger unavailable' });
     }
   });
+}
+
+function operationRecord(receipt) {
+  return {
+    id: receipt.id,
+    date: receipt.createdAt,
+    amount: receipt.amountJpy,
+    payout: receipt.status === 'pending' ? 'Queued' : 'Recorded',
+    asset:
+      receipt.network === 'ethereum'
+        ? 'ETH'
+        : receipt.network === 'mizuhiki'
+        ? receipt.payoutAsset || 'MIZU'
+        : 'SUI',
+    cryptoAmount: Number(receipt.estimatedCrypto),
+    recipient: receipt.recipient || null,
+    digest: receipt.transactionDigest || null,
+    receiptId: receipt.id,
+    reference: receipt.id,
+    chain: receipt.network,
+    mode: receipt.status === 'confirmed' ? receipt.chainNetwork : 'demo',
+    feeJpy: receipt.feeJpy || 0,
+  };
 }
 
 function binding(input) {

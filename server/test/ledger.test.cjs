@@ -308,6 +308,47 @@ test('live reset refuses an unresolved payout', async t => {
   assert.match((await reset.json()).error, /pending payout/);
 });
 
+test('operations sign-in includes the recipient and the merchant feed stays redacted', async t => {
+  const f = await fixture(t);
+  await post(f.url, input());
+  assert.equal((await fetch(f.url + '/operations')).status, 401);
+  assert.equal(
+    (
+      await fetch(f.url + '/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'vitalik@bitcoin.com',
+          password: 'wrong',
+        }),
+      })
+    ).status,
+    401,
+  );
+  const login = await fetch(f.url + '/auth/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'vitalik@bitcoin.com',
+      password: 'ethglobal2026',
+    }),
+  });
+  assert.equal(login.status, 200);
+  const { token } = await login.json();
+  const operations = await fetch(f.url + '/operations', {
+    headers: {
+      Origin: 'http://localhost:3001',
+      Authorization: 'Bearer ' + token,
+    },
+  });
+  assert.equal(operations.status, 200);
+  const record = (await operations.json()).records[0];
+  assert.equal(record.amount, 1000);
+  assert.equal(record.recipient, `0x${'1'.repeat(64)}`);
+  const feed = await (await fetch(f.url + '/merchant-feed')).json();
+  assert.equal('recipient' in feed.records[0], false);
+});
+
 test('MultiBaas feed exposes the configured SDK snapshot', async t => {
   const snapshot = { status: 'awaiting-contract', chainId: 6497, records: [] };
   const { url } = await fixture(t, {

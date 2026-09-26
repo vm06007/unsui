@@ -46,9 +46,21 @@ export default defineConfig(async () => {
 
   return {
     css: { postcss: { plugins: [tailwindcss()] } },
-    server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    server: {
+      ...(isCodexSeatbeltSandbox
+        ? { watch: { useFsEvents: false, usePolling: true } }
+        : {}),
+      proxy: {
+        '/api/auth': {
+          target: 'http://127.0.0.1:4100',
+          rewrite: (path) => path.replace(/^\/api\/auth/, '/auth'),
+        },
+        '/api/operations': {
+          target: 'http://127.0.0.1:4100',
+          rewrite: () => '/operations',
+        },
+      },
+    },
     plugins: [
       vinext(),
       sites(),
