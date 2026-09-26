@@ -1,0 +1,4 @@
+Source verification succeeded!
+  original ID:       0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541
+  published at:      0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541
+  binary:            /private/tmp/unsui-sui-bin/sui

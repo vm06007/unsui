@@ -121,8 +121,9 @@ demo constants, not market data; network fees are not included.
 
 Address checks cover hexadecimal shape, chain-specific length and the zero
 address. They do not prove ownership, EVM checksum validity, account existence,
-or network compatibility. Live quotes, human verification, merchant charges and
-blockchain payouts are not connected in this step.
+or network compatibility. Live market quotes, merchant charges and blockchain
+payouts are not connected. Refunds above ¥1,000 require a server-verified
+World ID proof; see [the backend README](../server/README.md).
 
 ## Recipient wallets and Sui names
 

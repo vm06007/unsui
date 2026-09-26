@@ -1,8 +1,9 @@
 # UnSui development ledger
 
 Shared refund records for the mobile app and dashboard integration. The service
-persists receipts, tracks remaining allowances and prevents duplicate requests.
-Merchant payments, World ID checks and blockchain payouts are not connected yet.
+persists receipts, tracks remaining allowances, prevents duplicate requests, and
+verifies World ID proofs for refunds above ¥1,000. Merchant payments and
+blockchain payouts are not connected yet.
 
 ## Run
 

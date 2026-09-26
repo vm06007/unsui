@@ -1,0 +1,16 @@
+{
+  "network": "mainnet",
+  "chainId": "35834a8a",
+  "packageId": "0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541",
+  "ledgerId": "0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535",
+  "adminCapId": "0x965ec339b564e86d1a2a169a6808e8894f0ce806fb008b3142edd26ef97419a7",
+  "upgradeCapId": "0x86e24efecd2c9371a64fa8e5fd7d944eabdc15b79392c284d7ea5cf9700e6fe4",
+  "publisher": "0x8e305ff1ca0058eb7462fe56011a78774966577b09f4f32e96d0d7fa589c1f4a",
+  "publishDigest": "CpZLzLBuHDrRnbQMb67L2EyKDsAM7P1gNAUevsr39dwW",
+  "gasMist": 27581600,
+  "toolchain": "1.80.0-ceaaff1cc84c",
+  "sourceSha256": "969dd9c5c3fe35f28c750e1df9aaa3fad06a5f6b6a4d8a06d549c51acd035aca",
+  "sourceVerification": "sui client verify-source succeeded",
+  "explorerSourceVerification": "Not confirmed; explorer currently displays bytecode",
+  "treasuryFunded": false
+}
