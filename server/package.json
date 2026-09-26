@@ -19,5 +19,8 @@
     "pg": "^8.23.0",
     "qrcode-generator": "2.0.4",
     "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
   }
 }

@@ -6,3 +6,5 @@ node_modules/
 unsui-extension/
 /extension
 web/tsconfig.tsbuildinfo
+
+.vercel/

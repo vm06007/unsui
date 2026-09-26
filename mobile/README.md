@@ -1,8 +1,7 @@
 # UnSui mobile
 
 React Native app for reading the balance of a physical Suica card over NFC.
-NFC reading works without an account or backend. Refunds require the development
-backend. The app reads the newest balance record
+NFC reading works without an account or backend. Refunds use the hosted backend at `https://unsui.ca/api/mobile`. The app reads the newest balance record
 without changing the card. Switch between Card and History after a scan to see
 up to 20 recent records. Preview a refund quote after scanning.
 
@@ -185,3 +184,11 @@ across restarts. Known names are translated; unknown names keep their original
 text. Menu/About describes the current demo scope. The original brand mark,
 animated transit illustration, palette and rounded controls are shared with the
 updated home screen. A modal scan sheet supports cancellation and Android Back.
+
+## Standalone dGen1 build
+
+Run `./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a` from
+`android`, then install `app/build/outputs/apk/release/app-release.apk` with
+`adb install -r`. This hackathon build uses the existing development signing key.
+The release contains its own JavaScript bundle and works over Wi-Fi or mobile
+data after unplugging USB. It does not require Metro.

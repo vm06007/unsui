@@ -28,5 +28,7 @@ jobs:
         env:
           VERCEL: '1'
           NITRO_PRESET: vercel
+      - run: node server/scripts/build-vercel.cjs
+      - run: node --test server/test/hosted.test.cjs server/test/sui-sdk.test.mjs
       - name: Verify Vercel output exists
         run: test -d web/.vercel/output/functions

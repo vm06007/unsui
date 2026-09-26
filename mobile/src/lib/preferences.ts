@@ -9,10 +9,10 @@ export function normalizeBackendUrl(value: string) {
     url.password ||
     url.search ||
     url.hash ||
-    (url.pathname !== '/' && url.pathname !== '')
+    !['/', '', '/api/mobile', '/api/mobile/'].includes(url.pathname)
   )
     throw Error('Enter a backend origin, for example http://localhost:4100.');
-  return url.origin;
+  return url.origin + (url.pathname.startsWith('/api/mobile') ? '/api/mobile' : '');
 }
 export async function getStoredLanguage(): Promise<DisplayLanguage> {
   return (await storage.getItem('history-language')) === 'en' ? 'en' : 'ja';

@@ -1,6 +1,6 @@
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
-    "framework": null,
-    "installCommand": "bun install",
-    "buildCommand": "vinext build"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "bun install && npm ci --prefix ../server",
+  "buildCommand": "vinext build && node ../server/scripts/build-vercel.cjs"
 }

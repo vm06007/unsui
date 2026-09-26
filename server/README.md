@@ -144,10 +144,19 @@ Sui SDK rather than the CLI. Signed bytes are saved before broadcast, and retrie
 reuse those bytes. These adapters do not by themselves serialize wallet nonces or
 authorize requests: the hosted request coordinator must enforce those controls.
 
-The local server still uses its existing storage and signer configuration. The
-mobile URL must remain local until hosted routes, device authentication, World ID
-session persistence, and receipt recovery are connected and verified. The public
-dashboard demo session must not grant payout or ledger-reset access.
+The hosted mobile endpoint is `https://unsui.ca/api/mobile`. The hackathon app
+allows public refund requests to any valid recipient; it does not require device
+pairing or wallet login. Existing balance checks, World ID rules, request binding,
+and on-chain replay protection still apply. World ID sessions and ledger writes
+share a transaction-scoped Postgres lock. Payout journals commit separately before
+broadcast so an interrupted invocation can recover the same transaction. Public
+ledger reset is disabled. The local server remains available for development.
+
+The Vercel build packages `hosted.cjs` as a separate Node function with a 300-second
+limit. Clients retain the original request ID after a timeout. Confirmation is
+synchronous within the function; retries recover the saved transaction. This is
+not a background worker. `scripts/import-hosted.cjs` imports the local ledger once
+and refuses to overwrite an initialized hosted ledger.
 
 For database integration testing, provide a dedicated `TEST_DATABASE_URL` and run
 `node --test test/postgres.test.cjs`. The test uses uniquely scoped records and

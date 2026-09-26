@@ -1,2 +1,2 @@
-// Backend origin bundled with the app. For USB development, use adb reverse tcp:4100 tcp:4100.
-export const BACKEND_URL = 'http://localhost:4100';
+// Hosted backend; the standalone build does not require USB forwarding or Metro.
+export const BACKEND_URL = 'https://unsui.ca/api/mobile';

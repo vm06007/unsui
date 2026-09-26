@@ -58,7 +58,7 @@ async function invoke(server, method, url, headers, body) {
 async function handle({ method, url, headers, body }, dependencies) {
   const { store, clients, marketQuotes } = dependencies;
   const path = new URL(url, 'https://unsui.ca').pathname;
-  const allowed = /^\/(health|ledger|refunds|quotes\/sui|sui\/resolve-name|ens\/resolve-name|world\/(start|status|cancel|public\/(request|complete|cancel|bypass)))$/;
+  const allowed = /^\/(health|ledger|merchant-feed|dashboard-feed|refunds|quotes\/sui|sui\/resolve-name|ens\/resolve-name|world\/(start|status|cancel|public\/(request|complete|cancel|bypass)))$/;
   if (!allowed.test(path)) return { status: 404, body: JSON.stringify({ error: 'Not found' }) };
   return store.coordinate(async state => {
     const sessions = new Map(await state.get('world-sessions') || []);
@@ -88,6 +88,9 @@ async function handle({ method, url, headers, body }, dependencies) {
       if (result.status !== 'confirmed' || !result.transactionDigest) throw Error('Payout is not confirmed yet. Retry the same request.');
       return store.complete(id, fingerprint, result);
     });
+    if (method === 'GET' && path === '/dashboard-feed') {
+      return { status: 200, body: JSON.stringify({ records: (await ledger.list()).map(operationRecord).reverse() }) };
+    }
     const server = createServer({
       ledger, worldId, marketQuotes, allowReset: false,
       liveClient: { networks: Object.keys(clients) },

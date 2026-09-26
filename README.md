@@ -11,6 +11,23 @@ Scanning works offline. Refunds need the local backend. Refunds above ¥1,000
 require a server-verified World ID proof. Sui mainnet payouts are available through the local operator backend. The local
 `unsui-extension` reads those refund receipts from `GET /merchant-feed` and projects them onto the SB Payment merchant page. It does not send data to SB Payment.
 
+## Payout contracts and funding
+
+Use these explorer links to check the current payout treasury balances and transactions.
+
+| Network | Payout asset | Treasury / contract | Where to check funding |
+| --- | --- | --- | --- |
+| Sui mainnet | SUI | [`0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535`](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535) | Open the Ledger object's `pool` field. Its balance is in MIST: divide by 1,000,000,000 for SUI. |
+| Ethereum mainnet | ETH | [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52) | Check the contract's ETH balance and transactions on Etherscan. |
+| Mizuhiki Awaji testnet (6497) | MJPY | [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://awaji.blockscout.com/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52) | Check MJPY under token holdings and token transfers on Blockscout. |
+
+- **Sui Move package:** [`0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8`](https://suivision.xyz/package/0xb4f9750ae4baf6cd1dd781f08b1d9a419c85fec62c13518b016434d8ea635ab8). Funds live in the Ledger above. Top up through `refunds::deposit`; a normal wallet transfer to the package or Ledger ID does not increase its payout pool.
+- **Ethereum funding:** send ETH to the Ethereum contract above.
+- **Awaji funding:** send **MJPY** to the Awaji contract above. MJPY token: [`0x78f5f0Ac4EF201618b97638ded959b155c4f4B04`](https://awaji.blockscout.com/address/0x78f5f0Ac4EF201618b97638ded959b155c4f4B04). MIZU pays operator gas, not refunds.
+- Ethereum and Awaji share the same hexadecimal contract address on **different networks**. Select the correct network when funding.
+
+Balances change with every refund; the explorer state is the current reference. Historical deposits are listed in the deployment sections below.
+
 ## Project structure
 
 - `mobile/` — React Native app with NFC scanning, a sample-card demo,
@@ -117,14 +134,14 @@ cd mobile
 npm ci
 ```
 
-Start the backend in another terminal:
+For local backend development, start the server in another terminal:
 
 ```sh
 cd server
 npm start
 ```
 
-From the repository root, point a USB-connected phone at the backend:
+For local backend development only, set `BACKEND_URL` to `http://localhost:4100` and forward the port:
 
 ```sh
 adb reverse tcp:4100 tcp:4100
@@ -133,8 +150,15 @@ npm start
 ```
 
 In another terminal, from `mobile`, run `npm run android`. `BACKEND_URL` in
-`mobile/src/config.ts` defaults to `http://localhost:4100` and is bundled with
-the app.
+`mobile/src/config.ts` defaults to `https://unsui.ca/api/mobile` and is bundled
+with the app. A standalone Android release includes the JavaScript bundle and
+uses Wi-Fi or mobile data, without Metro or USB port forwarding.
+
+The hosted backend runs as a Vercel Node function with Neon Postgres for receipts,
+World ID sessions, payout reservations and signed transaction journals. The
+hackathon flow accepts public payout requests to valid Sui/EVM recipients,
+including resolved names; wallet connection and device pairing are not required.
+Repeated requests recover the saved transaction instead of signing a new payment.
 
 Use **Menu → Demo**, or **No card nearby? Try the demo**, without a physical
 card. Real card reading needs a physical NFC-F-capable Android phone with NFC
@@ -146,7 +170,7 @@ In Sui mainnet mode, a confirmed refund sends real SUI from the prefunded
 treasury and includes its transaction hash and explorer link. NFC scanning does
 not debit the physical card or prove a merchant charge. The backend fetches SUI/JPY from CoinGecko, deducts a 2% fee and issues an
 authenticated five-minute quote. The contract pays the exact quoted MIST amount.
-The operator backend is for a trusted USB-connected device and binds to loopback.
+The local development server binds to loopback; the hosted API uses server-only operator keys. Public ledger reset is disabled.
 Ethereum mainnet payouts are enabled with `ETHEREUM_LIVE_PAYOUTS=true`; Awaji MJPY payouts are enabled with `AWAJI_LIVE_PAYOUTS=true` and require MJPY treasury funding.
 
 See [mobile setup](mobile/README.md) and [backend setup and API](server/README.md).
@@ -209,7 +233,7 @@ Full object IDs and reproducibility metadata: [deployment record](contracts/depl
 - Gross parity: **¥1 = 1 MJPY**; after the 2% fee, **¥1,112 pays 1,089.76 MJPY**. These are testnet assets.
 - Contract accepts prefunded ERC-20 payouts, not native MIZU payouts. Fund it with MJPY; keep MIZU in the operator wallet for gas.
 - Backend persists signed transactions before submission through MultiBaas, waits for two confirmations, and verifies token-bound receipts. `/multibaas-feed` provides indexed events.
-- [Deployment metadata](contracts/deployments/awaji-mjpy.json). Treasury currently awaits MJPY funding.
+- [Deployment metadata](contracts/deployments/awaji-mjpy.json). Use the funding links above to check the current MJPY treasury balance.
 
 ### Sui market-rate payouts
 
