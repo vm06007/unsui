@@ -12,6 +12,7 @@ export type DemoReceipt = RefundQuote & {
   chainReceiptId?: string;
   chainNetwork?: 'mainnet';
   amountMist?: string;
+  amountWei?: string;
   humanCheck?: 'verified' | 'bypassed' | 'not_required';
 };
 type Storage = {
@@ -70,11 +71,17 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
         !validBalance(r.scannedBalanceJpy) ||
         !['simulated', 'confirmed'].includes(r.status) ||
         (r.status === 'confirmed' &&
-          (r.network !== 'sui' ||
-            r.chainNetwork !== 'mainnet' ||
-            !/^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(r.transactionDigest || '') ||
+          (r.chainNetwork !== 'mainnet' ||
             !/^0x[0-9a-f]{64}$/.test(r.chainReceiptId || '') ||
-            r.amountMist !== String(r.amountJpy * 98000))) ||
+            (r.network === 'sui'
+              ? !/^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(
+                  r.transactionDigest || '',
+                ) || r.amountMist !== String(r.amountJpy * 98000)
+              : r.network === 'ethereum'
+              ? !/^0x[0-9a-f]{64}$/.test(r.transactionDigest || '') ||
+                r.amountWei !==
+                  (BigInt(r.amountJpy) * 1960000000000n).toString()
+              : true))) ||
         typeof r.createdAt !== 'string' ||
         !Number.isFinite(Date.parse(r.createdAt)) ||
         !Object.prototype.hasOwnProperty.call(PAYOUT_NETWORKS, r.network) ||

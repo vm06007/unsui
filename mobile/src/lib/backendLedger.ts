@@ -45,7 +45,7 @@ export async function checkBackend(url: string) {
   if (
     result.service !== 'unsui-dev-ledger' ||
     result.version !== 1 ||
-    !['demo', 'sui-mainnet'].includes(result.mode)
+    !['demo', 'sui-mainnet', 'mainnet'].includes(result.mode)
   )
     throw Error('This is not a compatible UnSui demo ledger.');
   await listBackend(url);
@@ -108,8 +108,8 @@ export async function resetBackend(url: string) {
   const health = await backendRequest(url, '/health');
   if (health.service !== 'unsui-dev-ledger' || health.version !== 1)
     throw Error('This is not a compatible UnSui ledger.');
-  if (health.mode === 'sui-mainnet' && !health.canReset) return false;
-  if (!['demo', 'sui-mainnet'].includes(health.mode))
+  if (health.mode !== 'demo' && !health.canReset) return false;
+  if (!['demo', 'sui-mainnet', 'mainnet'].includes(health.mode))
     throw Error('Reset is unavailable in this mode.');
   await backendRequest(url, '/ledger/reset', { confirm: 'reset-demo-ledger' });
   await requests.clear();

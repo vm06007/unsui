@@ -66,7 +66,9 @@ export default function DemoReceiptScreen({
           </Text>
           <Text style={styles.payoutNote}>
             {receipt.status === 'confirmed'
-              ? 'Sent on Sui mainnet · after the 2% service fee'
+              ? `Sent on ${
+                  PAYOUT_NETWORKS[receipt.network].name
+                } mainnet · after the 2% service fee`
               : 'Estimated payout · after the 2% service fee'}
           </Text>
         </View>
@@ -84,14 +86,23 @@ export default function DemoReceiptScreen({
             </Text>
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel="View transaction on SuiVision"
+              accessibilityLabel={`View transaction on ${
+                receipt.network === 'ethereum' ? 'Etherscan' : 'SuiVision'
+              }`}
               onPress={() =>
                 Linking.openURL(
-                  `https://suivision.xyz/txblock/${receipt.transactionDigest}`,
+                  `https://${
+                    receipt.network === 'ethereum'
+                      ? 'etherscan.io/tx'
+                      : 'suivision.xyz/txblock'
+                  }/${receipt.transactionDigest}`,
                 ).catch(() => {})
               }
             >
-              <Text style={styles.label}>View on SuiVision ↗</Text>
+              <Text style={styles.label}>
+                View on{' '}
+                {receipt.network === 'ethereum' ? 'Etherscan' : 'SuiVision'} ↗
+              </Text>
             </Pressable>
           </View>
         )}

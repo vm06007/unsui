@@ -50,8 +50,7 @@ The contracts do not authenticate NFC data, debit transit cards or enforce cross
 
 ## EVM deployment preparation
 
-Ethereum mainnet deployment is recorded in `deployments/ethereum-mainnet.json`. Awaji awaits test MIZU funding. Do not label
-the Ethereum or Awaji mobile options live until their backend adapters are connected.
+Ethereum mainnet deployment is recorded in `deployments/ethereum-mainnet.json`. Awaji awaits test MIZU funding. Ethereum payouts are connected through the backend operator. Awaji payouts remain disabled until deployment and integration are complete.
 Build with `forge build --root contracts/evm`. Run all contract tests before publishing.
 
 Awaji uses the official MultiBaas SDK. Configure the `AWAJI_*` public addresses,
@@ -78,4 +77,4 @@ source, optimizer settings and constructor arguments on their explorers.
 
 Source verification is confirmed on [Etherscan](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52#code) (matching bytecode and ABI) and Sourcify (exact creation and runtime matches).
 
-Ethereum treasury initial funding: **0.0045 ETH**, confirmed in [this deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). The mobile Ethereum payout adapter is not yet enabled.
+Ethereum treasury initial funding: **0.0045 ETH**, confirmed in [this deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). The mobile Ethereum payout adapter is available behind `ETHEREUM_LIVE_PAYOUTS=true`.

@@ -12,15 +12,15 @@ function fingerprint(input) {
     )
     .digest("hex");
 }
-function createLivePayouts({ file, pay, authorize }) {
+function createLivePayouts({ file, pay, authorize, networks = ["sui"] }) {
   let queue = Promise.resolve();
   return (input) => {
     const work = queue.then(async () => {
       if (
-        input.quote.network !== "sui" ||
+        !networks.includes(input.quote.network) ||
         input.cardId.toLowerCase() === "ffffffffffffffff"
       )
-        throw Error("Live payouts require a physical card and Sui.");
+        throw Error("Live payouts require a physical card and an enabled network (Sui by default).");
       let records = {};
       try {
         records = JSON.parse(await fs.readFile(file, "utf8"));
@@ -58,7 +58,7 @@ function createLivePayouts({ file, pay, authorize }) {
       const result = await pay(input);
       if (
         result.status !== "confirmed" ||
-        !/^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(result.transactionDigest || "")
+        !(input.quote.network === "ethereum" ? /^0x[0-9a-f]{64}$/i : /^[1-9A-HJ-NP-Za-km-z]{43,44}$/).test(result.transactionDigest || "")
       )
         throw Error("Payout confirmation unavailable");
       order.result = { ...result, humanCheck: order.humanCheck };

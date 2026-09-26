@@ -313,31 +313,13 @@ export default function RecipientEditor({
                 </Text>
               )}
 
-              {!mismatch && !value.blocked && (
+              {!mismatch && !value.blocked && !value.signed && (
                 <Action
                   label="Sign destination message (optional)"
                   disabled={busy || disabled}
                   onPress={() => run('sign')}
                 />
               )}
-              {value.signed && (
-                <>
-                  <Text style={styles.label}>Message signed on dGen1</Text>
-                  <Text selectable style={styles.note}>
-                    {value.signed.message}
-                  </Text>
-                  <Action
-                    label="Remove signature"
-                    disabled={busy || disabled}
-                    onPress={() => onChange({ ...value, signed: undefined })}
-                  />
-                </>
-              )}
-              <Text style={styles.note}>
-                Signing requests personal_sign only, never a transaction or
-                token approval. The response is held for this session; it is not
-                server-verified proof of ownership or payment.
-              </Text>
               <Action
                 label="Use manual entry"
                 disabled={busy || disabled}

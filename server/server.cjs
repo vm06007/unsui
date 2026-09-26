@@ -13,7 +13,7 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
   if(liveClient && syncFs.existsSync(baseFile+'.round')){round=JSON.parse(syncFs.readFileSync(baseFile+'.round','utf8')).round;if(!/^[0-9a-f-]{36}$/.test(round))throw Error('Invalid round state');file=baseFile+'.round-'+round;}
   function makeLedger(){
   const roundFile=file, roundId=round;
-  const livePayout=liveClient?createLivePayouts({file:roundFile+'.orders',pay:input=>liveClient.pay({...input,demoRound:roundId}),authorize:input=>worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId})}):undefined;
+  const livePayout=liveClient?createLivePayouts({file:roundFile+'.orders',networks:liveClient.networks || ['sui'],pay:input=>liveClient.pay({...input,demoRound:roundId}),authorize:input=>worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId})}):undefined;
   return createDemoLedger({
     async getItem() {
       try {return await fs.readFile(roundFile, 'utf8');}
@@ -85,7 +85,7 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
           return reply(200,await upstream.json());
         } catch {return reply(502,{error:'SuiNS is unavailable. Please retry.'});}
       }
-      if(req.method==='GET' && req.url==='/health') return reply(200,{service:'unsui-dev-ledger',version:1,mode:liveClient?'sui-mainnet':'demo',canReset:allowReset&&(!liveClient||allowLiveReset)});
+      if(req.method==='GET' && req.url==='/health') return reply(200,{service:'unsui-dev-ledger',version:1,mode:liveClient?(liveClient.networks?.includes('ethereum')?'mainnet':'sui-mainnet'):'demo',networks:liveClient?.networks || (liveClient?['sui']:[]),canReset:allowReset&&(!liveClient||allowLiveReset)});
       if(req.method==='GET' && req.url==='/ledger') return reply(200,{version:1,receipts:await ledger.list()});
       if(req.method==='GET' && req.url==='/merchant-feed') {
         const records=(await ledger.list()).map(r=>({
@@ -149,13 +149,21 @@ if(require.main===module) {
   try { process.loadEnvFile(path.join(__dirname,'.env')); } catch(error) {if(error.code!=='ENOENT')throw error;}
   const host=process.env.HOST || '127.0.0.1';
   const port=Number(process.env.PORT || 4100);
-  const live=process.env.SUI_LIVE_PAYOUTS==='true';
+  const suiLive=process.env.SUI_LIVE_PAYOUTS==='true';
+  const ethereumLive=process.env.ETHEREUM_LIVE_PAYOUTS==='true';
+  const live=suiLive||ethereumLive;
   if(live && host!=='127.0.0.1')throw Error('Live development payouts must bind to loopback only');
   const setup=async()=>{
-  let liveClient=null;
-  if(live){const {createSuiPayoutClient}=await import('./sui/client.mjs');liveClient=createSuiPayoutClient({deployment:require('../contracts/deployments/sui-mainnet.json'),secret:process.env.CARD_COMMITMENT_SECRET,binary:process.env.SUI_BINARY});}
+  const clients={};
+  if(suiLive){const {createSuiPayoutClient}=await import('./sui/client.mjs');clients.sui=createSuiPayoutClient({deployment:require('../contracts/deployments/sui-mainnet.json'),secret:process.env.CARD_COMMITMENT_SECRET,binary:process.env.SUI_BINARY});}
+  if(ethereumLive){
+    const {createEthereumPayoutClient}=await import('./evm/client.mjs');
+    clients.ethereum=createEthereumPayoutClient({deployment:require('../contracts/deployments/ethereum-mainnet.json'),secret:process.env.CARD_COMMITMENT_SECRET,privateKey:process.env.EVM_DEPLOYER_PRIVATE_KEY,rpcUrl:process.env.ETHEREUM_RPC_URL,journalDir:path.join(path.dirname(process.env.LEDGER_FILE||path.join(__dirname,'data/ledger.json')),'ethereum-transactions')});
+    await clients.ethereum.check();
+  }
+  const liveClient=live?{networks:Object.keys(clients),pay(input){const client=clients[input.quote.network];if(!client)throw Error('Payouts are not enabled for this network.');return client.pay(input);}}:null;
   const server=createServer({file:process.env.LEDGER_FILE,liveClient,allowLiveReset:process.env.ALLOW_LIVE_DEMO_RESET==='true'&&process.env.NODE_ENV!=='production'});
-  server.listen(port,host,()=>console.log(`UnSui ledger: http://${host}:${port} (${live?'SUI MAINNET PAYOUTS':'record only'})`));
+  server.listen(port,host,()=>console.log(`UnSui ledger: http://${host}:${port} (${live?Object.keys(clients).join(', ')+' MAINNET PAYOUTS':'record only'})`));
   server.on('error',e=>{console.error(e.message);process.exitCode=1;});
   };setup().catch(e=>{console.error(e.message);process.exitCode=1;});
 }

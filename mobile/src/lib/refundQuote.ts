@@ -1,4 +1,4 @@
-// Illustrative conversion rates only. No price feed or payout service is connected.
+// Fixed conversion policy shared with the deployed treasuries; not a market price feed.
 export const PAYOUT_NETWORKS = {
   sui: { name: 'Sui', asset: 'SUI', unitsPerYen: 10000, yenPerAsset: 10000 },
   ethereum: {

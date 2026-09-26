@@ -100,3 +100,11 @@ rates, not a price feed. The initial treasury deposit is 0.5 SUI. Funds are real
 card readings remain operator attestations, not evidence of a Suica debit.
 `WORLD_ALLOW_TEST_BYPASS` is still a separate local test option and retains a
 `bypassed` audit label; it does not constitute World ID verification.
+
+## Ethereum mainnet payouts
+
+Set `ETHEREUM_LIVE_PAYOUTS=true` with `ETHEREUM_RPC_URL`, the existing server-only `EVM_DEPLOYER_PRIVATE_KEY`, and `CARD_COMMITMENT_SECRET`. The key must match the deployed operator. Both Sui and Ethereum can be enabled together; unsupported networks fail closed. The service stays bound to loopback.
+
+The adapter checks chain ID, operator, rate, fee, card allowance, treasury balance, and gas before signing. Signed transactions are journaled next to the ledger in `ethereum-transactions/` before broadcast. Keep this directory with the ledger: retries reuse the same transaction and verify the contract receipt and event after two confirmations. No automatic replacement or duplicate payout is issued after a timeout. A reverted transaction requires operator review. Maximum transaction gas cost is capped at 0.0001 ETH.
+
+Mobile success and history show the transaction hash and Etherscan link. Local reset begins a new card-allowance round on both chains while retaining transaction journals; it remains explicitly opt-in.

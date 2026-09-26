@@ -59,13 +59,13 @@ treasury and includes its transaction hash and explorer link. NFC scanning does
 not debit the physical card or prove a merchant charge. The conversion is fixed
 at 0.0001 SUI per yen, less a 2% fee (¥1,100 pays 0.1078 SUI), not market pricing.
 The operator backend is for a trusted USB-connected device and binds to loopback.
-Ethereum and Mizuhiki payouts are not enabled.
+Ethereum mainnet payouts are enabled with `ETHEREUM_LIVE_PAYOUTS=true`; Mizuhiki payouts are not enabled.
 
 See [mobile setup](mobile/README.md) and [backend setup and API](server/README.md).
 
 ## Code to verify
 
-Prize forms accept one link. These are the lines behind the World and Sui integrations.
+Prize forms accept one link. These are the lines behind the World, Sui, and Curvegrid integrations.
 
 ### World ID
 
@@ -79,6 +79,12 @@ Prize forms accept one link. These are the lines behind the World and Sui integr
 - Backend submits `unsui::refunds::refund`: [`server/sui/client.mjs`](https://github.com/vm06007/unsui/blob/master/server/sui/client.mjs#L109)
 - Contract transfers SUI and freezes the receipt: [`unsui.move`](https://github.com/vm06007/unsui/blob/master/contracts/unsui/sources/unsui.move#L139)
 - `.sui` names resolve through Sui mainnet GraphQL: [`server/server.cjs`](https://github.com/vm06007/unsui/blob/master/server/server.cjs#L80)
+
+### Curvegrid MultiBaas
+
+- SDK client, locked to the HTTPS MultiBaas host and Awaji chain id 6497: [`server/multibaas.mjs`](https://github.com/vm06007/unsui/blob/master/server/multibaas.mjs#L9)
+- Indexed `Refunded` events for Mizuhiki payouts: [`server/multibaas.mjs`](https://github.com/vm06007/unsui/blob/master/server/multibaas.mjs#L70)
+- Locally signed deployment bytes are submitted through the SDK: [`server/scripts/multibaas-awaji.mjs`](https://github.com/vm06007/unsui/blob/master/server/scripts/multibaas-awaji.mjs#L55)
 
 ## Sui mainnet deployment
 
@@ -99,7 +105,7 @@ Full object IDs and reproducibility metadata: [deployment record](contracts/depl
 - [Deployment transaction](https://etherscan.io/tx/0x4039868bb4d6cc091b9beb959d822975a5dec9b443b0fc0c7c8bcb98506d72e7), block 26059748.
 - Gas cost: 0.0000607496525559 ETH. Compiled runtime bytecode and constructor settings checked on chain.
 - Fixed gross rate: 2,000,000,000,000 wei/JPY, less 2% fee.
-- Treasury funded with **0.0045 ETH**: [deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). Mobile EVM payout integration remains pending.
+- Treasury funded with **0.0045 ETH**: [deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). Ethereum mobile payouts use the backend operator, wait for two confirmations, and link receipts to Etherscan.
 - Source verified on [Etherscan](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52#code): matching bytecode and ABI (September 26, 2026).
 - Source verified on [Sourcify](https://repo.sourcify.dev/1/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52): **exact match**, creation and runtime bytecode (September 26, 2026).
 - [Deployment metadata](contracts/deployments/ethereum-mainnet.json). Awaji deployment still awaits test MIZU funding.

@@ -135,3 +135,13 @@ test("validation precedes payout; failed receipt storage retries without duplica
   assert.equal(calls, 1);
   assert.equal((await ledger.list())[0].status, "confirmed");
 });
+
+test('Ethereum receipts survive ledger reload and reject another amount', async t => {
+  const f=await file(t);let raw=null;
+  const eth={...input,quote:createDemoQuote('1100',1100,'ethereum','0x'+'3'.repeat(40))};
+  const payout=createLivePayouts({file:f,networks:['sui','ethereum'],authorize:()=>true,pay:async()=>({status:'confirmed',transactionDigest:'0x'+'a'.repeat(64),chainReceiptId:'0x'+'b'.repeat(64),chainNetwork:'mainnet',amountWei:'2156000000000000'})});
+  const ledger=createDemoLedger({getItem:async()=>raw,setItem:async(_,v)=>{raw=v;}},payout);
+  const receipt=await ledger.record(eth);assert.equal(receipt.network,'ethereum');assert.equal((await ledger.list())[0].amountWei,'2156000000000000');
+  const {decodeDemoReceipts}=require('../build/demoLedger');
+  assert.throws(()=>decodeDemoReceipts(raw.replace('2156000000000000','1')),/unreadable/);
+});

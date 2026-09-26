@@ -89,12 +89,16 @@ export default function RefundHistory({
                         accessibilityLabel="View payout transaction"
                         onPress={() =>
                           Linking.openURL(
-                            `https://suivision.xyz/txblock/${receipt.transactionDigest}`,
+                            `https://${
+                              receipt.network === 'ethereum'
+                                ? 'etherscan.io/tx'
+                                : 'suivision.xyz/txblock'
+                            }/${receipt.transactionDigest}`,
                           ).catch(() => {})
                         }
                       >
                         <Text style={styles.note}>
-                          Sui mainnet · View transaction ↗
+                          {payout.name} mainnet · View transaction ↗
                         </Text>
                         <Text selectable style={styles.note}>
                           {receipt.transactionDigest}
