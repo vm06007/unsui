@@ -329,16 +329,3 @@ Select **Present the project** on the homepage for an eight-slide introduction: 
 Merchant and order references connect purchase records with payout tracking and reconciliation in the dashboard. SB Payment identifies the merchant with `merchant_id`, the contracted service with `service_id`, and the purchase with `order_id`.
 
 See the official [SB Payment developer documentation](https://developer.sbpayment.jp/) and [purchase request specification: merchant, service and order IDs](https://developer.sbpayment.jp/system-specifications/link-type/2517/).
-
-### Hackathon refund rounds
-
-In the Android app, tap the **UnSui logo on the home screen three times quickly**
-to start a new refund round when the hosted backend has
-`ALLOW_HOSTED_HACKATHON_RESET=true`. Scan the card again to refund it in the new
-round. This permits another real payout from the funded treasury.
-
-The app shows the current round; earlier receipts remain in the dashboard.
-Transaction journals and payout reservations are retained, old request IDs cannot
-issue a second payment, and a pending payout must be resolved before a round can
-change. The gesture requires the updated APK; a backend deployment alone cannot
-unlock it in an older release build. The hosted flag defaults to disabled.
