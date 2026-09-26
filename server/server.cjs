@@ -1,4 +1,5 @@
-const {createHash}=require('node:crypto');
+const {createHash,randomUUID}=require('node:crypto');
+const syncFs=require('node:fs');
 const {createLivePayouts}=require('./live-payouts.cjs');
 const {createWorldId}=require('./world-id.cjs');
 const http = require('node:http');
@@ -6,21 +7,28 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {createDemoLedger} = require('./build/demoLedger');
 
-function createServer({file = path.join(__dirname, 'data/ledger.json'), allowReset = process.env.NODE_ENV !== 'production', worldId = createWorldId(), liveClient = null} = {}) {
-  const livePayout=liveClient?createLivePayouts({file:file+'.orders',pay:liveClient.pay,authorize:input=>worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId})}):undefined;
-  const ledger = createDemoLedger({
+function createServer({file = path.join(__dirname, 'data/ledger.json'), allowReset = process.env.NODE_ENV !== 'production', worldId = createWorldId(), liveClient = null, allowLiveReset = false} = {}) {
+  const baseFile=file;
+  let round=null,payoutBusy=0,resetBusy=false;
+  if(liveClient && syncFs.existsSync(baseFile+'.round')){round=JSON.parse(syncFs.readFileSync(baseFile+'.round','utf8')).round;if(!/^[0-9a-f-]{36}$/.test(round))throw Error('Invalid round state');file=baseFile+'.round-'+round;}
+  function makeLedger(){
+  const roundFile=file, roundId=round;
+  const livePayout=liveClient?createLivePayouts({file:roundFile+'.orders',pay:input=>liveClient.pay({...input,demoRound:roundId}),authorize:input=>worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId})}):undefined;
+  return createDemoLedger({
     async getItem() {
-      try {return await fs.readFile(file, 'utf8');}
+      try {return await fs.readFile(roundFile, 'utf8');}
       catch (e) {if(e.code === 'ENOENT') return null; throw e;}
     },
     async setItem(_key, value) {
-      await fs.mkdir(path.dirname(file), {recursive:true});
-      const temp = file + '.tmp';
+      await fs.mkdir(path.dirname(roundFile), {recursive:true});
+      const temp = roundFile + '.tmp';
       const handle = await fs.open(temp, 'w', 0o600);
       try {await handle.writeFile(value); await handle.sync();} finally {await handle.close();}
-      await fs.rename(temp, file);
+      await fs.rename(temp, roundFile);
     }
   },livePayout);
+  }
+  let ledger=makeLedger();
   return http.createServer(async(req,res)=>{
     res.setHeader('Content-Type','application/json');
     res.setHeader('Cache-Control','no-store');
@@ -57,7 +65,27 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
           if(req.url==='/world/public/complete')return reply(200,await worldId.complete(input.verificationId,input.proof));
         }
       }
-      if(req.method==='GET' && req.url==='/health') return reply(200,{service:'unsui-dev-ledger',version:1,mode:liveClient?'sui-mainnet':'demo'});
+      if(req.method==='POST' && req.url==='/ens/resolve-name') {
+        let body='';
+        for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>2048)return reply(413,{error:'Request too large'});}
+        const {resolveEnsName}=require('./ens.cjs');
+        return reply(200,await resolveEnsName(JSON.parse(body).name));
+      }
+      if(req.method==='POST' && req.url==='/sui/resolve-name') {
+        let body='';
+        for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>2048)return reply(413,{error:'Request too large'});}
+        const name=JSON.parse(body).variables?.name;
+        if(typeof name!=='string'||name.length>235||!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.sui$/.test(name))return reply(400,{error:'Enter a valid .sui name.'});
+        try {
+          const upstream=await fetch('https://graphql.mainnet.sui.io/graphql',{
+            method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
+            body:JSON.stringify({query:'query ResolveName($name: String!) { nameRecord(name: $name) { domain target { address } } }',variables:{name}})
+          });
+          if(!upstream.ok)return reply(502,{error:'SuiNS is unavailable. Please retry.'});
+          return reply(200,await upstream.json());
+        } catch {return reply(502,{error:'SuiNS is unavailable. Please retry.'});}
+      }
+      if(req.method==='GET' && req.url==='/health') return reply(200,{service:'unsui-dev-ledger',version:1,mode:liveClient?'sui-mainnet':'demo',canReset:allowReset&&(!liveClient||allowLiveReset)});
       if(req.method==='GET' && req.url==='/ledger') return reply(200,{version:1,receipts:await ledger.list()});
       if(req.method==='GET' && req.url==='/merchant-feed') {
         const records=(await ledger.list()).map(r=>({
@@ -70,14 +98,30 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
         return reply(200,{source:'mobile-ledger',processorConnected:false,feeBps:200,updatedAt:Date.now(),records});
       }
       if(req.method==='POST' && req.url==='/ledger/reset') {
-        if(liveClient || !allowReset) return reply(403,{error:'Reset is disabled'});
+        if(!allowReset || (liveClient && !allowLiveReset)) return reply(403,{error:'Reset is disabled'});
         let body='';
         for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>1024)return reply(413,{error:'Request too large'});}
         if(JSON.parse(body).confirm!=='reset-demo-ledger') return reply(400,{error:'Reset confirmation required'});
-        await ledger.reset();
+        if(payoutBusy||resetBusy)return reply(409,{error:'Wait for the current refund before starting a new round.'});
+        resetBusy=true;
+        try {
+          if(liveClient){
+            let orders={};try{orders=JSON.parse(await fs.readFile(file+'.orders','utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}
+            if(Object.values(orders).some(order=>!order.result))throw Error('Resolve the pending payout before starting a new round.');
+            const next=randomUUID();
+            await fs.mkdir(path.dirname(baseFile),{recursive:true});
+            const handle=await fs.open(baseFile+'.round.tmp','w',0o600);
+            try{await handle.writeFile(JSON.stringify({round:next,previousRound:round,createdAt:new Date().toISOString()}));await handle.sync();}finally{await handle.close();}
+            await fs.rename(baseFile+'.round.tmp',baseFile+'.round');
+            round=next;file=baseFile+'.round-'+round;ledger=makeLedger();
+          }else await ledger.reset();
+        }finally{resetBusy=false;}
         return reply(200,{reset:true});
       }
       if(req.method==='POST' && req.url==='/refunds') {
+        if(resetBusy)return reply(409,{error:'A new round is starting. Retry shortly.'});
+        payoutBusy++;
+        try {
         let body='';
         for await(const chunk of req) {body+=chunk; if(Buffer.byteLength(body)>16384) return reply(413,{error:'Request too large'});}
         let input; try {input=JSON.parse(body);} catch {return reply(400,{error:'Invalid JSON'});}
@@ -90,6 +134,7 @@ function createServer({file = path.join(__dirname, 'data/ledger.json'), allowRes
         if(!liveClient && !existing && !worldId.allows({...binding(input),worldVerificationId:input.worldVerificationId}))
           return reply(403,{error:'Refunds above ¥1,000 require a completed World ID check.',code:'WORLD_ID_REQUIRED'});
         return reply(200,{receipt:await ledger.record({...input,humanCheck:input.quote.amountJpy<=1000?'not_required':checkStatus==='bypassed'?'bypassed':'verified'})});
+        }finally{payoutBusy--;}
       }
       reply(404,{error:'Not found'});
     }catch(e) {reply(400,{error:e.message || 'Ledger unavailable'});}
@@ -109,7 +154,7 @@ if(require.main===module) {
   const setup=async()=>{
   let liveClient=null;
   if(live){const {createSuiPayoutClient}=await import('./sui/client.mjs');liveClient=createSuiPayoutClient({deployment:require('../contracts/deployments/sui-mainnet.json'),secret:process.env.CARD_COMMITMENT_SECRET,binary:process.env.SUI_BINARY});}
-  const server=createServer({file:process.env.LEDGER_FILE,liveClient});
+  const server=createServer({file:process.env.LEDGER_FILE,liveClient,allowLiveReset:process.env.ALLOW_LIVE_DEMO_RESET==='true'&&process.env.NODE_ENV!=='production'});
   server.listen(port,host,()=>console.log(`UnSui ledger: http://${host}:${port} (${live?'SUI MAINNET PAYOUTS':'record only'})`));
   server.on('error',e=>{console.error(e.message);process.exitCode=1;});
   };setup().catch(e=>{console.error(e.message);process.exitCode=1;});

@@ -5,14 +5,18 @@
   "scripts": {
     "build": "node scripts/build.cjs",
     "start": "npm run build && node server.cjs",
-    "test": "npm run build && node --test test/*.test.cjs"
+    "test": "npm run build && node --test test/*.test.cjs test/*.test.mjs",
+    "multibaas:awaji": "node scripts/multibaas-awaji.mjs",
+    "deploy:ethereum": "node scripts/ethereum.mjs"
   },
   "engines": {
     "node": ">=22.11.0"
   },
   "dependencies": {
+    "@curvegrid/multibaas-sdk": "1.1.1",
     "@mysten/sui": "2.26.2",
     "@worldcoin/idkit-core": "4.3.0",
-    "qrcode-generator": "2.0.4"
+    "qrcode-generator": "2.0.4",
+    "viem": "2.56.9"
   }
 }

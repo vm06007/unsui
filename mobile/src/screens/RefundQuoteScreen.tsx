@@ -219,6 +219,21 @@ export default function RefundQuoteScreen({
       )
     : null;
   const locked = phase !== 'idle';
+  if (phase === 'saving')
+    return (
+      <View style={styles.issuing} accessibilityLiveRegion="polite">
+        <ActivityIndicator size="large" color="#173E35" />
+        <Text accessibilityRole="header" style={styles.title}>
+          Issuing refund
+        </Text>
+        <Text style={styles.issuingNote}>
+          Waiting for your {payout.asset} transfer to confirm.
+        </Text>
+        <Text style={styles.issuingNote}>
+          Your receipt will appear as soon as it is ready.
+        </Text>
+      </View>
+    );
   if (phase === 'human')
     return (
       <View style={styles.flex}>
@@ -362,9 +377,7 @@ export default function RefundQuoteScreen({
           style={[styles.button, (locked || recipientBusy) && styles.disabled]}
         >
           <Text style={styles.buttonText}>
-            {phase === 'saving'
-              ? 'Submitting and confirming…'
-              : phase === 'cancelling'
+            {phase === 'cancelling'
               ? 'Closing scanner…'
               : isSample
               ? 'Confirm sample refund'
@@ -394,6 +407,20 @@ export default function RefundQuoteScreen({
 }
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  issuing: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 18,
+    backgroundColor: '#F5F6F0',
+  },
+  issuingNote: {
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 23,
+    color: '#68776F',
+  },
   deviceWallet: { marginTop: 12 },
   walletButton: {
     padding: 14,

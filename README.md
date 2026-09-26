@@ -63,6 +63,23 @@ Ethereum and Mizuhiki payouts are not enabled.
 
 See [mobile setup](mobile/README.md) and [backend setup and API](server/README.md).
 
+## Code to verify
+
+Prize forms accept one link. These are the lines behind the World and Sui integrations.
+
+### World ID
+
+- Phone starts the check before a refund above ¥1,000 is confirmed: [`RefundQuoteScreen.tsx`](https://github.com/vm06007/unsui/blob/master/mobile/src/screens/RefundQuoteScreen.tsx#L126)
+- Official IDKit Proof of Human request: [`server/world-ui/app.js`](https://github.com/vm06007/unsui/blob/master/server/world-ui/app.js#L28)
+- Server posts the proof to World’s v4 verify API: [`server/world-id.cjs`](https://github.com/vm06007/unsui/blob/master/server/world-id.cjs#L59)
+
+### Sui
+
+- Mainnet gRPC client: [`server/sui/client.mjs`](https://github.com/vm06007/unsui/blob/master/server/sui/client.mjs#L31)
+- Backend submits `unsui::refunds::refund`: [`server/sui/client.mjs`](https://github.com/vm06007/unsui/blob/master/server/sui/client.mjs#L109)
+- Contract transfers SUI and freezes the receipt: [`unsui.move`](https://github.com/vm06007/unsui/blob/master/contracts/unsui/sources/unsui.move#L139)
+- `.sui` names resolve through Sui mainnet GraphQL: [`server/server.cjs`](https://github.com/vm06007/unsui/blob/master/server/server.cjs#L80)
+
 ## Sui mainnet deployment
 
 - Package: [`0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541`](https://suivision.xyz/package/0xbf654bef3c0177dfd909fe00bd133bba716efa47b6150dfbd7a5792484527541)
@@ -74,3 +91,15 @@ See [mobile setup](mobile/README.md) and [backend setup and API](server/README.m
 - Mobile payout integration is enabled locally via `SUI_LIVE_PAYOUTS=true`; the contract retains a fixed conversion policy.
 
 Full object IDs and reproducibility metadata: [deployment record](contracts/deployments/sui-mainnet.json).
+
+
+## Ethereum mainnet deployment
+
+- Contract: [`0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52`](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52)
+- [Deployment transaction](https://etherscan.io/tx/0x4039868bb4d6cc091b9beb959d822975a5dec9b443b0fc0c7c8bcb98506d72e7), block 26059748.
+- Gas cost: 0.0000607496525559 ETH. Compiled runtime bytecode and constructor settings checked on chain.
+- Fixed gross rate: 2,000,000,000,000 wei/JPY, less 2% fee.
+- Treasury funded with **0.0045 ETH**: [deposit transaction](https://etherscan.io/tx/0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0). Mobile EVM payout integration remains pending.
+- Source verified on [Etherscan](https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52#code): matching bytecode and ABI (September 26, 2026).
+- Source verified on [Sourcify](https://repo.sourcify.dev/1/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52): **exact match**, creation and runtime bytecode (September 26, 2026).
+- [Deployment metadata](contracts/deployments/ethereum-mainnet.json). Awaji deployment still awaits test MIZU funding.

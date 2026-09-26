@@ -76,3 +76,21 @@ test('test bypass audit is server-owned and survives retries and restart',async 
  await f.stop();f.url=await f.start();
  assert.equal((await(await post(f.url,body)).json()).receipt.humanCheck,'bypassed');
 });
+
+test('live reset preserves prior receipts and starts a durable new card round',async t=>{
+ const rounds=[];
+ const f=await fixture(t,{allowLiveReset:true,liveClient:{pay:async i=>{rounds.push(i.demoRound);return {status:'confirmed',transactionDigest:'1'.repeat(43),chainReceiptId:'0x'+'2'.repeat(64),chainNetwork:'mainnet',amountMist:String(i.quote.amountJpy*98000)};}}});
+ assert.equal((await post(f.url,input())).status,200);
+ const reset=await fetch(f.url+'/ledger/reset',{method:'POST',body:JSON.stringify({confirm:'reset-demo-ledger'})});assert.equal(reset.status,200);
+ assert.equal((await(await fetch(f.url+'/ledger')).json()).receipts.length,0);
+ assert.equal(JSON.parse(await fs.readFile(f.file,'utf8')).receipts.length,1);
+ await f.stop();f.url=await f.start();
+ assert.equal((await post(f.url,input())).status,200);
+ assert.equal(rounds[0],null);assert.match(rounds[1],/^[0-9a-f-]{36}$/);
+});
+test('live reset refuses an unresolved payout',async t=>{
+ const f=await fixture(t,{allowLiveReset:true,liveClient:{pay:async()=>{throw Error('Unknown outcome');}}});
+ assert.equal((await post(f.url,input())).status,400);
+ const reset=await fetch(f.url+'/ledger/reset',{method:'POST',body:JSON.stringify({confirm:'reset-demo-ledger'})});assert.equal(reset.status,400);
+ assert.match((await reset.json()).error,/pending payout/);
+});

@@ -1,0 +1,43 @@
+{
+  "network": "ethereum-mainnet",
+  "chainId": 1,
+  "contract": "0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52",
+  "deployer": "0x20025F78da2b65D2b1cfa7FC411e1dA3F56f3BB3",
+  "owner": "0x20025F78da2b65D2b1cfa7FC411e1dA3F56f3BB3",
+  "operator": "0x20025F78da2b65D2b1cfa7FC411e1dA3F56f3BB3",
+  "weiPerJpy": "2000000000000",
+  "FEE_BPS": "200",
+  "paused": "false",
+  "transactionHash": "0x4039868bb4d6cc091b9beb959d822975a5dec9b443b0fc0c7c8bcb98506d72e7",
+  "blockNumber": "26059748",
+  "gasUsed": "909117",
+  "gasCostWei": "60749652555900",
+  "runtimeBytecodeHash": "0xa9a95027472b0d47a2b18fc7b7645d1e1a542300c80002415c86b8090b979183",
+  "sourceSha256": "7e7efb5898c82367493070cbf06b29149eb35b40eb01f635dc139788df77cc0a",
+  "sourceVerification": "Runtime matches compiled artifact excluding constructor immutable slots; rate checked on chain",
+  "explorerSourceVerification": "Etherscan verified (matching bytecode and ABI); Sourcify exact_match (creation and runtime bytecode)",
+  "treasuryFunded": true,
+  "sourceVerificationUrl": "https://repo.sourcify.dev/1/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52",
+  "sourceVerificationResult": {
+    "matchId": "52637281",
+    "creationMatch": "exact_match",
+    "runtimeMatch": "exact_match",
+    "verifiedAt": "2026-09-26T06:12:23Z",
+    "match": "exact_match",
+    "chainId": "1",
+    "address": "0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52"
+  },
+  "compilerVersion": "0.8.30",
+  "evmVersion": "cancun",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "etherscanSourceVerificationUrl": "https://etherscan.io/address/0xeAf3e03A76eb5Be4E08E0b0FF415CA3422319C52#code",
+  "etherscanSourceVerifiedAt": "2026-09-26",
+  "initialFunding": {
+    "transactionHash": "0xbf256d5fa7b5d109ad2f4aefa3a31e7587549dd77044ecb5efdd2d4537ca86f0",
+    "amountWei": "4500000000000000",
+    "amountETH": "0.0045"
+  }
+}

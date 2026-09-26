@@ -86,3 +86,19 @@ test('rejects account, network, message and freshness mismatches', () => {
     ),
   ).toThrow('invalid');
 });
+
+test('accepts the original wallet 64-byte format as well as 65-byte signatures', () => {
+  for (const bytes of [64, 65]) {
+    const result = { ...signed(), signature: `0x${'ab'.repeat(bytes)}` };
+    expect(validateWalletSignature(result, 'mizuhiki', address)).toEqual(
+      result,
+    );
+  }
+  expect(() =>
+    validateWalletSignature(
+      { ...signed(), signature: `0x${'ab'.repeat(63)}` },
+      'mizuhiki',
+      address,
+    ),
+  ).toThrow('invalid');
+});

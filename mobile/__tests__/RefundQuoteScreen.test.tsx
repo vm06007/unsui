@@ -286,3 +286,30 @@ test('cancelled human check cannot start NFC or save a refund even if approval a
   expect(readCard).not.toHaveBeenCalled();
   expect(demoLedger.record).not.toHaveBeenCalled();
 });
+
+test('shows issuing screen until the backend confirms and restores review on failure', async () => {
+  await review();
+  (readCard as jest.Mock).mockResolvedValue({
+    idm: '0123456789abcdef',
+    balanceJpy: 575,
+  });
+  let reject!: (error: Error) => void;
+  (demoLedger.record as jest.Mock).mockImplementationOnce(
+    () =>
+      new Promise((_resolve, fail) => {
+        reject = fail;
+      }),
+  );
+  await act(async () => {
+    button('Confirm refund').props.onPress();
+  });
+  expect(JSON.stringify(view.toJSON())).toContain('Issuing refund');
+  expect(
+    view.root.findAllByProps({ accessibilityLabel: 'Confirm refund' }),
+  ).toHaveLength(0);
+  expect(onRecorded).not.toHaveBeenCalled();
+  await act(async () => reject(Error('Please retry this request')));
+  expect(JSON.stringify(view.toJSON())).not.toContain('Issuing refund');
+  expect(JSON.stringify(view.toJSON())).toContain('Please retry this request');
+  expect(button('Confirm refund').props.disabled).toBe(false);
+});

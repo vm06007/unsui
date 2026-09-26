@@ -1,4 +1,5 @@
-import { randomDemoName, resolveSuiName } from '../src/lib/suiNames';
+import { BACKEND_URL } from '../src/config';
+import { resolveSuiName } from '../src/lib/suiNames';
 const address = `0x${'1'.repeat(64)}`;
 const originalFetch = globalThis.fetch;
 const fetchMock = jest.fn();
@@ -9,14 +10,6 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = originalFetch;
   jest.restoreAllMocks();
-});
-test('chooses the two demo names at the 50/50 boundary', () => {
-  jest
-    .spyOn(Math, 'random')
-    .mockReturnValueOnce(0.4999)
-    .mockReturnValueOnce(0.5);
-  expect(randomDemoName()).toBe('kartik.sui');
-  expect(randomDemoName()).toBe('vitally.sui');
 });
 test('resolves through the mainnet query and normalizes input', async () => {
   fetchMock.mockResolvedValue({
@@ -30,6 +23,7 @@ test('resolves through the mainnet query and normalizes input', async () => {
     address,
     network: 'mainnet',
   });
+  expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/sui/resolve-name`);
   expect(JSON.parse(fetchMock.mock.calls[0][1].body).variables.name).toBe(
     'kartik.sui',
   );

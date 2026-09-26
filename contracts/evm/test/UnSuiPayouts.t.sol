@@ -60,8 +60,8 @@ contract UnSuiPayoutsTest {
     function testPayoutAndLinkedReceipt() public {
         UnSuiPayouts.Claim memory c = claim();
         bytes32 first = target.refund(c);
-        require(RECIPIENT.balance == 1000 * RATE);
-        require(address(target).balance == 1 ether - 1000 * RATE);
+        require(RECIPIENT.balance == 1000 * RATE * 98 / 100);
+        require(address(target).balance == 1 ether - 1000 * RATE * 98 / 100);
         UnSuiPayouts.Receipt memory r = target.getReceipt(c.request);
         require(
             r.hash
@@ -89,7 +89,7 @@ contract UnSuiPayoutsTest {
         target.refund(c);
         r = target.getReceipt(c.request);
         require(r.previousHash == first && r.sequence == 2 && r.redeemedJpy == 1500);
-        require(RECIPIENT.balance == 1500 * RATE);
+        require(RECIPIENT.balance == 1500 * RATE * 98 / 100);
     }
 
     function testAwajiNativeMizuAndChainBoundReceipt() public {
@@ -99,8 +99,8 @@ contract UnSuiPayoutsTest {
         UnSuiPayouts.Claim memory c = claim();
         c.amountJpy = 575;
         bytes32 hash = awaji.refund(c);
-        require(RECIPIENT.balance == 0.0575 ether, "MIZU payout amount");
-        require(awaji.getReceipt(c.request).amountWei == 0.0575 ether, "MIZU receipt amount");
+        require(RECIPIENT.balance == 0.05635 ether, "MIZU payout amount");
+        require(awaji.getReceipt(c.request).amountWei == 0.05635 ether, "MIZU receipt amount");
         vm.chainId(11155111);
         // Same contract code and claim on another chain must produce a different receipt.
         UnSuiPayouts other = new UnSuiPayouts(address(this), address(this), 100_000_000_000_000);
@@ -206,7 +206,7 @@ contract UnSuiPayoutsTest {
         c.recipient = payable(address(r));
         r.execute(c);
         require(r.blocked());
-        require(address(r).balance == 1000 * RATE);
+        require(address(r).balance == 1000 * RATE * 98 / 100);
     }
 
     function testAdminRotation() public {
@@ -280,7 +280,7 @@ contract UnSuiPayoutsTest {
         c.amountJpy = amount;
         c.observedJpy = amount;
         target.refund(c);
-        require(RECIPIENT.balance == amount * RATE);
+        require(RECIPIENT.balance == amount * RATE * 98 / 100);
         require(target.getReceipt(c.request).redeemedJpy == amount);
     }
 }

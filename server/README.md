@@ -87,8 +87,7 @@ in the mobile bundle. Select a separate `LEDGER_FILE` for live receipts, such as
 its `.orders` journal, along with the commitment secret. Never change the secret
 for an existing treasury: it defines each card's on-chain identity.
 
-Run one backend process. Mainnet mode rejects sample cards, non-Sui payouts and
-ledger reset. Quotes and same-card readings are checked before authorization.
+Run one backend process. Mainnet mode rejects sample cards and non-Sui payouts. Reset is disabled by default. Quotes and same-card readings are checked before authorization.
 Requests are durably reserved before submission. An uncertain transaction result
 must be retried with the same request; another request for that card is blocked.
 Retries recover the immutable on-chain receipt and validate its hash, amount,

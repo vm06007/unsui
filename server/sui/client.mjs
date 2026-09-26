@@ -90,8 +90,8 @@ export function createSuiPayoutClient({ deployment, secret, binary }) {
     };
   }
   async function pay(input) {
-    const card = [...cardCommitment(input.cardId, secret)],
-      request = [...createHash("sha256").update(input.requestId).digest()];
+    const card = [...cardCommitment(input.demoRound ? `${input.demoRound}:${input.cardId}` : input.cardId, secret)],
+      request = [...createHash("sha256").update(input.demoRound ? `${input.demoRound}:${input.requestId}` : input.requestId).digest()];
     const l = await ledger();
     const prior = await field(l.requests.id, request, bcs.Address);
     if (prior) return receipt(prior, input, card, request);

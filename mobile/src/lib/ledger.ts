@@ -13,7 +13,7 @@ export const demoLedger = {
   async reset() {
     if (!__DEV__)
       throw Error('Ledger reset is available in development builds only.');
-    await resetBackend(BACKEND_URL);
+    return resetBackend(BACKEND_URL);
   },
   async list() {
     return listBackend(BACKEND_URL);

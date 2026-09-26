@@ -1,6 +1,9 @@
+import { resolveEnsName } from '../lib/ensNames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
+  ToastAndroid,
   Pressable,
   StyleSheet,
   Text,
@@ -20,7 +23,7 @@ import {
   WalletSignature,
 } from '../lib/deviceWallet';
 import {
-  randomDemoName,
+  DEVELOPER_SUI_NAME,
   ResolvedSuiName,
   resolveSuiName,
 } from '../lib/suiNames';
@@ -95,6 +98,7 @@ export default function RecipientEditor({
     action: 'connect' | 'switch' | 'sign' | 'resolve',
     name = value.input,
   ) => {
+    clearTimeout(lookupTimer.current);
     if (running.current || disabled) return;
     running.current = true;
     const current = ++epoch.current;
@@ -107,7 +111,9 @@ export default function RecipientEditor({
     try {
       if (action === 'resolve') {
         abort.current = new AbortController();
-        const result = await resolveSuiName(name, abort.current.signal);
+        const result = await (network === 'sui'
+          ? resolveSuiName
+          : resolveEnsName)(name, abort.current.signal);
         if (current === epoch.current)
           onChange({
             input: result.name,
@@ -136,12 +142,15 @@ export default function RecipientEditor({
       }
     } catch (failure) {
       if (current === epoch.current) {
-        setError(
+        const message =
           failure instanceof Error
             ? failure.message
-            : 'Request failed. Please retry.',
-        );
-        if (action === 'sign' || action === 'switch')
+            : 'Request failed. Please retry.';
+        if (Platform.OS === 'android' && action !== 'resolve') {
+          ToastAndroid.show(message, ToastAndroid.LONG);
+        } else setError(message);
+        if (action === 'sign') onChange({ ...value, signed: undefined });
+        else if (action === 'switch')
           onChange({ ...value, signed: undefined, blocked: true });
       }
     } finally {
@@ -154,14 +163,17 @@ export default function RecipientEditor({
   };
   const edit = (text: string) => {
     clearTimeout(lookupTimer.current);
-    setError('');
-    if (network === 'sui' && text.trim().toLowerCase().endsWith('.sui')) {
-      lookupTimer.current = setTimeout(() => {
-        run('resolve', text);
-      }, 500);
+    if (
+      text
+        .trim()
+        .toLowerCase()
+        .endsWith(network === 'sui' ? '.sui' : '.eth')
+    ) {
+      lookupTimer.current = setTimeout(() => run('resolve', text), 500);
     }
+    setError('');
     onChange(
-      network === 'sui' && !text.trim().startsWith('0x')
+      !text.trim().startsWith('0x')
         ? { input: text, address: '', blocked: true }
         : manualDestination(text),
     );
@@ -173,19 +185,72 @@ export default function RecipientEditor({
           ? 'Send to'
           : `${PAYOUT_NETWORKS[network].name} wallet address`}
       </Text>
-      <TextInput
-        testID="refund-recipient"
-        accessibilityLabel="Recipient wallet address"
-        value={value.input}
-        onChangeText={edit}
-        editable={!busy && !disabled}
-        autoCapitalize="none"
-        autoCorrect={false}
-        spellCheck={false}
-        placeholder={network === 'sui' ? '0x… or yourname.sui' : '0x…'}
-        placeholderTextColor="#78856B"
-        style={styles.input}
-      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          testID="refund-recipient"
+          accessibilityLabel="Recipient wallet address"
+          value={value.input}
+          onChangeText={edit}
+          editable={!busy && !disabled}
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          placeholder={
+            network === 'sui' ? '0x… or yourname.sui' : '0x… or yourname.eth'
+          }
+          placeholderTextColor="#78856B"
+          returnKeyType="done"
+          onSubmitEditing={() => {
+            if (!value.input.trim().startsWith('0x')) run('resolve');
+          }}
+          style={[styles.input, styles.inputWithAction]}
+        />
+        {
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Resolve recipient name"
+            accessibilityState={{
+              disabled:
+                busy ||
+                disabled ||
+                !value.input.trim() ||
+                value.input.trim().startsWith('0x'),
+              busy,
+            }}
+            disabled={
+              busy ||
+              disabled ||
+              !value.input.trim() ||
+              value.input.trim().startsWith('0x')
+            }
+            onPress={() => run('resolve')}
+            style={[
+              styles.resolveButton,
+              (disabled ||
+                !value.input.trim() ||
+                value.input.trim().startsWith('0x')) &&
+                styles.disabled,
+            ]}
+          >
+            {busy ? (
+              <ActivityIndicator size="small" color="#214A37" />
+            ) : (
+              <Text style={styles.resolveText}>
+                {value.resolved ? '✓' : 'Resolve'}
+              </Text>
+            )}
+          </Pressable>
+        }
+      </View>
+      {value.resolved && (
+        <Text
+          selectable
+          style={styles.note}
+          accessibilityLabel="Resolved recipient address"
+        >
+          {value.resolved.address}
+        </Text>
+      )}
       {network === 'sui' ? (
         <>
           <Pressable
@@ -193,22 +258,12 @@ export default function RecipientEditor({
             accessibilityLabel="Use developer address"
             disabled={busy || disabled}
             onPress={() => {
-              clearTimeout(lookupTimer.current);
-              run('resolve', randomDemoName());
+              run('resolve', DEVELOPER_SUI_NAME);
             }}
             style={styles.prefill}
           >
             <Text style={styles.prefillText}>Use developer address</Text>
           </Pressable>
-          {value.resolved && (
-            <Text
-              selectable
-              style={styles.note}
-              accessibilityLabel="Resolved recipient address"
-            >
-              {value.resolved.address}
-            </Text>
-          )}
         </>
       ) : (
         <>
@@ -228,9 +283,26 @@ export default function RecipientEditor({
           />
           {value.connection && (
             <View style={styles.panel}>
-              <Text style={styles.label}>
-                dGen1 wallet · chain {value.connection.chainId}
-              </Text>
+              <View style={styles.walletRow}>
+                <Text style={styles.label}>
+                  dGen1 wallet / chain {value.connection.chainId}
+                </Text>
+                {(mismatch || value.blocked) && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Switch dGen1 network"
+                    accessibilityState={{ disabled: busy || disabled }}
+                    disabled={busy || disabled}
+                    onPress={() => run('switch')}
+                    style={[
+                      styles.networkLink,
+                      (busy || disabled) && styles.disabled,
+                    ]}
+                  >
+                    <Text style={styles.prefillText}>Switch network</Text>
+                  </Pressable>
+                )}
+              </View>
               {mismatch && (
                 <Text accessibilityRole="alert" style={styles.error}>
                   Wallet network mismatch. Switch to{' '}
@@ -240,13 +312,7 @@ export default function RecipientEditor({
                   or use manual entry.
                 </Text>
               )}
-              {(mismatch || value.blocked) && (
-                <Action
-                  label="Switch dGen1 network"
-                  disabled={busy || disabled}
-                  onPress={() => run('switch')}
-                />
-              )}
+
               {!mismatch && !value.blocked && (
                 <Action
                   label="Sign destination message (optional)"
@@ -288,7 +354,11 @@ export default function RecipientEditor({
         <View style={styles.group}>
           <ActivityIndicator color="#214A37" />
           <Text style={styles.note}>
-            {evm ? 'Check your dGen1 wallet…' : 'Resolving SuiNS name…'}
+            {evm && value.connection
+              ? 'Check your dGen1 wallet…'
+              : network === 'sui'
+              ? 'Resolving SuiNS name…'
+              : 'Resolving ENS name…'}
           </Text>
           <Action label="Cancel recipient request" onPress={cancel} />
         </View>
@@ -328,6 +398,20 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', color: '#173E35' },
   note: { fontSize: 12, lineHeight: 19, color: '#68776F' },
   error: { fontSize: 15, lineHeight: 23, color: '#85472F' },
+  inputContainer: { position: 'relative', justifyContent: 'center' },
+  inputWithAction: { paddingRight: 90 },
+  resolveButton: {
+    position: 'absolute',
+    right: 5,
+    minWidth: 76,
+    minHeight: 44,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: '#E9EFDD',
+  },
+  resolveText: { fontSize: 13, fontWeight: '600', color: '#214A37' },
   input: {
     borderWidth: 1,
     borderColor: '#DCE3D7',
@@ -344,6 +428,14 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  walletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    columnGap: 12,
+  },
+  networkLink: { minHeight: 44, justifyContent: 'center' },
   panel: { padding: 16, gap: 12, backgroundColor: '#E9EFDD', borderRadius: 12 },
   button: {
     paddingVertical: 14,

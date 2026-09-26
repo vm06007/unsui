@@ -1,3 +1,6 @@
+import { Platform, ToastAndroid } from 'react-native';
+import { resolveEnsName } from '../src/lib/ensNames';
+jest.mock('../src/lib/ensNames', () => ({ resolveEnsName: jest.fn() }));
 import React, { useState } from 'react';
 import Renderer, { act } from 'react-test-renderer';
 import RecipientEditor, {
@@ -9,7 +12,7 @@ import {
   signDeviceWallet,
   switchDeviceWallet,
 } from '../src/lib/deviceWallet';
-import { randomDemoName, resolveSuiName } from '../src/lib/suiNames';
+import { resolveSuiName } from '../src/lib/suiNames';
 import { PayoutNetwork } from '../src/lib/refundQuote';
 jest.mock('../src/lib/deviceWallet', () => ({
   ...jest.requireActual('../src/lib/deviceWallet'),
@@ -20,7 +23,7 @@ jest.mock('../src/lib/deviceWallet', () => ({
   cancelDeviceWallet: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../src/lib/suiNames', () => ({
-  randomDemoName: jest.fn(),
+  DEVELOPER_SUI_NAME: 'kartik.sui',
   resolveSuiName: jest.fn(),
 }));
 let view: Renderer.ReactTestRenderer;
@@ -54,7 +57,6 @@ afterEach(async () => {
 });
 test('developer name resolves directly into the recipient without a second confirmation', async () => {
   const address = `0x${'1'.repeat(64)}`;
-  (randomDemoName as jest.Mock).mockReturnValue('kartik.sui');
   (resolveSuiName as jest.Mock).mockResolvedValue({
     name: 'kartik.sui',
     address,
@@ -68,7 +70,6 @@ test('developer name resolves directly into the recipient without a second confi
 });
 test('cancelled lookup cannot fill a recipient when its late response arrives', async () => {
   let resolve!: (v: unknown) => void;
-  (randomDemoName as jest.Mock).mockReturnValue('vitally.sui');
   (resolveSuiName as jest.Mock).mockImplementationOnce(
     () =>
       new Promise(r => {
@@ -82,7 +83,7 @@ test('cancelled lookup cannot fill a recipient when its late response arrives', 
   await act(async () => button('Cancel recipient request').props.onPress());
   await act(async () =>
     resolve({
-      name: 'vitally.sui',
+      name: 'kartik.sui',
       address: `0x${'1'.repeat(64)}`,
       network: 'mainnet',
     }),
@@ -154,4 +155,60 @@ test('typing a name resolves automatically and editing clears its destination', 
   } finally {
     jest.useRealTimers();
   }
+});
+
+test.each(['ethereum', 'mizuhiki'] as const)(
+  'resolves a typed ENS name on %s without connecting dGen1',
+  async network => {
+    const address = `0x${'3'.repeat(40)}`;
+    (resolveEnsName as jest.Mock).mockResolvedValue({
+      name: 'test.eth',
+      address,
+      network: 'mainnet',
+    });
+    await mount(network);
+    await act(async () =>
+      view.root
+        .findByProps({ testID: 'refund-recipient' })
+        .props.onChangeText('test.eth'),
+    );
+    expect(props().value.blocked).toBe(true);
+    await act(async () => button('Resolve recipient name').props.onPress());
+    expect(props().value.address).toBe(address);
+    expect(props().value.blocked).toBe(false);
+    expect(connectDeviceWallet).not.toHaveBeenCalled();
+    await act(async () =>
+      view.root
+        .findByProps({ testID: 'refund-recipient' })
+        .props.onChangeText('other.eth'),
+    );
+    expect(props().value.address).toBe('');
+    expect(props().value.resolved).toBeUndefined();
+  },
+);
+
+test('optional signing failure uses a toast and keeps the connected recipient usable', async () => {
+  Object.defineProperty(Platform, 'OS', {
+    value: 'android',
+    configurable: true,
+  });
+  const toast = jest.spyOn(ToastAndroid, 'show').mockImplementation(() => {});
+  const address = `0x${'4'.repeat(40)}`;
+  (connectDeviceWallet as jest.Mock).mockResolvedValue({ address, chainId: 1 });
+  (signDeviceWallet as jest.Mock).mockRejectedValueOnce(
+    Error('Wallet signing declined.'),
+  );
+  await mount('ethereum');
+  await act(async () => button('Connect dGen1 wallet').props.onPress());
+  await act(async () =>
+    button('Sign destination message (optional)').props.onPress(),
+  );
+  expect(toast).toHaveBeenCalledWith(
+    'Wallet signing declined.',
+    ToastAndroid.LONG,
+  );
+  expect(props().value.address).toBe(address);
+  expect(props().value.blocked).toBe(false);
+  expect(props().value.signed).toBeUndefined();
+  toast.mockRestore();
 });

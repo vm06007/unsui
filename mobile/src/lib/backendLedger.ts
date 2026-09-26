@@ -105,6 +105,13 @@ export async function recordBackend(
 }
 
 export async function resetBackend(url: string) {
+  const health = await backendRequest(url, '/health');
+  if (health.service !== 'unsui-dev-ledger' || health.version !== 1)
+    throw Error('This is not a compatible UnSui ledger.');
+  if (health.mode === 'sui-mainnet' && !health.canReset) return false;
+  if (!['demo', 'sui-mainnet'].includes(health.mode))
+    throw Error('Reset is unavailable in this mode.');
   await backendRequest(url, '/ledger/reset', { confirm: 'reset-demo-ledger' });
   await requests.clear();
+  return true;
 }

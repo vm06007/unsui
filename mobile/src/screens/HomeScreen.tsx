@@ -45,11 +45,11 @@ export default function HomeScreen({
     taps.current.count = 0;
     resetting.current = true;
     try {
-      await demoLedger.reset();
-      onReset();
+      const cleared = await demoLedger.reset();
+      if (cleared !== false) onReset();
       if (Platform.OS === 'android')
         ToastAndroid.show('ETHGlobal Tokyo 2026', ToastAndroid.SHORT);
-      else Alert.alert('Reset complete', 'ETHGlobal Tokyo 2026');
+      else Alert.alert('UnSui', 'ETHGlobal Tokyo 2026');
     } catch (error) {
       const text =
         error instanceof Error

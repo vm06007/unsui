@@ -44,10 +44,11 @@ contract UnSuiPayouts {
         bytes32 hash;
     }
 
-    bytes32 public constant DOMAIN = keccak256("UNSUI_EVM_RECEIPT_V1");
+    bytes32 public constant DOMAIN = keccak256("UNSUI_EVM_RECEIPT_V2");
     uint256 public constant MAX_OBSERVED_JPY = 20_000;
     uint256 public constant MAX_CLAIM_LIFETIME = 5 minutes;
-    // Fixed deployment policy, not a market FX oracle. No fee is deducted in v1.
+    // Fixed gross conversion rate; payouts retain the 2% service fee.
+    uint256 public constant FEE_BPS = 200;
     uint256 public immutable weiPerJpy;
     address public owner;
     address public pendingOwner;
@@ -130,7 +131,7 @@ contract UnSuiPayouts {
         if (state.redeemedJpy > claim.observedJpy || claim.amountJpy > claim.observedJpy - state.redeemedJpy) {
             revert ExceedsObservedBalance();
         }
-        uint256 amountWei = claim.amountJpy * weiPerJpy;
+        uint256 amountWei = claim.amountJpy * weiPerJpy * (10_000 - FEE_BPS) / 10_000;
         if (address(this).balance < amountWei) revert InsufficientTreasury();
         Receipt memory receipt = Receipt(
             claim.card,

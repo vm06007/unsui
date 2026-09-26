@@ -1,7 +1,7 @@
+import { BACKEND_URL } from '../config';
 import { recipientError } from './refundQuote';
-export const SUI_NAMES_ENDPOINT = 'https://graphql.mainnet.sui.io/graphql';
-export const DEMO_SUI_NAMES = ['kartik.sui', 'vitally.sui'] as const;
-export const randomDemoName = () => DEMO_SUI_NAMES[Math.random() < 0.5 ? 0 : 1];
+export const SUI_NAMES_ENDPOINT = `${BACKEND_URL}/sui/resolve-name`;
+export const DEVELOPER_SUI_NAME = 'kartik.sui';
 export type ResolvedSuiName = {
   name: string;
   address: string;

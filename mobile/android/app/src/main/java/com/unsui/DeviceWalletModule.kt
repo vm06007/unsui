@@ -107,7 +107,7 @@ class DeviceWalletModule(context: ReactApplicationContext) : ReactContextBaseJav
                         val network = if (chainId == 1) "Ethereum (1)" else "Mizuhiki Awaji Testnet (6497)"
                         val message = "UnSui demo refund destination\n\nAddress: $address\nNetwork: $network\nRequest: $nonce\nIssued at: $issuedAt\n\nI choose this wallet as my demo refund destination. This message does not authorize a transaction, token approval or transfer. No funds will be sent."
                         call("signMessage", arrayOf(session, message, chainId.toString(), address, "personal_sign")) { signature ->
-                            if (!Regex("^0x(?:[0-9a-fA-F]{2}){65,4096}$").matches(signature)) {
+                            if (!Regex("^0x(?:[0-9a-fA-F]{2}){64,4096}$").matches(signature)) {
                                 fail("SIGNATURE", "Signing was declined or the signature format is unsupported.")
                             } else account { afterAddress, afterChain ->
                                 if (!afterAddress.equals(address, ignoreCase = true) || afterChain != chainId) {

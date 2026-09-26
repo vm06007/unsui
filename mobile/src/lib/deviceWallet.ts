@@ -79,7 +79,7 @@ export function validateWalletSignature(
     );
   if (
     typeof result.signature !== 'string' ||
-    !/^0x(?:[0-9a-fA-F]{2}){65,4096}$/.test(result.signature) ||
+    !/^0x(?:[0-9a-fA-F]{2}){64,4096}$/.test(result.signature) ||
     typeof result.nonce !== 'string' ||
     !/^[0-9a-f-]{36}$/i.test(result.nonce) ||
     typeof result.issuedAt !== 'string' ||
