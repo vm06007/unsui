@@ -55,6 +55,16 @@ export function OrderRecords({
                 return yen(r.jpy);
             case 'crypto':
                 return r.crypto.toLocaleString('en-US', { maximumFractionDigits: 8 });
+            case 'payout':
+                return (
+                    <span className={'badge ' + r.payout}>
+                        {r.payout === 'confirmed'
+                            ? 'Confirmed'
+                            : r.payout === 'queued'
+                              ? 'Queued'
+                              : r.payout}
+                    </span>
+                );
             case 'recipient':
             case 'digest':
                 return (

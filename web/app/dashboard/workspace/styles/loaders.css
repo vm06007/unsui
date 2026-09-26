@@ -148,13 +148,13 @@ html {
     white-space: nowrap;
 }
 
-.ops {
+:root:has(.ops) {
     font-size: 16px;
 }
-.ops[data-text-size='large'] {
+:root[data-text-size='large']:has(.ops) {
     font-size: 18.4px;
 }
-.ops[data-text-size='extra-large'] {
+:root[data-text-size='extra-large']:has(.ops) {
     font-size: 20.8px;
 }
 .ops .metric small {

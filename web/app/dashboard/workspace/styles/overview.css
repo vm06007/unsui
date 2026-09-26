@@ -225,6 +225,12 @@
     padding: 16px 12px;
     border-bottom: 1px solid var(--line);
 }
+.ops .table-wrap tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--soft) 72%, var(--surface));
+}
+.ops .table-wrap tbody tr:hover td {
+    background: var(--soft);
+}
 .ops td:first-child,
 .ops th:first-child {
     padding-left: 0;
@@ -261,6 +267,7 @@
 }
 .ops .badge.in-app,
 .ops .badge.matched,
+.ops .badge.confirmed,
 .ops .badge.covered,
 .ops .badge.connected {
     background: #edf4e9;
@@ -273,7 +280,8 @@
     color: #b4735e;
 }
 .ops .badge.unmatched,
-.ops .badge.pending {
+.ops .badge.pending,
+.ops .badge.queued {
     background: #fbf2dd;
     color: #9e854f;
 }

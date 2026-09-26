@@ -24,7 +24,7 @@ export function saveSession(result: { token: string; user: Admin }) {
     sessionStorage.setItem('unsui-ops-token', result.token);
     return result.user;
 }
-const clientId = (import.meta as any).env.VITE_THIRDWEB_CLIENT_ID;
+const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID;
 const client = clientId ? createThirdwebClient({ clientId }) : null;
 const wallets = [
     createWallet('io.rabby'),

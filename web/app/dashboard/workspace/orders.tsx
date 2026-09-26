@@ -9,13 +9,12 @@ import {
     Clock,
     Maximize2,
     Minimize2,
-    Download,
 } from 'lucide-react';
 import { useSaved, useScrollLock, type SettingItem } from './preferences';
 import { ToolbarPopover } from './popover';
 import { ColumnSettings } from './columns';
 import type { Row } from './types';
-import { yen, reconcile, csv } from './domain.mjs';
+import { yen, reconcile } from './domain.mjs';
 import { OrderRecords, orderValue } from './order-records';
 const defaults: SettingItem[] = [
     ['id', 'Order'],
@@ -133,14 +132,6 @@ export function OrdersExplorer({
             document.removeEventListener('keydown', escape);
         };
     }, [expanded]);
-    function exportRows() {
-        const a = document.createElement('a'),
-            url = URL.createObjectURL(new Blob([csv(filtered)], { type: 'text/csv' }));
-        a.href = url;
-        a.download = 'unsui-filtered-orders.csv';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
     return (
         <section
             className={'card explorer ' + (expanded ? 'explorer-fullscreen' : '')}
@@ -391,13 +382,6 @@ export function OrdersExplorer({
                         onChange={setColumns}
                         onReset={() => setColumns(defaults)}
                     />
-                    <button
-                        className="icon-button"
-                        aria-label="Export filtered orders"
-                        onClick={exportRows}
-                    >
-                        <Download size={16} />
-                    </button>
                     <button
                         className="icon-button"
                         aria-label={expanded ? 'Exit expanded table' : 'Expand table'}

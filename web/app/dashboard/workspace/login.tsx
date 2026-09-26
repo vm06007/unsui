@@ -97,9 +97,7 @@ export function DemoLogin() {
                     this local workspace. Not an SB Payment account.
                 </p>
             </section>
-            <p className="login-footer">
-                <a href="/">Welcome site</a> · 雲水 · Clouds & water
-            </p>
+            <p className="login-footer">雲水 · Clouds & water</p>
         </main>
     );
 }

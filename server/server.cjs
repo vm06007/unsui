@@ -85,13 +85,14 @@ function createServer({
     res.setHeader('Cache-Control', 'no-store');
     const origin = req.headers.origin;
     const merchantProjection =
-      req.method === 'GET' && req.url === '/merchant-feed';
+      req.method === 'GET' &&
+      (req.url === '/merchant-feed' || req.url === '/operations');
     // Trusted local operator service: do not expose payout endpoints publicly.
     // The unpacked merchant extension may read the public projection only.
     if (
       origin &&
       origin !== process.env.WORLD_PUBLIC_BASE_URL &&
-      !/^http:\/\/(localhost|127\.0\.0\.1):(3000|3001|3010|3012)$/.test(origin) &&
+      !/^http:\/\/(localhost|127\.0\.0\.1):(3000|3001|3010|3012|3201)$/.test(origin) &&
       !(
         merchantProjection &&
         /^chrome-extension:\/\/[a-p]{32}$/.test(origin)
@@ -297,7 +298,10 @@ function createServer({
         });
       if (req.method === 'GET' && req.url === '/ledger')
         return reply(200, { version: 1, receipts: await ledger.list() });
-      if (req.method === 'GET' && req.url === '/merchant-feed') {
+      if (
+        req.method === 'GET' &&
+        (req.url === '/merchant-feed' || req.url === '/operations')
+      ) {
         const records = (await ledger.list())
           .map(r => ({
             id: r.id,

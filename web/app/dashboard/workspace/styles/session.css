@@ -1,11 +1,29 @@
+body:has(.ops) {
+    background: #f7f8f5;
+    font-family: 'DM Sans', sans-serif;
+}
+.ops dialog {
+    margin: auto;
+}
 .ops .login-shell {
+    --bg: #f7f8f5;
+    --surface: #fff;
+    --ink: #21382e;
+    --muted: #69786e;
+    --line: #e7ebe3;
+    --soft: #f1f4ee;
+    --green: #254c39;
+    --lime: #d1eca2;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 32px 20px;
-    background: radial-gradient(ellipse at 50% 0%, #d7e9ba40, transparent 65%);
+    color: var(--ink);
+    color-scheme: light;
+    background-color: #f7f8f5;
+    background-image: radial-gradient(ellipse at 50% 0%, #d7e9ba40, transparent 65%);
     max-width: none;
 }
 .ops .login-card {
@@ -194,6 +212,19 @@
     position: absolute;
     height: 100dvh;
     min-height: 680px;
+}
+.ops .sidebar-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ops .sidebar-collapse {
+    flex-shrink: 0;
+    color: var(--muted);
+}
+.ops .sidebar-compact .sidebar-brand-row {
+    flex-direction: column;
 }
 .ops .sidebar-compact .sidebar {
     width: 78px;

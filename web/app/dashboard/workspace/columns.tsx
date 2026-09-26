@@ -129,7 +129,7 @@ export function ColumnSettings({
                             />
                         </div>
                     </div>,
-                    document.body,
+                    trigger.current?.closest('.ops') ?? document.body,
                 )}
         </>
     );

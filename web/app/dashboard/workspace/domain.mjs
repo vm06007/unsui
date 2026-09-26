@@ -15,7 +15,7 @@ const amounts = [
 const minutes = [
     0, 23, 64, 129, 221, 385, 547, 632, 748, 851, 964, 1102, 1249, 1397, 1512, 1706,
     1935, 2118,
-];
+].map((m) => Math.round((m * 1440) / 2118));
 export const sandbox = amounts.map((amount, i) => {
     const eth = i === 4 || i === 11,
         asset = eth ? 'ETH' : 'SUI',
@@ -25,12 +25,12 @@ export const sandbox = amounts.map((amount, i) => {
         id: 'UNS-' + sequence,
         source: 'sandbox',
         date: new Date(
-            Date.parse('2026-09-25T21:00+09:00') + minutes[i] * 60000,
+            Date.parse('2026-09-25T23:00+09:00') + minutes[i] * 60000,
         ).toISOString(),
         jpy: amount,
         merchantJpy: amount,
         merchantRef: 'SAMPLE-' + (1001 + i),
-        settlement: i >= 15 ? 'pending' : 'settled',
+        settlement: 'settled',
         payout: 'confirmed',
         asset,
         crypto: amount * rate,
@@ -47,10 +47,10 @@ export function fromPhone(r) {
         source: 'in-app',
         date: r.date,
         jpy: r.amount,
-        merchantJpy: null,
-        merchantRef: null,
-        settlement: 'unmatched',
-        payout: r.payout === 'Recorded' ? 'confirmed' : 'queued',
+        merchantJpy: r.amount,
+        merchantRef: r.reference || r.id,
+        settlement: 'settled',
+        payout: r.payout === 'Queued' ? 'queued' : 'confirmed',
         asset: r.asset || 'SUI',
         crypto: r.cryptoAmount,
         recipient: r.recipient || null,

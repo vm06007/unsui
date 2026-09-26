@@ -1,4 +1,10 @@
-import { ArrowUpRight, Radio, ShieldCheck } from 'lucide-react';
+import {
+    ArrowUpRight,
+    PanelLeftClose,
+    PanelLeftOpen,
+    Radio,
+    ShieldCheck,
+} from 'lucide-react';
 import type { Admin } from './auth';
 import { routes } from './routes';
 
@@ -6,22 +12,36 @@ export function WorkspaceSidebar({
     mobile,
     navigate,
     view,
-    issueRows,
+    livePurchases,
     admin,
+    compact,
+    onCompact,
 }: {
     mobile: boolean;
     navigate: (next: string) => void;
     view: string;
-    issueRows: { length: number };
+    livePurchases: number;
     admin: Admin;
+    compact: boolean;
+    onCompact: (compact: boolean) => void;
 }) {
     return (
         <aside className={'sidebar ' + (mobile ? 'show' : '')}>
-            <a className="brand" href="#overview" onClick={() => navigate('overview')}>
-                <img src="/unsui-mark.svg" alt="" />
-                <b>unsui</b>
-                <span>雲水</span>
-            </a>
+            <div className="sidebar-brand-row">
+                <a className="brand" href="#overview" onClick={() => navigate('overview')}>
+                    <img src="/unsui-mark.svg" alt="" />
+                    <b>unsui</b>
+                    <span>雲水</span>
+                </a>
+                <button
+                    className="icon-button sidebar-collapse"
+                    aria-label={compact ? 'Expand sidebar' : 'Compact sidebar'}
+                    aria-pressed={compact}
+                    onClick={() => onCompact(!compact)}
+                >
+                    {compact ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                </button>
+            </div>
             <div className="workspace-tag">
                 <span className="tiny-dot" />
                 Tokyo workspace<small>OPERATIONS</small>
@@ -36,8 +56,8 @@ export function WorkspaceSidebar({
                     >
                         <Icon size={18} />
                         {label}
-                        {id === 'reconciliation' && issueRows.length > 0 && (
-                            <em>{issueRows.length}</em>
+                        {id === 'reconciliation' && livePurchases > 0 && (
+                            <em title="In-app purchases">{livePurchases}</em>
                         )}
                     </button>
                 ))}

@@ -126,13 +126,13 @@ export function App({ onLogout, admin }: { onLogout: () => void; admin: Admin })
             return () => clearTimeout(t);
         }
     }, [toast]);
-    const all = useMemo(
-        () =>
-            [...sandbox, ...feed.records].sort(
-                (a, b) => Date.parse(b.date) - Date.parse(a.date),
-            ) as Row[],
-        [feed.records],
-    );
+    const all = useMemo(() => {
+        const recent = (a: Row, b: Row) => Date.parse(b.date) - Date.parse(a.date);
+        return [
+            ...[...feed.records].sort(recent),
+            ...[...sandbox].sort(recent),
+        ] as Row[];
+    }, [feed.records]);
     const rows = useMemo(
         () =>
             all.filter(
@@ -198,9 +198,7 @@ export function App({ onLogout, admin }: { onLogout: () => void; admin: Admin })
         }
     }
     const title = routes.find((r) => r[0] === view)?.[1] || 'Overview';
-    const issueRows = rows.filter((r) =>
-        ['unmatched', 'mismatch'].includes(reconcile(r)),
-    );
+    const livePurchases = rows.filter((r) => r.source === 'in-app');
     const tableRows = rows.filter(
         (r) =>
             status === 'all' ||
@@ -225,8 +223,10 @@ export function App({ onLogout, admin }: { onLogout: () => void; admin: Admin })
                 mobile={mobile}
                 navigate={navigate}
                 view={view}
-                issueRows={issueRows}
+                livePurchases={livePurchases.length}
                 admin={admin}
+                compact={layout.compact}
+                onCompact={(compact) => setLayout({ ...layout, compact })}
             />
             {mobile && (
                 <button

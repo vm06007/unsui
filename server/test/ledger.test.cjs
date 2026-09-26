@@ -124,6 +124,10 @@ test('merchant extension can read the feed and no other route', async t => {
   assert.equal(feed.headers.get('access-control-allow-origin'), origin);
   assert.equal((await feed.json()).records[0].amount, 1000);
   assert.equal(
+    (await fetch(f.url + '/operations', { headers: { Origin: origin } })).status,
+    401,
+  );
+  assert.equal(
     (await fetch(f.url + '/ledger', { headers: { Origin: origin } })).status,
     403,
   );

@@ -1,8 +1,13 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { sites } from '@openai/sites-vite-plugin';
 import tailwindcss from '@tailwindcss/postcss';
 import vinext from 'vinext';
 import { defineConfig } from 'vite';
 import hostingConfig from './.openai/hosting.json';
+
+const webRoot = path.dirname(fileURLToPath(import.meta.url));
+const pinoShim = path.join(webRoot, 'shims/pino.ts');
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   '00000000-0000-4000-8000-000000000000';
@@ -45,6 +50,12 @@ export default defineConfig(async () => {
   const { cloudflare } = await import('@cloudflare/vite-plugin');
 
   return {
+    resolve: {
+      alias: [
+        { find: /^pino$/, replacement: pinoShim },
+        { find: /^pino\/browser(\.js)?$/, replacement: pinoShim },
+      ],
+    },
     css: { postcss: { plugins: [tailwindcss()] } },
     server: {
       ...(isCodexSeatbeltSandbox
@@ -57,7 +68,7 @@ export default defineConfig(async () => {
         },
         '/api/operations': {
           target: 'http://127.0.0.1:4100',
-          rewrite: () => '/operations',
+          rewrite: (path) => path.replace(/^\/api\/operations/, '/operations'),
         },
       },
     },

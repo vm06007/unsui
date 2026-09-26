@@ -127,7 +127,7 @@ export function ToolbarPopover({
                         </header>
                         <div className="column-popover-content">{children}</div>
                     </div>,
-                    document.body,
+                    trigger.current?.closest('.ops') ?? document.body,
                 )}
         </>
     );
