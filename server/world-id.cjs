@@ -48,7 +48,7 @@ function createWorldId(
   env = process.env,
   dependencies = {}
 ) {
-  const sessions = new Map();
+  const sessions = dependencies.sessions || new Map();
   const request = dependencies.fetch || fetch;
   const sign = dependencies.sign || signRequest;
   const now = dependencies.now || Date.now;

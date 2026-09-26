@@ -12,6 +12,7 @@ const {
 } = require('./operations-auth.cjs');
 
 function createServer({
+  ledger: suppliedLedger = null,
   file = path.join(__dirname, 'data/ledger.json'),
   allowReset = process.env.NODE_ENV !== 'production',
   worldId = createWorldId(),
@@ -76,7 +77,7 @@ function createServer({
       livePayout,
     );
   }
-  let ledger = makeLedger();
+  let ledger = suppliedLedger || makeLedger();
   const operationsAuth = createOperationsAuth();
   const agentChat = dashboardAgent;
   let agentBusy = false;
@@ -529,7 +530,7 @@ function binding(input) {
     requestId: createHash('sha256').update(input.requestId).digest('hex'),
   };
 }
-module.exports = { createServer };
+module.exports = { createServer, operationRecord, binding };
 if (require.main === module) {
   try {
     process.loadEnvFile(path.join(__dirname, '.env'));
