@@ -11,8 +11,6 @@ export const demoLedger = {
   prepare: (input: Parameters<typeof prepareBackendRecord>[1]) =>
     prepareBackendRecord(BACKEND_URL, input),
   async reset() {
-    if (!__DEV__)
-      throw Error('Ledger reset is available in development builds only.');
     return resetBackend(BACKEND_URL);
   },
   async list() {

@@ -16,12 +16,15 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 let view: Renderer.ReactTestRenderer;
+const originalDev = __DEV__;
 afterEach(async () => {
   await act(async () => view?.unmount());
+  (globalThis as any).__DEV__ = originalDev;
   jest.restoreAllMocks();
   jest.clearAllMocks();
 });
-test('logo reset needs three close taps and calls backend only once', async () => {
+test('release logo reset needs three close taps and calls backend only once', async () => {
+  (globalThis as any).__DEV__ = false;
   const onReset = jest.fn(),
     onDemo = jest.fn();
   let now = 10000;

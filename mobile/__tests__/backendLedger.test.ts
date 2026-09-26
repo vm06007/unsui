@@ -67,3 +67,13 @@ test('connection check rejects a different service', async () => {
     'compatible',
   );
 });
+
+test('a later round keeps globally unique receipt numbers and restores card allowance', async () => {
+  fetchMock.mockResolvedValueOnce(ok({
+    version: 1, receiptOffset: 3,
+    receipts: [{ ...receipt, id: 'GM-000004' }],
+  }));
+  const rows = await listBackend('http://localhost:4100');
+  expect(rows[0].id).toBe('GM-000004');
+  expect(rows[0].remainingDemoJpy).toBe(1000);
+});

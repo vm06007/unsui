@@ -62,6 +62,8 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
   try {
     const parsed = JSON.parse(raw);
     if (parsed.version !== 1 || !Array.isArray(parsed.receipts)) throw Error();
+    const offset = parsed.receiptOffset ?? 0;
+    if (!Number.isSafeInteger(offset) || offset < 0) throw Error();
     const validated: DemoReceipt[] = [];
     const requests = new Set();
     for (const r of parsed.receipts) {
@@ -70,7 +72,7 @@ export function decodeDemoReceipts(raw: string | null): DemoReceipt[] {
         !['GM', 'DEMO'].some(
           prefix =>
             r.id ===
-            `${prefix}-${String(validated.length + 1).padStart(6, '0')}`,
+            `${prefix}-${String(offset + validated.length + 1).padStart(6, '0')}`,
         ) ||
         typeof r.requestId !== 'string' ||
         !r.requestId ||
@@ -160,6 +162,7 @@ export type RecordInput = {
 export function createDemoLedger(
   storage: Storage,
   payout?: (input: RecordInput) => Promise<Partial<DemoReceipt>>,
+  options: { receiptOffset?: number } = {},
 ) {
   // Serialize read/modify/write operations across all cards and networks.
   let queue: Promise<unknown> = Promise.resolve();
@@ -221,7 +224,7 @@ export function createDemoLedger(
           throw Error('The quote changed. Please review it again.');
         const receipt: DemoReceipt = {
           ...quote,
-          id: `GM-${String(receipts.length + 1).padStart(6, '0')}`,
+          id: `GM-${String((options.receiptOffset || 0) + receipts.length + 1).padStart(6, '0')}`,
           requestId: input.requestId,
           cardId,
           scannedBalanceJpy: input.scannedBalanceJpy,
@@ -234,7 +237,7 @@ export function createDemoLedger(
         try {
           await storage.setItem(
             LEDGER_KEY,
-            JSON.stringify({ version: 1, receipts: [...receipts, receipt] }),
+            JSON.stringify({ version: 1, receiptOffset: options.receiptOffset || 0, receipts: [...receipts, receipt] }),
           );
         } catch {
           throw Error(

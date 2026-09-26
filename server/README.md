@@ -164,3 +164,13 @@ For database integration testing, provide a dedicated `TEST_DATABASE_URL` and ru
 `node --test test/postgres.test.cjs`. The test uses uniquely scoped records and
 removes them afterward. Never put database passwords in client-prefixed environment
 variables or tracked files.
+
+### Hosted hackathon rounds
+
+Set `ALLOW_HOSTED_HACKATHON_RESET=true` to enable the Android home-logo triple-tap
+round reset through `/ledger/reset`. This allows another real payout from the same
+card. The hosted service archives the active round in Neon, clears its card
+allowances and World ID sessions, and changes the round used in on-chain card
+commitments. Dashboard history, reservations, and signed transaction journals are
+preserved. Pending payouts block reset; requests from archived rounds are rejected.
+Disable the flag to turn the hosted gesture off without rebuilding the APK.

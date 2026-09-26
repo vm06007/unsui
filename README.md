@@ -70,6 +70,18 @@ Use these explorer links to check the current payout treasury balances and trans
 
 Balances change with every refund; the explorer state is the current reference. Historical deposits are listed in the deployment sections below.
 
+## Confirmed Sui refund
+
+Receipt **GM-000003** paid **5.967690706 SUI** to `kartik.sui` on
+**27 September 2026 at 03:51 JST**, for a **¥1,112** refund request with a
+**¥22.24** fee.
+
+[View the confirmed payout and recipient balance change on Suivision](https://suivision.xyz/txblock/7MnCfhtWLMi4yLvWzR7Td6uF4QNaCWEq5dp79a2VRYRQ?tab=Changes).
+The recipient’s balance increased by **5,967,690,706 MIST**. For this contract
+payout, Suivision’s Overview displays an amount of zero; the **Changes** tab shows
+the SUI actually received. Find the corresponding receipt in the
+[UnSui dashboard](https://unsui.ca/dashboard).
+
 ## Project structure
 
 - `mobile/` — React Native app with NFC scanning, a sample-card demo,
@@ -252,6 +264,7 @@ Prize forms accept one link. These are the lines behind the World, Sui, and Curv
 - Source-to-chain verification: **passed** using Sui CLI 1.80.0. This verifies local source against deployed bytecode; an explorer-hosted verified-source badge is not confirmed.
 - Initial treasury funding of **0.5 SUI**: [deposit transaction](https://suivision.xyz/txblock/B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx).
 - Additional **8 SUI** treasury funding: [deposit transaction](https://suivision.xyz/txblock/ANBK4QDdN5VjyJMsksdwcp49HDsvPKEKzcVV2wadkYQH).
+- Treasury replenishment on **27 September 2026**: **8 SUI** added through `refunds::deposit` ([confirmed deposit](https://suivision.xyz/txblock/F26wa9odkMrcJXXUPTQpnPqAuFR3yJsFdXdkLtrazRUk)). The pool held **8.175219528 SUI immediately after this deposit**; use the Ledger link above for its current balance.
 - Mobile payout integration is enabled on the hosted backend via `SUI_LIVE_PAYOUTS=true`; live Sui payouts use CoinGecko market quotes.
 
 Full object IDs and reproducibility metadata: [deployment record](contracts/deployments/sui-mainnet.json).
@@ -299,3 +312,16 @@ Select **Present the project** on the homepage for an eight-slide introduction: 
 Merchant and order references connect purchase records with payout tracking and reconciliation in the dashboard. SB Payment identifies the merchant with `merchant_id`, the contracted service with `service_id`, and the purchase with `order_id`.
 
 See the official [SB Payment developer documentation](https://developer.sbpayment.jp/) and [purchase request specification: merchant, service and order IDs](https://developer.sbpayment.jp/system-specifications/link-type/2517/).
+
+### Hackathon refund rounds
+
+In the Android app, tap the **UnSui logo on the home screen three times quickly**
+to start a new refund round when the hosted backend has
+`ALLOW_HOSTED_HACKATHON_RESET=true`. Scan the card again to refund it in the new
+round. This permits another real payout from the funded treasury.
+
+The app shows the current round; earlier receipts remain in the dashboard.
+Transaction journals and payout reservations are retained, old request IDs cannot
+issue a second payment, and a pending payout must be resolved before a round can
+change. The gesture requires the updated APK; a backend deployment alone cannot
+unlock it in an older release build. The hosted flag defaults to disabled.

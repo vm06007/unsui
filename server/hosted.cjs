@@ -1,5 +1,5 @@
 const { Readable } = require('node:stream');
-const { createHash } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const { createServer, binding, operationRecord } = require('./server.cjs');
 const { createDemoLedger } = require('./build/demoLedger.js');
 const { createWorldId } = require('./world-id.cjs');
@@ -57,13 +57,37 @@ async function invoke(server, method, url, headers, body) {
 
 async function handle({ method, url, headers, body }, dependencies) {
   const { store, clients, marketQuotes } = dependencies;
+  const allowReset = process.env.ALLOW_HOSTED_HACKATHON_RESET === 'true';
   const path = new URL(url, 'https://unsui.ca').pathname;
   const allowed = /^\/(health|ledger|merchant-feed|dashboard-feed|refunds|quotes\/sui|sui\/resolve-name|ens\/resolve-name|world\/(start|status|cancel|public\/(request|complete|cancel|bypass)))$/;
-  if (!allowed.test(path)) return { status: 404, body: JSON.stringify({ error: 'Not found' }) };
+  if (!(allowReset && path === '/ledger/reset') && !allowed.test(path)) return { status: 404, body: JSON.stringify({ error: 'Not found' }) };
   return store.coordinate(async state => {
     const sessions = new Map(await state.get('world-sessions') || []);
     const worldId = createWorldId(process.env, { sessions });
     const round = await state.get('round');
+    const archives = await state.get('ledger-rounds') || [];
+    const archivedReceipts = archives.flatMap(entry => entry.ledger.receipts);
+    // All changes commit together under the same lock used by payouts.
+    if (method === 'POST' && path === '/ledger/reset') {
+      let input;
+      try { input = JSON.parse(body || '{}'); } catch { return { status: 400, body: JSON.stringify({ error: 'Invalid reset request' }) }; }
+      if (input.confirm !== 'reset-demo-ledger') return { status: 400, body: JSON.stringify({ error: 'Reset confirmation required' }) };
+      if (await store.pending()) return { status: 409, body: JSON.stringify({ error: 'Retry the pending refund before starting a new round.' }) };
+      const previous = await state.get('ledger') || { version: 1, receipts: [] };
+      if (previous.receipts.length) archives.push({ round: round || 'initial', closedAt: new Date().toISOString(), ledger: previous });
+      await state.set('ledger-rounds', archives);
+      await state.set('ledger', { version: 1, receipts: [] });
+      await state.set('round', randomUUID());
+      await state.set('world-sessions', []);
+      return { status: 200, body: JSON.stringify({ reset: true }) };
+    }
+    // An old request must never become another payment after a round change.
+    if (method === 'POST' && path === '/refunds') {
+      let input;
+      try { input = JSON.parse(body || '{}'); } catch { return { status: 400, body: JSON.stringify({ error: 'Invalid refund request' }) }; }
+      if (archivedReceipts.some(receipt => receipt.requestId === input.requestId))
+        return { status: 409, body: JSON.stringify({ error: 'This request belongs to a completed round. Its receipt remains in the dashboard. Scan again for a new refund.' }) };
+    }
     const ledger = createDemoLedger({
       async getItem() { const value = await state.get('ledger'); return value ? JSON.stringify(value) : null; },
       async setItem(_key, value) { await state.set('ledger', JSON.parse(value)); },
@@ -87,15 +111,21 @@ async function handle({ method, url, headers, body }, dependencies) {
       const result = await client.pay({ ...input, demoRound: round });
       if (result.status !== 'confirmed' || !result.transactionDigest) throw Error('Payout is not confirmed yet. Retry the same request.');
       return store.complete(id, fingerprint, result);
-    });
+    }, { receiptOffset: archivedReceipts.length });
     if (method === 'GET' && path === '/dashboard-feed') {
-      return { status: 200, body: JSON.stringify({ records: (await ledger.list()).map(operationRecord).reverse() }) };
+      return { status: 200, body: JSON.stringify({ records: [...archivedReceipts, ...await ledger.list()].map(operationRecord).reverse() }) };
     }
     const server = createServer({
       ledger, worldId, marketQuotes, allowReset: false,
       liveClient: { networks: Object.keys(clients) },
     });
     const result = await invoke(server, method, path, headers, body);
+    if (method === 'GET' && path === '/ledger') {
+      result.body = JSON.stringify({ ...JSON.parse(result.body), receiptOffset: archivedReceipts.length });
+    }
+    if (method === 'GET' && path === '/health') {
+      result.body = JSON.stringify({ ...JSON.parse(result.body), canReset: allowReset });
+    }
     await state.set('world-sessions', [...sessions]);
     return result;
   });

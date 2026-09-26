@@ -37,7 +37,7 @@ export default function HomeScreen({
   const taps = useRef({ count: 0, time: 0 });
   const resetting = useRef(false);
   const handleLogoTap = async () => {
-    if (!__DEV__ || scanning || resetting.current) return;
+    if (scanning || resetting.current) return;
     const now = Date.now();
     const count = now - taps.current.time < 1500 ? taps.current.count + 1 : 1;
     taps.current = { count, time: now };
@@ -46,10 +46,11 @@ export default function HomeScreen({
     resetting.current = true;
     try {
       const cleared = await demoLedger.reset();
-      if (cleared !== false) onReset();
+      if (cleared === false) throw Error('New refund rounds are disabled on this backend.');
+      onReset();
       if (Platform.OS === 'android')
-        ToastAndroid.show('ETHGlobal Tokyo 2026', ToastAndroid.SHORT);
-      else Alert.alert('UnSui', 'ETHGlobal Tokyo 2026');
+        ToastAndroid.show('New refund round ready. Scan your card again.', ToastAndroid.SHORT);
+      else Alert.alert('UnSui', 'New refund round ready. Scan your card again.');
     } catch (error) {
       const text =
         error instanceof Error
