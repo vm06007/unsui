@@ -1,3 +1,4 @@
+import { PresentationMode } from '@/components/presentation-mode';
 import { MarketOpportunity } from '@/components/market-opportunity';
 import { SiteHeader, SiteFooter } from '@/components/site-chrome';
 import {
@@ -14,8 +15,7 @@ import {
   ExternalLink,
   Download,
 } from 'lucide-react';
-const tx =
-  'https://suiexplorer.com/txblock/6EuqKUAbzYEg2MqpuFCr9ERcjFMezPZoCgnwGdPekffL?network=devnet';
+import { transactionLink as tx } from './how-it-works/deployed-records';
 export default function Home() {
   return (
     <>
@@ -37,9 +37,11 @@ export default function Home() {
             </p>
             <p className="hero-detail">
               Meet UnSui. Tap your transit card, discover what’s left, and
-              explore a new way to take it with you — on Sui.
+              choose where it goes next: Sui, Ethereum, or yen-denominated MJPY
+              on Mizuhiki Awaji.
             </p>
             <div className="hero-actions">
+              <PresentationMode />
               <a href="/demo" className="button dark">
                 Take it for a spin <ArrowUpRight size={20} />
               </a>
@@ -48,8 +50,8 @@ export default function Home() {
               </a>
             </div>
             <div className="hero-foot">
-              <span>No wallet needed</span>
-              <span>About 60 seconds</span>
+              <span>No wallet connection required</span>
+              <span>Name or wallet address</span>
               <span>Made for mobile</span>
             </div>
           </div>
@@ -156,13 +158,13 @@ export default function Home() {
             BUILT AT <b>ETHGlobal Tokyo 2026</b>
           </span>
           <span>
-            POWERED BY <b>Sui</b>
+            PAYOUTS ON <b>Sui · Ethereum · Awaji</b>
           </span>
           <span>
             ON DEVICE <b>dGen1 × NFC</b>
           </span>
           <a href={tx} target="_blank" rel="noreferrer">
-            See the devnet transaction <ArrowUpRight size={16} />
+            See a mainnet payout <ArrowUpRight size={16} />
           </a>
         </div>
         <section id="how" className="section how">
@@ -195,8 +197,8 @@ export default function Home() {
               <ArrowUpRight />
               <h3>Give your balance a destination.</h3>
               <p>
-                Choose your wallet and confirm with another scan. Sui is the
-                default, with a test-token refund on the native prototype.
+                Enter a .sui name, ENS name or wallet address, or use your dGen1
+                wallet. Review the quote and confirm with another scan.
               </p>
             </article>
             <article>
@@ -204,8 +206,8 @@ export default function Home() {
               <ShieldCheck />
               <h3>Keep the proof.</h3>
               <p>
-                Explore a receipt linked to the one before it. The Sui contract
-                records the refund and prevents replayed claims.
+                Follow confirmation in the app, then open the transaction on its
+                explorer. Your receipt and refund history stay available.
               </p>
             </article>
           </div>
@@ -221,8 +223,8 @@ export default function Home() {
               <br />A verifiable trail.
             </h2>
             <p>
-              Built on real Sui infrastructure, with the trust boundaries in the
-              open.
+              Mainnet payouts, a hosted ledger and a dashboard that brings every
+              recorded refund into view.
             </p>
             <a
               href={tx}
@@ -250,9 +252,9 @@ export default function Home() {
               <div>
                 <h3>Record on Sui</h3>
                 <p>
-                  A Move contract holds the test-token treasury and records
-                  refund totals, sequences and unique claims. Payment and
-                  recording happen atomically.
+                  A Move contract holds the SUI treasury and records refund
+                  totals, sequences and unique claims. Payment and recording
+                  happen atomically.
                 </p>
               </div>
             </article>
@@ -267,12 +269,69 @@ export default function Home() {
                 </p>
               </div>
             </article>
+            <article>
+              <ShieldCheck />
+              <div>
+                <h3>A clear quote before you confirm</h3>
+                <p>
+                  Sui quotes use the SUI/JPY market rate with a 2% fee. Awaji
+                  pays 1 MJPY per net yen. Refunds above ¥1,000 require a World
+                  ID check before confirmation.
+                </p>
+              </div>
+            </article>
             <div className="trust-note">
               The operator attests to the NFC scan. A receipt proves the Sui
               refund record; it does not prove a debit from a transit card. This
               is an independent hackathon prototype, not a JR East service.
             </div>
           </div>
+        </section>
+        <section className="section how" id="operations">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">03 / YOUR OPERATIONS WORKSPACE</span>
+              <h2>
+                Every payout.
+                <br />
+                Your point of view.
+              </h2>
+            </div>
+            <p>
+              See hosted refund records, recipients and transaction links in one
+              place. Arrange the workspace yourself, or ask the assistant.
+            </p>
+          </div>
+          <div className="steps">
+            <article>
+              <Layers />
+              <h3>Make room for what matters.</h3>
+              <p>
+                Choose, reorder and resize cards on Overview and Treasury.
+                Switch table views and show the columns you need.
+              </p>
+            </article>
+            <article>
+              <ShieldCheck />
+              <h3>Follow the transaction.</h3>
+              <p>
+                Find an order, check its payout and open the blockchain
+                explorer. Keep sample orders and app records easy to
+                distinguish.
+              </p>
+            </article>
+            <article>
+              <ArrowUpRight />
+              <h3>Ask for a different view.</h3>
+              <p>
+                “Show only payouts and latest journeys.” The assistant changes
+                display settings, with Undo when you want to go back.
+              </p>
+            </article>
+          </div>
+          <a href="/dashboard" className="button dark">
+            Explore the dashboard <ArrowUpRight size={18} />
+          </a>
         </section>
         <section id="film" className="section film">
           <div className="video-placeholder">
@@ -282,7 +341,7 @@ export default function Home() {
             <p>Demo video coming soon.</p>
           </div>
           <div>
-            <span className="eyebrow">03 / SEE IT IN MOTION</span>
+            <span className="eyebrow">04 / SEE IT IN MOTION</span>
             <h2>
               Until the film drops,
               <br />
@@ -303,15 +362,20 @@ export default function Home() {
             <div>
               <h3>The next stop: your phone.</h3>
               <p>
-                Android APK downloads will live here when the public build is
-                ready.
+                The standalone Android app connects to the hosted backend over
+                Wi-Fi or mobile data, without a laptop.
                 <br />
-                For now, explore the complete browser demo.
+                Android · ARM64 · 21 MB. Built for dGen1 and compatible NFC
+                phones.
               </p>
             </div>
-            <span className="coming-badge">
-              <Download size={16} /> APK coming soon
-            </span>
+            <a
+              className="button dark"
+              href="/downloads/unsui-1.0-arm64.apk"
+              download
+            >
+              <Download size={16} /> Download APK
+            </a>
           </div>
         </section>
       </main>

@@ -3885,14 +3885,6 @@ footer > span {
   border-radius: 13px;
   background: #fff;
 }
-.charge-sequence li:not(:last-child):after {
-  content: '→';
-  position: absolute;
-  right: -17px;
-  top: 34px;
-  font-size: 20px;
-  color: #94ad7b;
-}
 .charge-step-icon {
   width: 43px;
   height: 43px;
@@ -3936,18 +3928,6 @@ footer > span {
   font-size: 13px;
   line-height: 1.8;
   color: #768d62;
-}
-.charge-sequence .charge-highlight {
-  background: #ebf4df;
-  border-color: #adc991;
-}
-.charge-highlight .charge-step-icon {
-  background: #d6e9bb;
-  color: #5d813f;
-}
-.charge-highlight .charge-status {
-  color: #537831;
-  font-weight: 600;
 }
 .charge-boundary {
   padding: 22px 25px;
@@ -4002,13 +3982,6 @@ footer > span {
   .charge-sequence li p {
     font-size: 14px;
   }
-  .charge-sequence li:not(:last-child):after {
-    right: auto;
-    left: 37px;
-    top: auto;
-    bottom: -23px;
-    transform: rotate(90deg);
-  }
   .proof-diagrams {
     grid-template-columns: 1fr;
   }
@@ -4041,9 +4014,6 @@ footer > span {
   .charge-step-icon {
     width: 36px;
     height: 36px;
-  }
-  .charge-sequence li:not(:last-child):after {
-    left: 26px;
   }
   .charge-sequence h4 {
     font-size: 18px;
@@ -4631,4 +4601,139 @@ footer > span {
     padding: 28px 24px;
     margin: auto;
   }
+}
+
+/* Architecture introduction: keep the section index beside the copy. */
+.arch-hero-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: clamp(32px, 5vw, 80px);
+  align-items: center;
+}
+.arch-hero-layout .arch-nav {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+  margin: 0;
+  padding: 0 0 0 24px;
+  border-top: 0;
+  border-left: 1px solid #73816855;
+}
+.arch-hero-layout .arch-nav a {
+  display: block;
+  padding: 15px 0;
+  font-size: 14px;
+}
+.arch-hero-layout .arch-nav a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+@media (max-width: 1000px) {
+  .arch-hero-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .arch-hero-layout .arch-nav {
+    border-left: 0;
+    border-top: 1px solid #73816855;
+    padding: 12px 0 0;
+  }
+  .arch-hero-layout .arch-nav a {
+    padding: 10px 0;
+  }
+}
+
+.charge-sequence li,
+.charge-step-icon,
+.charge-status {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+@media (hover: hover) {
+  .charge-sequence li:hover {
+    background: #ebf4df;
+    border-color: #adc991;
+  }
+  .charge-sequence li:hover .charge-step-icon {
+    background: #d6e9bb;
+    color: #5d813f;
+  }
+  .charge-sequence li:hover .charge-status {
+    color: #537831;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .charge-sequence li,
+  .charge-step-icon,
+  .charge-status {
+    transition: none;
+  }
+}
+
+.cycle-edge-labels rect {
+  fill: #f7f9f2;
+  stroke: #d8e4cb;
+  stroke-width: 1;
+}
+.cycle-edge-labels text {
+  fill: #426334;
+  font-weight: 500;
+}
+
+.demo-dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 17px;
+  border-radius: 10px;
+  background: #c6e6a1;
+  color: #173e2f;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 160ms ease;
+}
+.demo-dashboard-link:hover {
+  background: #d8f6b3;
+}
+.demo-dashboard-link:focus-visible {
+  outline: 2px solid #78975a;
+  outline-offset: 3px;
+}
+.mobile-demo-bar .demo-dashboard-link {
+  padding: 6px 9px;
+  font-size: 11px;
+  color: #173e2f;
+}
+
+.demo-recipient-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #80957966;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.demo-recipient-input input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 8px 0;
+}
+.demo-recipient-input button {
+  padding: 8px;
+  border-radius: 8px;
+  background: #c6e6a1;
+  color: #173e2f;
+}
+.demo-recipient-input button:disabled {
+  opacity: 0.45;
+}
+.demo-resolved {
+  overflow-wrap: anywhere;
+  font-size: 12px;
 }

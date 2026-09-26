@@ -3,6 +3,7 @@ import './globals.css';
 import './presentation-theme.css';
 import './demo-theme.css';
 import './mobile-layout.css';
+import './pitch.css';
 export const metadata: Metadata = {
   title: 'UnSui (雲水) — Your journey goes on',
   description:

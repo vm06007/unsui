@@ -65,7 +65,8 @@ export function MobileNavigation() {
           </a>
           <a
             className="button get-app-button"
-            href="/#download"
+            href="/downloads/unsui-1.0-arm64.apk"
+            download
             onClick={() => setOpen(false)}
           >
             Get the app <Download size={18} />

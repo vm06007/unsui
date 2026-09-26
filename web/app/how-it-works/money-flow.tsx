@@ -1,159 +1,162 @@
 import {
-    ArrowRight,
-    Clock3,
-    FileCheck,
-    Landmark,
-    LockKeyhole,
-    Store,
-    Wallet,
+  ArrowRight,
+  ScanLine,
+  FileCheck,
+  ShieldCheck,
+  Database,
+  Wallet,
 } from 'lucide-react';
 import { ChargeSequence, MoneyCycle } from './money-cycle';
 
 export function MoneyFlow() {
-    return (
-        <>
-            <section className="arch-section" id="money-flow">
-                <div className="arch-section-heading">
-                    <span className="arch-kicker">
-                        01 / TWO PATHS, ONE RECONCILED RECORD
-                    </span>
-                    <h2>
-                        A purchase now.
-                        <br />
-                        Settlement later.
-                    </h2>
-                    <p>
-                        In the proposed flow, a supported merchant purchase creates a yen
-                        receivable. After authoritative payment confirmation and
-                        eligibility checks, UnSui authorizes a crypto payout from funds
-                        already in its treasury.
-                    </p>
+  return (
+    <>
+      <section className="arch-section" id="money-flow">
+        <div className="arch-section-heading">
+          <span className="arch-kicker">01 / FROM A TAP TO A TRANSACTION</span>
+          <h2>
+            Your card on the phone.
+            <br />
+            Your payout on-chain.
+          </h2>
+          <p>
+            UnSui reads the card over NFC, prepares the payout and confirms it
+            through the hosted backend. A prefunded contract sends the funds to
+            your chosen address. The phone and dashboard share the same recorded
+            result.
+          </p>
+        </div>
+        <div className="flow-board">
+          <div className="flow-board-title">
+            <span className="implemented-badge">HOW UNSUI WORKS TODAY</span>
+            <span>Scan → confirm → follow the transaction.</span>
+          </div>
+          <ol className="money-nodes">
+            <li>
+              <ScanLine />
+              <small>01 · SCAN & QUOTE</small>
+              <h3>A balance and a destination</h3>
+              <p>
+                Read the transit card, select the network and enter a wallet
+                address, .sui name or ENS name. Review the amount and 2% fee.
+              </p>
+            </li>
+            <li>
+              <ShieldCheck />
+              <small>02 · CONFIRM</small>
+              <h3>Check the same card</h3>
+              <p>
+                Re-scan to confirm. The backend checks the quote, remaining
+                allowance and request ID. Refunds above ¥1,000 also require
+                World ID verification.
+              </p>
+            </li>
+            <li>
+              <FileCheck />
+              <small>03 · ISSUE THE PAYOUT</small>
+              <h3>One request, one result</h3>
+              <p>
+                The operator signs the payout and waits for chain confirmation.
+                An interrupted request reuses its saved transaction when
+                retried.
+              </p>
+            </li>
+          </ol>
+          <div className="split-connector">
+            <span>Transaction confirmed</span>
+            <div />
+            <span>One result, two views</span>
+          </div>
+          <div className="payment-lanes">
+            <article className="payout-lane">
+              <div className="lane-heading">
+                <Wallet />
+                <span>ON THE PHONE</span>
+                <b>Funds and a receipt</b>
+              </div>
+              <div className="lane-steps">
+                <div>
+                  <strong>Funded treasury</strong>
+                  <small>SUI · ETH · MJPY</small>
                 </div>
-                <MoneyCycle />
-                <div className="flow-board">
-                    <div className="flow-board-title">
-                        <span className="planned-badge">
-                            PROPOSED PAYMENT INTEGRATION
-                        </span>
-                        <span>
-                            Arrows show value movement or authorization—not elapsed time.
-                        </span>
-                    </div>
-                    <ol className="money-nodes">
-                        <li>
-                            <Store />
-                            <small>01 · PAYMENT</small>
-                            <h3>Eligible purchase</h3>
-                            <p>Customer pays through an approved payment channel.</p>
-                        </li>
-                        <li>
-                            <FileCheck />
-                            <small>02 · CONFIRMATION</small>
-                            <h3>SB Payment record</h3>
-                            <p>
-                                Verify merchant, order, amount and completed payment status.
-                            </p>
-                        </li>
-                        <li>
-                            <LockKeyhole />
-                            <small>03 · AUTHORIZATION</small>
-                            <h3>UnSui authorizer</h3>
-                            <p>
-                                Bind the eligible payment to one recipient and payout
-                                entitlement.
-                            </p>
-                        </li>
-                    </ol>
-                    <div className="split-connector">
-                        <span>Payment confirmed</span>
-                        <div />
-                        <span>Two independent paths</span>
-                    </div>
-                    <div className="payment-lanes">
-                        <article className="payout-lane">
-                            <div className="lane-heading">
-                                <Wallet />
-                                <span>THE USER PATH</span>
-                                <b>Prefunded payout</b>
-                            </div>
-                            <div className="lane-steps">
-                                <div>
-                                    <strong>Crypto reserve</strong>
-                                    <small>Capital funded in advance</small>
-                                </div>
-                                <ArrowRight />
-                                <div>
-                                    <strong>Sui contract</strong>
-                                    <small>Check → record → pay</small>
-                                </div>
-                                <ArrowRight />
-                                <div>
-                                    <strong>User wallet</strong>
-                                    <small>Receipt + crypto</small>
-                                </div>
-                            </div>
-                            <p>
-                                Subject to approval, available liquidity and chain
-                                confirmation. No need to wait for that purchase’s yen
-                                settlement.
-                            </p>
-                        </article>
-                        <article className="settlement-lane">
-                            <div className="lane-heading">
-                                <Landmark />
-                                <span>THE TREASURY PATH</span>
-                                <b>Replenishment later</b>
-                            </div>
-                            <div className="lane-steps">
-                                <div>
-                                    <strong>Yen settlement</strong>
-                                    <small>Merchant bank account</small>
-                                </div>
-                                <ArrowRight />
-                                <div>
-                                    <strong>Conversion</strong>
-                                    <small>Separate provider / venue</small>
-                                </div>
-                                <ArrowRight />
-                                <div>
-                                    <strong>Crypto reserve</strong>
-                                    <small>Reconcile + replenish</small>
-                                </div>
-                            </div>
-                            <p>
-                                Net settled yen is converted through a separately arranged,
-                                suitable provider. SBPS is not shown as performing crypto
-                                conversion.
-                            </p>
-                        </article>
-                    </div>
+                <ArrowRight />
+                <div>
+                  <strong>Payout contract</strong>
+                  <small>Check → record → transfer</small>
                 </div>
-                <div className="arch-callout">
-                    <Clock3 />
-                    <p>
-                        <b>Confirmed does not mean settled.</b> A payment result, a
-                        merchant receivable, cleared bank cash and available crypto are
-                        different balances. Only crypto already available in the pool can
-                        fund an immediate on-chain payout.{' '}
-                        <a
-                            href="https://support.sbpayment.jp/first-guide/5031/"
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            SBPS settlement reference ↗
-                        </a>
-                    </p>
+                <ArrowRight />
+                <div>
+                  <strong>Destination wallet</strong>
+                  <small>Confirmed transaction</small>
                 </div>
-                <p className="arch-footnote">
-                    The proposed crypto-linked use case and the exact payment channel
-                    must be accepted by the relevant providers before launch. A merchant
-                    ID alone does not authorize cash-out or crypto purchases. A phone
-                    reading a Suica balance is not a merchant payment or card debit.
-                </p>
-            </section>
-            <section className="arch-section" id="card-transaction">
-                <ChargeSequence />
-            </section>
-        </>
-    );
+              </div>
+              <p>
+                Sui and Ethereum payouts run on mainnet. Mizuhiki Awaji pays
+                MJPY on testnet at 1 MJPY per net yen. The app shows progress,
+                then the receipt and explorer link.
+              </p>
+            </article>
+            <article className="settlement-lane">
+              <div className="lane-heading">
+                <Database />
+                <span>IN OPERATIONS</span>
+                <b>The same receipt, ready to inspect</b>
+              </div>
+              <div className="lane-steps">
+                <div>
+                  <strong>Hosted ledger</strong>
+                  <small>Durable refund history</small>
+                </div>
+                <ArrowRight />
+                <div>
+                  <strong>Dashboard</strong>
+                  <small>Orders, recipients, hashes</small>
+                </div>
+                <ArrowRight />
+                <div>
+                  <strong>Explorer</strong>
+                  <small>Inspect the chain record</small>
+                </div>
+              </div>
+              <p>
+                Filter orders, choose cards and columns, or ask the workspace
+                assistant to arrange the view. The SB extension presents
+                merchant-shaped records for the demonstration; live SBPS
+                settlement is not connected.
+              </p>
+            </article>
+          </div>
+        </div>
+        <div className="arch-callout">
+          <Wallet />
+          <p>
+            <b>Funded before the scan.</b> Payouts use the contract’s existing
+            balance. Operators replenish the treasury directly. NFC reads the
+            transit card; the refund ledger tracks the allowance without
+            debiting the physical card.
+          </p>
+        </div>
+        <div className="arch-actions">
+          <a className="button dark" href="/dashboard">
+            Explore the operations dashboard <ArrowRight size={18} />
+          </a>
+        </div>
+      </section>
+      <section className="arch-section" id="card-transaction">
+        <ChargeSequence />
+      </section>
+      <section className="arch-section" id="settlement-model">
+        <div className="arch-section-heading">
+          <span className="arch-kicker">THE MERCHANT SETTLEMENT MODEL</span>
+          <h2>How replenishment can follow.</h2>
+          <p>
+            The working payout path uses operator-funded liquidity. This model
+            shows how verified merchant payments and later yen settlement could
+            replenish it when the payment provider is connected.
+          </p>
+        </div>
+        <MoneyCycle />
+      </section>
+    </>
+  );
 }

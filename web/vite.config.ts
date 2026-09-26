@@ -91,6 +91,8 @@ export default defineConfig(async () => {
         ? { watch: { useFsEvents: false, usePolling: true } }
         : {}),
       proxy: {
+        '/api/mobile/sui/resolve-name': { target: 'https://unsui.ca', changeOrigin: true },
+        '/api/mobile/ens/resolve-name': { target: 'https://unsui.ca', changeOrigin: true },
         '/api/auth': {
           target: 'http://127.0.0.1:4100',
           rewrite: (path: string) => path.replace(/^\/api\/auth/, '/auth'),

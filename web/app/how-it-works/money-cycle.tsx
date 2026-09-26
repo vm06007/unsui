@@ -112,21 +112,31 @@ export function MoneyCycle() {
             <path d="M107 196 Q146 85 277 75" />
           </g>
           <g className="cycle-edge-labels">
-            <text x="580" y="113" textAnchor="middle">
-              Verify payment
-            </text>
-            <text x="672" y="386" textAnchor="middle">
-              Settlement lag
-            </text>
-            <text x="380" y="576" textAnchor="middle">
-              Net of fees & adjustments
-            </text>
-            <text x="87" y="386" textAnchor="middle">
-              Crypto deposit
-            </text>
-            <text x="173" y="113" textAnchor="middle">
-              Next purchase
-            </text>
+            {[
+              { label: 'Verify payment', x: 580, y: 109, width: 116 },
+              { label: 'Settlement lag', x: 672, y: 382, width: 112 },
+              {
+                label: 'Net of fees & adjustments',
+                x: 380,
+                y: 572,
+                width: 180,
+              },
+              { label: 'Crypto deposit', x: 87, y: 382, width: 116 },
+              { label: 'Next purchase', x: 173, y: 109, width: 110 },
+            ].map(({ label, x, y, width }) => (
+              <g key={label} transform={`translate(${x},${y})`}>
+                <rect
+                  x={-width / 2}
+                  y={-14}
+                  width={width}
+                  height={28}
+                  rx={14}
+                />
+                <text textAnchor="middle" dominantBaseline="central">
+                  {label}
+                </text>
+              </g>
+            ))}
           </g>
           <g className="cycle-center">
             <text x="380" y="269" textAnchor="middle">
@@ -203,46 +213,42 @@ export function ChargeSequence() {
   const steps = [
     {
       icon: ScanLine,
-      title: 'Read & quote',
-      text: 'Read the card for context, choose the payout wallet and show the amount and quote. Reading NFC alone does not charge the card.',
-      status: 'NO DEBIT YET',
+      status: 'NFC READ',
+      title: 'Scan the card',
+      text: 'Read the balance and recent journeys. The shared ledger checks what remains available for refund.',
     },
     {
       icon: CreditCard,
-      title: 'Accept the card payment',
-      text: 'The customer approves the purchase at a supported merchant terminal or payment integration. The payment system performs the actual debit.',
-      status: 'CARD DEBIT HAPPENS HERE',
+      status: 'YOUR DESTINATION',
+      title: 'Review the quote',
+      text: 'Choose Sui, Ethereum or Awaji. Resolve a name, enter an address or use the dGen1 wallet, then review the fee and payout.',
     },
     {
       icon: FileCheck,
-      title: 'Verify the completed payment',
-      text: 'The backend checks the processor result, merchant, order and amount. A failed or unknown payment does not authorize a payout.',
-      status: 'SERVER-SIDE VERIFICATION',
+      status: 'SAME-CARD CHECK',
+      title: 'Re-scan to confirm',
+      text: 'Present the same card again. The backend validates the request and requires a World ID proof for refunds above ¥1,000.',
     },
     {
       icon: ShieldCheck,
-      title: 'Consume the entitlement',
-      text: 'Bind the verified payment to one payout entitlement. The target contract checks it is unused and within its amount cap; current code checks request IDs and card totals.',
-      status: 'DUPLICATE-PAYOUT GATE',
+      status: 'ISSUING REFUND',
+      title: 'Wait for confirmation',
+      text: 'The contract processes the payout while the app shows progress. Safe retries reuse the saved request and transaction.',
     },
     {
       icon: Wallet,
-      title: 'Transfer & issue a receipt',
-      text: 'An approved on-chain transaction pays from the crypto buffer and records the receipt atomically. A retry reuses the same claim, not a new card charge.',
-      status: 'PAYOUT + RECORD',
+      status: 'CONFIRMED ON-CHAIN',
+      title: 'Open your receipt',
+      text: 'See the amount, destination and transaction hash. Open the explorer or find the same refund in history and the dashboard.',
     },
   ];
   return (
     <div className="charge-sequence">
-      <div className="cycle-heading">
-        <div>
-          <span className="arch-kicker">ONE CUSTOMER TRANSACTION</span>
-          <h3>Where the card is charged—and what follows.</h3>
-        </div>
-      </div>
+      <span className="arch-kicker">ONE REFUND, START TO FINISH</span>
+      <h3>From the first scan to the explorer.</h3>
       <ol>
         {steps.map((step, i) => (
-          <li key={step.title} className={i === 1 ? 'charge-highlight' : ''}>
+          <li key={step.title}>
             <div className="charge-step-icon">
               <step.icon size={21} />
               <span>{i + 1}</span>
@@ -256,15 +262,14 @@ export function ChargeSequence() {
         ))}
       </ol>
       <div className="charge-boundary">
-        <b>Two systems, two outcomes.</b> The card debit and crypto transfer are
-        not one atomic transaction. If the payout is delayed or fails after a
-        successful payment, keep the entitlement pending for reconciliation and
-        retry; any payment reversal follows the original payment channel. The
-        current dGen1 NFC reader does not execute the merchant debit.
+        <b>Keep the receipt, even if the connection drops.</b> The hosted ledger
+        preserves confirmed refunds. Retry an interrupted request to recover its
+        result without issuing another payout.
       </div>
     </div>
   );
 }
+
 export function ClaimTree() {
   return (
     <div

@@ -9,9 +9,9 @@ export function BufferSection() {
                 <h2>The buffer buys time.</h2>
                 <p>
                     UnSui prefunds a crypto treasury using operator capital. User
-                    payouts reduce it. Bank settlement and later conversion replenish
-                    it. Pending yen is tracked separately and never counted as
-                    spendable SUI.
+                    payouts reduce it; operators currently replenish it directly.
+                    The proposed merchant integration would replenish it after bank
+                    settlement and conversion. Pending yen is not spendable crypto.
                 </p>
             </div>
             <BufferChart />

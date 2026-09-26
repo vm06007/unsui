@@ -1,4 +1,4 @@
-import { objectLink, pkg } from './devnet-records';
+import { objectLink, pkg } from './deployed-records';
 
 export function SourcesSection() {
     return (
@@ -45,7 +45,7 @@ export function SourcesSection() {
                     PayCAS · supported payment brands ↗
                 </a>
                 <a href={objectLink(pkg)} target="_blank" rel="noreferrer">
-                    UnSui · deployed Move package on devnet ↗
+                    UnSui · deployed Move package on mainnet ↗
                 </a>
             </div>
         </section>

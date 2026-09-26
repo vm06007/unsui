@@ -35,7 +35,11 @@ export function SiteHeader() {
       <div className="header-actions">
         <ThemeToggle />
         <MobileNavigation />
-        <a className="button small get-app-button" href="/#download">
+        <a
+          className="button small get-app-button"
+          href="/downloads/unsui-1.0-arm64.apk"
+          download
+        >
           Get the app <Download size={17} />
         </a>
         <a className="button small dark" href="/demo">

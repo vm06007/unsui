@@ -4,5 +4,5 @@ export const siteNavigation = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/#technology', label: 'Under the hood' },
-  { href: '/#film', label: 'The film' },
+  { href: '/#film', label: 'Watch Demo' },
 ];

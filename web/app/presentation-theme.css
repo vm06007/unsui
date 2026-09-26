@@ -91,7 +91,6 @@ html[data-theme='dark']:has(.site-nav)
     .reconcile-strip,
     .charge-step-icon,
     .charge-step-icon > span,
-    .charge-sequence .charge-highlight,
     .charge-boundary,
     .ideology-closing,
     .ideology-card-story,
@@ -279,11 +278,6 @@ html[data-theme='dark']:has(.site-nav) .avatar,
 html[data-theme='dark']:has(.site-nav) .buffer-notes code,
 html[data-theme='dark']:has(.site-nav) .buffer-notes svg,
 html[data-theme='dark']:has(.site-nav) .charge-boundary b,
-html[data-theme='dark']:has(.site-nav) .charge-highlight .charge-status,
-html[data-theme='dark']:has(.site-nav) .charge-highlight .charge-step-icon,
-html[data-theme='dark']:has(.site-nav)
-  .charge-sequence
-  li:not(:last-child):after,
 html[data-theme='dark']:has(.site-nav) .charge-step-icon,
 html[data-theme='dark']:has(.site-nav) .contract-checks li svg,
 html[data-theme='dark']:has(.site-nav) .contract-flow > svg,
@@ -335,10 +329,6 @@ html[data-theme='dark']:has(.site-nav) .video-placeholder > svg {
 
 html[data-theme='dark']:has(.site-nav) .site-nav .button.dark {
   color: #173e2f;
-}
-
-html[data-theme='dark']:has(.site-nav) .charge-highlight .charge-step-icon {
-  background: #344f30;
 }
 
 /* Download panel styles live beside the demo styles in the base stylesheet. */
@@ -416,4 +406,31 @@ html[data-theme='dark']:has(.site-nav) .site-nav .get-app-button:hover {
   .site-nav .header-actions .theme-toggle {
     margin-right: auto;
   }
+}
+
+@media (hover: hover) {
+  html[data-theme='dark']:has(.site-nav) .charge-sequence li:hover {
+    background: #26392a;
+    border-color: #78975a;
+  }
+  html[data-theme='dark']:has(.site-nav)
+    .charge-sequence
+    li:hover
+    .charge-step-icon {
+    background: #344f30;
+  }
+  html[data-theme='dark']:has(.site-nav)
+    .charge-sequence
+    li:hover
+    .charge-status {
+    color: #b9dc96;
+  }
+}
+
+html[data-theme='dark']:has(.site-nav) .cycle-edge-labels rect {
+  fill: #26392a;
+  stroke: #52674a;
+}
+html[data-theme='dark']:has(.site-nav) .cycle-edge-labels text {
+  fill: #d4eabf;
 }

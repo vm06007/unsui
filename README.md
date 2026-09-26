@@ -212,7 +212,7 @@ Prize forms accept one link. These are the lines behind the World, Sui, and Curv
 - Source-to-chain verification: **passed** using Sui CLI 1.80.0. This verifies local source against deployed bytecode; an explorer-hosted verified-source badge is not confirmed.
 - Initial treasury funding of **0.5 SUI**: [deposit transaction](https://suivision.xyz/txblock/B2PUHvty7AC7S7ga6yyDxpdLifqkuViNhNJHy7iK2zHx).
 - Additional **8 SUI** treasury funding: [deposit transaction](https://suivision.xyz/txblock/ANBK4QDdN5VjyJMsksdwcp49HDsvPKEKzcVV2wadkYQH).
-- Mobile payout integration is enabled locally via `SUI_LIVE_PAYOUTS=true`; live Sui payouts use CoinGecko market quotes.
+- Mobile payout integration is enabled on the hosted backend via `SUI_LIVE_PAYOUTS=true`; live Sui payouts use CoinGecko market quotes.
 
 Full object IDs and reproducibility metadata: [deployment record](contracts/deployments/sui-mainnet.json).
 
@@ -249,3 +249,13 @@ Sui refunds use a CoinGecko SUI/JPY quote with a 2% service fee. The backend aut
 - [Existing treasury and refund history](https://suivision.xyz/object/0xa4b33876663619dd90862ab611e104258f9c366ba1c6655dfb0a4a93af94e535) are preserved.
 
 The legacy Ledger pause flag stays **true** to block old fixed-rate calls. Market payouts use the separate MarketPolicy pause flag; administer it with `pause_market`. Keep the legacy pause flag true. Quote amounts are capped at 200 SUI per refund. Fund the treasury for market prices before testing: the previous fixed rate is no longer used for live Sui refunds. Old receipts retain their original amounts.
+
+### Website presentation mode
+
+Select **Present the project** on the homepage for a seven-slide introduction: the problem, experience, payout architecture, dashboard, confirmed transaction and demo handoff. Use Left/Right arrows or the slide dots to navigate, the fullscreen control when supported, and Escape to close. The final slide links directly to the browser demo, dashboard and Android APK.
+
+### Merchant identity and API reference
+
+Merchant and order references connect purchase records with payout tracking and reconciliation in the dashboard. SB Payment identifies the merchant with `merchant_id`, the contracted service with `service_id`, and the purchase with `order_id`.
+
+See the official [SB Payment developer documentation](https://developer.sbpayment.jp/) and [purchase request specification: merchant, service and order IDs](https://developer.sbpayment.jp/system-specifications/link-type/2517/).

@@ -16,10 +16,12 @@ export function ReadinessSection() {
                     <h3>Explore it today</h3>
                     <ul>
                         <li>Native FeliCa balance and history reading</li>
-                        <li>Devnet Move treasury and refund ledger</li>
+                        <li>Sui and Ethereum mainnet payouts; Awaji MJPY payouts</li>
                         <li>Request replay and sequence protection</li>
                         <li>Immutable, linked receipts and Merkle commitments</li>
-                        <li>Standalone browser walkthrough</li>
+                        <li>Hosted ledger and standalone Android app</li>
+                        <li>Customizable dashboard with a workspace assistant</li>
+                        <li>Sui names, ENS and dGen1 wallet destinations</li>
                     </ul>
                 </article>
                 <article>
@@ -38,8 +40,8 @@ export function ReadinessSection() {
                 <a className="button dark" href="/demo">
                     Try the experience <ArrowUpRight size={18} />
                 </a>
-                <a className="text-link" href="/">
-                    Back to UnSui <ArrowRight size={17} />
+                <a className="text-link" href="/dashboard">
+                    Open the dashboard <ArrowRight size={17} />
                 </a>
             </div>
         </section>

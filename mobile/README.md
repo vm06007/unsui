@@ -78,51 +78,32 @@ was already running. Run `npm run test:stations` to check failure handling.
 The lookup is keyed by line and station code, preferring region 0 for collisions.
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the source license.
 
-## Refund quotes, confirmation and demo ledger
+## Refund quotes, confirmation and shared ledger
 
-After scanning a card with a positive **available demo balance**, tap **Preview
-refund**. Enter a whole-yen amount from ¥1 up to that allowance, choose Sui,
-Ethereum or Mizuhiki (Awaji Testnet), and enter a recipient address. Review the
-amount, 2% demo fee, net conversion, recipient and estimated crypto payout.
-**Edit quote** preserves inputs; switching networks clears the recipient.
+The app uses `https://unsui.ca/api/mobile` for refunds. Scan a card, choose
+Sui, Ethereum or Mizuhiki Awaji, and enter a recipient. Review the amount,
+2% fee and payout before re-scanning the same card to confirm. A different card
+or changed physical balance is rejected. The **Issuing refund** screen stays
+visible while the backend submits and confirms the transaction.
 
-**Re-scan & confirm demo refund** reads the newest balance block from the original
-card. A different card or changed physical balance is rejected. Confirmation
-can be cancelled and times out after 25 seconds. A cancelled or late scan cannot
-create a receipt. While the receipt is being saved, navigation is held until the
-write succeeds or fails. Failed saves can be retried with the same request ID;
-even an ambiguous persisted write is recovered without a duplicate debit.
+Successful payouts show the amount, recipient, transaction hash and explorer
+link. History includes the recorded refund alongside the scanned card history.
+The physical card balance is not changed by the NFC scan; the shared ledger
+tracks the remaining refund allowance across networks. Re-scanning or topping
+up the physical card does not reset that allowance. Public ledger reset is disabled.
 
-After a successful save, the receipt shows the yen amount, fee, crypto estimate,
-recipient, network and remaining demo
-balance. No funds are sent, no physical card balance changes and no transaction
-hash is created. **Demo receipts** reopens backend receipts, including after app
-restart. Card history remains the physical card's NFC records; it is separate
-from the backend demo ledger.
+Receipts and pending transactions persist in Neon. The phone retains preferences
+and pending request references so a failed or interrupted request can be retried
+without issuing a duplicate payout. There is no local refund-storage fallback.
 
-The backend is the only refund ledger. It stores balances and receipts across app
-restarts and devices. The phone retains only the backend URL, history language
-and pending request references for safe retries; it never falls back to local
-refund storage. Previous on-device receipts are not uploaded automatically.
+Sui uses a five-minute backend quote based on CoinGecko SUI/JPY. Ethereum uses
+the deployed contract's configured rate. Awaji pays MJPY at 1 MJPY per net yen.
+The 2% fee is deducted before conversion. Local sample mode has illustrative
+rates and does not represent live treasury payouts; live mode rejects sample cards.
 
-The first demo refund establishes that card's allowance from its scanned balance.
-Subsequent refunds share the remaining allowance across all networks. Re-scanning
-or physically topping up the card does not replenish that initial allowance.
-The backend serializes writes and validates quotes using the same rules as the
-mobile app. Duplicate request IDs return the original receipt. Corrupt storage
-blocks further refunds rather than clearing previous records. This development
-service trusts the app's card readings and must not authorize real payouts.
-
-Illustrative rates: 1 SUI = ¥10,000, 1 ETH = ¥500,000, 1 MIZU = ¥10,000.
-The 2% fee is deducted before conversion, not charged separately. Estimates use
-integer calculation at eight decimal places and round down. These are local
-demo constants, not market data; network fees are not included.
-
-Address checks cover hexadecimal shape, chain-specific length and the zero
-address. They do not prove ownership, EVM checksum validity, account existence,
-or network compatibility. Live market quotes, merchant charges and blockchain
-payouts are not connected. Refunds above ¥1,000 require a server-verified
-World ID proof; see [the backend README](../server/README.md).
+Refunds above ¥1,000 require a server-verified World ID proof. Address validation
+and name resolution do not prove ownership. See [the backend README](../server/README.md)
+for quote validation, persistence and network configuration.
 
 ## Recipient wallets and Sui names
 
@@ -132,32 +113,35 @@ Awaji Testnet (chain 6497). A network mismatch blocks review until the wallet
 switches successfully, or you return to manual entry. Awaji must be supported by
 the wallet; there is no fallback to another chain.
 
-Signing the destination message is optional. It identifies the address, selected
+Choosing **Use dGen1 wallet** requests a destination signature automatically. Manual
+entry remains available without connecting a wallet. The message identifies the address, selected
 network, time and unique request, and does not authorize a transaction or token
 approval. Connection and signing can be cancelled and time out after two minutes.
 The bridge checks the account and network before and after signing. Changing the
 recipient or network clears the signature. Signed responses stay in memory and
 are not server-verified ownership proofs; receipts store only the recipient
-address. No private keys are accessed and no funds are sent.
+address. The connection/signature step does not send funds or expose private keys.
 
 The native bridge follows the public interface in
 [EthereumPhone WalletSDK](https://github.com/EthereumPhone/WalletSDK/tree/e774281fb23170e4461f2676c4540e7de73aa992).
-Rebuild the Android app to include it. Physical dGen1 testing is still required.
+Rebuild the Android app to include it. Test the wallet handoff on the target dGen1 build.
 Other devices retain manual entry.
 
 On Sui, enter a `.sui` name and resolve it through the
 [Sui mainnet GraphQL service](https://sdk.mystenlabs.com/sui/clients/graphql).
-Review the full address and tap **Use resolved address** before continuing.
-**Use demo name** independently chooses `kartik.sui` or `vitally.sui` with equal
-probability on each tap, then performs the same live lookup. Internet access is
+The resolved address is selected automatically and shown for review.
+**Use developer address** always prefills `kartik.sui`. Ethereum and Awaji also
+support manual hexadecimal addresses or `.eth` names, resolved through Ethereum.
+The input's resolve button checks a typed name. Internet access is
 required. Missing names, missing targets and service errors block that selection;
 there is no hard-coded address fallback. A name lookup does not prove ownership.
 Name and signing metadata are session-only; saved receipts retain the selected
 address. Lookup cancellation and changes discard late results.
 
-## Device demo and backend
+## Local backend development and sample cards
 
-Start the shared ledger in another terminal (after `npm ci` in `mobile`):
+The default app uses the hosted backend; USB forwarding is only needed when
+working against a local server. To do that, start the shared ledger in another terminal (after `npm ci` in `mobile`):
 
 ```sh
 cd ../server
@@ -174,8 +158,8 @@ shared balances. See `../server/README.md` for LAN/iPhone setup and feed details
 
 **Menu → Demo** or **No card nearby? Try the demo** opens a fictional ¥1,500
 sample card with three journey records. Confirmation is explicit and requires no
-NFC. Sample refunds use a reserved sample ID, share their backend allowance, and
-remain visibly labeled. Return **Home** or scan a physical card to leave the
+NFC. In local record-only mode, sample refunds use a reserved sample ID and share
+their backend allowance. Hosted live payouts reject this sample card. Return **Home** or scan a physical card to leave the
 sample flow. Physical-card confirmations still require a matching NFC re-scan.
 There is no silent switch to sample data after an NFC failure.
 
@@ -186,6 +170,11 @@ animated transit illustration, palette and rounded controls are shared with the
 updated home screen. A modal scan sheet supports cancellation and Android Back.
 
 ## Standalone dGen1 build
+
+Download the [Android ARM64 APK](https://unsui.ca/downloads/unsui-1.0-arm64.apk)
+from **Get the app** on the website. It includes its JavaScript bundle and uses
+the hosted API. Enable installation from your browser when Android requests it.
+The downloadable hackathon build uses the development signing key.
 
 Run `./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a` from
 `android`, then install `app/build/outputs/apk/release/app-release.apk` with

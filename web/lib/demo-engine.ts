@@ -1,10 +1,13 @@
 /** Browser-only demo. No wallet, NFC, authorizer or transaction submission. */
 export type Chain = 'sui' | 'ethereum' | 'mizuhiki';
 export const DEMO_NETWORKS = {
-  sui: { name: 'Sui', asset: 'SUI', rate: 0.0001 },
+  sui: { name: 'Sui', asset: 'SUI', rate: 1 / 187 },
   ethereum: { name: 'Ethereum', asset: 'ETH', rate: 0.000002 },
-  mizuhiki: { name: 'Mizuhiki · Awaji Testnet', asset: 'MIZU', rate: 0.0001 },
+  mizuhiki: { name: 'Mizuhiki · Awaji Testnet', asset: 'MJPY', rate: 1 },
 } as const;
+export const demoPayout = (amountJpy: number, chain: Chain) =>
+  Math.floor(amountJpy * 0.98 * DEMO_NETWORKS[chain].rate * 1e9) / 1e9;
+
 export type Receipt = {
   version: 'UNSUI_WEB_DEMO_V1';
   id: string;
@@ -66,7 +69,7 @@ export async function issueDemoReceipt(
     chain,
     recipient,
     amountJpy,
-    amount: amountJpy * DEMO_NETWORKS[chain].rate,
+    amount: demoPayout(amountJpy, chain),
     sequence: (previous?.sequence || 0) + 1,
     timestamp: new Date().toISOString(),
     previousHash: previous?.hash || '0'.repeat(64),
@@ -87,7 +90,7 @@ export async function verifyDemoReceipt(receipt: Receipt, previous?: Receipt) {
   return calculated === hash && root === receipt.root && linked;
 }
 export const DEMO_ADDRESSES = {
-  sui: '0x02b45b23d9f1d739a7ee4424009efb342029007eef9d3f72275dec2afb4a1c47',
+  sui: '0xbb50428c2cabff077551f66c02181d0f86a25ac655a4232d8f641a030fe3dd0e',
   mizuhiki: '0x0000000000000000000000000000000000000001',
   ethereum: '0x0000000000000000000000000000000000000001',
 };
