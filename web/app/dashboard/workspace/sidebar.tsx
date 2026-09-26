@@ -76,9 +76,7 @@ export function WorkspaceSidebar({
                 <span>U</span>
                 <div title={admin.email + ' · ' + admin.address}>
                     UnSui admin
-                    <small>
-                        {admin.method === 'wallet' ? 'Wallet admin' : 'Demo admin'}
-                    </small>
+                    {admin.method === 'wallet' && <small>Wallet admin</small>}
                 </div>
                 <ShieldCheck size={17} />
             </div>

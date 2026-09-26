@@ -41,6 +41,39 @@ export function MarketOpportunity() {
         transit-card users or measured departures.
       </p>
       <div className="market-scenario">
+        <span className="eyebrow">JR EAST FACT BOOK 2026</span>
+        <p>
+          <b>Suica kept growing through the year to March 2026.</b>
+        </p>
+        <div className="market-stats">
+          <article>
+            <strong>124.35m</strong>
+            <span>Suica cards issued by 31 March 2026</span>
+          </article>
+          <article>
+            <strong>+10.98m</strong>
+            <span>More cards issued in that fiscal year alone</span>
+          </article>
+          <article>
+            <strong>42.14m</strong>
+            <span>Mobile Suica, including 7.92 million added that year</span>
+          </article>
+        </div>
+        <p className="market-source">
+          Source:{' '}
+          <a
+            href="https://www.jreast.co.jp/company/ir/library/factbook/pdf/data.pdf"
+            target="_blank"
+            rel="noreferrer"
+          >
+            JR East Fact Book 2026
+          </a>
+          , published 17 September 2026, IT &amp; Suica. Cumulative cards issued
+          (万枚): Suica 12,435, up from 11,337 a year earlier; Mobile Suica 4,214,
+          up from 3,422. Figures are as of the fiscal year ended 31 March 2026.
+        </p>
+      </div>
+      <div className="market-scenario">
         <span className="eyebrow">A SCENARIO, NOT A MEASURED MARKET TOTAL</span>
         <p>
           <b>

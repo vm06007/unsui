@@ -4490,6 +4490,9 @@ footer > span {
   font-weight: 500;
   color: #426133;
 }
+.market-scenario .market-stats {
+  margin: 22px 0 8px;
+}
 .market-wallet {
   display: flex;
   gap: 23px;

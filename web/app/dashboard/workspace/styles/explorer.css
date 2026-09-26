@@ -93,7 +93,10 @@
 .ops .sticky-table th:first-child {
     padding-left: 14px;
 }
-.ops .sticky-table tr:hover td {
+.ops .sticky-table tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--soft) 72%, var(--surface));
+}
+.ops .sticky-table tbody tr:hover td {
     background: var(--soft);
 }
 .ops .compact .sticky-table td {
