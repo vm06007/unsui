@@ -56,7 +56,7 @@ function createWorldId(
   const credential = env.WORLD_ID_CREDENTIAL || 'proof_of_human';
   const bypassEnabled =
     env.WORLD_ALLOW_TEST_BYPASS === 'true' &&
-    env.NODE_ENV !== 'production' &&
+    (env.NODE_ENV !== 'production' || env.WORLD_ALLOW_HOSTED_TEST_BYPASS === 'true') &&
     ['staging', 'sandbox'].includes(environment);
   const prune = () => {
     for (const [id, s] of sessions) if (s.expires <= now()) sessions.delete(id);

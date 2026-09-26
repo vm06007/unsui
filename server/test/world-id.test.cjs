@@ -296,3 +296,22 @@ test('test bypass is opt-in, non-production, bound and single-use', () => {
   gate.cancel(cancelled.verificationId);
   assert.throws(() => gate.bypass(cancelled.verificationId));
 });
+
+test('hosted simulation requires both flags and never enables production World ID', () => {
+  for (const environment of ['staging', 'sandbox', 'production']) {
+    for (const enabled of [false, true]) {
+      const gate = createWorldId({ ...env, NODE_ENV: 'production', WORLD_ID_ENVIRONMENT: environment,
+        WORLD_ALLOW_TEST_BYPASS: String(enabled), WORLD_ALLOW_HOSTED_TEST_BYPASS: 'true' });
+      const session = gate.start(body);
+      const allowed = enabled && environment !== 'production';
+      assert.equal(gate.getRequest(session.verificationId).bypassEnabled, allowed);
+      if (!allowed) { assert.throws(() => gate.bypass(session.verificationId)); continue; }
+      gate.bypass(session.verificationId);
+      assert.equal(gate.status(session.verificationId).status, 'bypassed');
+      const input = { ...body, worldVerificationId: session.verificationId };
+      assert.equal(gate.allows({ ...input, amountJpy: 1002 }), false);
+      assert.equal(gate.allows(input), true);
+      assert.equal(gate.allows(input), false);
+    }
+  }
+});

@@ -65,7 +65,7 @@
         cancel.hidden = true;
         returnApp.hidden = false;
         status.textContent =
-          'Check bypassed for testing — not World ID verified. Return to UnSui to continue.';
+          'Simulation complete. World ID check skipped for testing. Return to UnSui to continue your refund.';
       } catch (error) {
         status.textContent = error.message;
         bypass.disabled = false;
