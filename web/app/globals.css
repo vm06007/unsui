@@ -235,20 +235,36 @@ section {
 }
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
+  gap: 14px 20px;
   margin-top: 32px;
+}
+.hero-actions .button,
+.hero-actions .text-link {
+  flex-shrink: 0;
+  min-height: 54px;
+  margin-top: 0;
+  white-space: nowrap;
+}
+.hero-actions .button {
+  gap: 12px;
+}
+.hero-actions svg {
+  flex-shrink: 0;
 }
 .hero-foot {
   display: flex;
-  gap: 18px;
-  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 15px;
+  line-height: 1.6;
   color: #7b877f;
   margin-top: 25px;
 }
 .hero-foot span + span:before {
-  content: '·';
-  margin-right: 18px;
+  content: '/';
+  margin-right: 14px;
 }
 .hero-product {
   position: relative;
@@ -721,11 +737,6 @@ footer > span {
   .hero h1 {
     letter-spacing: -2.8px;
   }
-  .hero-actions {
-    align-items: start;
-    flex-direction: column;
-    gap: 20px;
-  }
   .hero-foot {
     flex-wrap: wrap;
     gap: 9px;
@@ -799,7 +810,7 @@ footer > span {
     font-size: 13px;
   }
   .hero-foot {
-    font-size: 11px;
+    font-size: 14px;
   }
   .hero-product {
     max-width: 355px;

@@ -55,7 +55,7 @@ export function PresentationMode() {
   const slides = [
     <div className="pitch-cover" key="idea">
       <img src="/unsui-mark.svg?v=monk-5" alt="UnSui" width="96" height="96" />
-      <p className="pitch-kicker">UNSUI · 雲水</p>
+      <p className="pitch-kicker">UNSUI / 雲水</p>
       <h2>
         Your journey
         <br />
