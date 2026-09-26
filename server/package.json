@@ -16,6 +16,7 @@
     "@curvegrid/multibaas-sdk": "1.1.1",
     "@mysten/sui": "2.26.2",
     "@worldcoin/idkit-core": "4.3.0",
+    "pg": "^8.23.0",
     "qrcode-generator": "2.0.4",
     "viem": "2.56.9"
   }

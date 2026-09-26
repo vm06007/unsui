@@ -74,6 +74,7 @@ export function createAwajiPayoutClient({
   privateKey,
   rpcUrl,
   journalDir,
+  journal,
   publicClient,
   walletClient,
   multiBaas,
@@ -82,7 +83,7 @@ export function createAwajiPayoutClient({
     deployment.chainId !== 6497 ||
     !secret ||
     secret.length < 32 ||
-    !journalDir
+    (!journalDir && !journal)
   )
     throw Error('Missing Awaji testnet configuration');
   const account = privateKeyToAccount(privateKey);
@@ -184,13 +185,16 @@ export function createAwajiPayoutClient({
         .digest('hex');
     const request =
       '0x' + createHash('sha256').update(scoped(input.requestId)).digest('hex');
-    const file = path.join(journalDir, request.slice(2) + '.json');
+    const journalKey = request.slice(2);
+    const file = journalDir ? path.join(journalDir, journalKey + '.json') : null;
     const binding = createHash('sha256')
       .update(JSON.stringify([card, input.scannedBalanceJpy, input.quote]))
       .digest('hex');
     let saved;
     try {
-      saved = JSON.parse(await fs.readFile(file, 'utf8'));
+      saved = journal
+        ? await journal.get(journalKey)
+        : JSON.parse(await fs.readFile(file, 'utf8'));
     } catch (e) {
       if (e.code !== 'ENOENT') throw e;
     }
@@ -247,15 +251,19 @@ export function createAwajiPayoutClient({
         throw Error('Operator needs MIZU for gas. No payout was submitted.');
       const raw = await wallet.signTransaction(prepared);
       saved = { binding, raw, hash: keccak256(raw) };
-      await fs.mkdir(journalDir, { recursive: true });
-      const h = await fs.open(file + '.tmp', 'w', 0o600);
-      try {
-        await h.writeFile(JSON.stringify(saved));
-        await h.sync();
-      } finally {
-        await h.close();
+      if (journal) {
+        await journal.put(journalKey, saved);
+      } else {
+        await fs.mkdir(journalDir, { recursive: true });
+        const h = await fs.open(file + '.tmp', 'w', 0o600);
+        try {
+          await h.writeFile(JSON.stringify(saved));
+          await h.sync();
+        } finally {
+          await h.close();
+        }
+        await fs.rename(file + '.tmp', file);
       }
-      await fs.rename(file + '.tmp', file);
     }
     // Persist signed bytes before broadcasting. Every retry uses the identical nonce and hash.
     let tx;

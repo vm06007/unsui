@@ -1,3 +1,4 @@
+import { marketRefundTransaction, executeStoredTransaction } from './sdk-transaction.mjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
@@ -21,11 +22,12 @@ const Ledger = bcs.struct('Ledger', {
   requests: Table,
 });
 
-export function createSuiPayoutClient({ deployment, secret, binary, marketQuotes }) {
+export function createSuiPayoutClient({ deployment, secret, binary, marketQuotes, signer, journal }) {
   if (
     !secret ||
     secret.length < 32 ||
-    !binary ||
+    (!binary && !signer) ||
+    (signer && !journal) ||
     deployment.network !== 'mainnet'
   )
     throw Error('Missing Sui mainnet configuration');
@@ -34,6 +36,8 @@ export function createSuiPayoutClient({ deployment, secret, binary, marketQuotes
     baseUrl: 'https://fullnode.mainnet.sui.io:443',
   });
   const { packageId, ledgerId, publisher, marketPolicyId } = deployment;
+  if (signer && signer.toSuiAddress().toLowerCase() !== publisher.toLowerCase())
+    throw Error('Sui operator key mismatch');
   const typePackageId = deployment.originalPackageId || packageId;
 
   async function ledger() {
@@ -125,6 +129,27 @@ export function createSuiPayoutClient({ deployment, secret, binary, marketQuotes
     const l = await ledger();
     const prior = await field(l.requests.id, request, bcs.Address);
     if (prior) return receipt(prior, input, card, request);
+    if (signer) {
+      const binding = createHash('sha256')
+        .update(JSON.stringify([card, input.scannedBalanceJpy, input.quote]))
+        .digest('hex');
+      await executeStoredTransaction({
+        client, signer, journal, key: hex(request), binding,
+        build: async () => {
+          await preflight(input);
+          const state = await field(l.cards.id, card, CardState);
+          if (BigInt(state?.redeemed_jpy || 0) + BigInt(input.quote.amountJpy) > BigInt(input.scannedBalanceJpy))
+            throw Error('This card balance has already been refunded on chain');
+          return marketRefundTransaction({
+            deployment, input, card, request, sequence: state?.sequence || 0,
+          });
+        },
+      });
+      const id = await field(l.requests.id, request, bcs.Address);
+      if (!id) throw Error('Receipt indexing pending. Retry the same request.');
+      return receipt(id, input, card, request);
+    }
+
     await preflight(input);
     if (l.operator !== publisher || !l.paused)
       throw Error('Treasury operator mismatch or payouts paused');

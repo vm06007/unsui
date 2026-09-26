@@ -130,3 +130,26 @@ It does not execute arbitrary code or perform payouts. Preferences persist in th
 browser; Undo restores the last changeset unless those settings were edited again.
 The local Vite `/api/operations` proxy also serves this route. Hosted deployments need
 the same authenticated backend routing; the API key must never be a VITE_* variable.
+
+### Hosted storage preparation
+
+`storage/postgres.cjs` provides Postgres compare-and-swap documents, durable
+payout reservations, and immutable signed transaction journals. It uses the
+server-only `DATABASE_URL` supplied by the Neon integration. Schema creation is
+explicit through `store.migrate()`; importing the module does not modify the database.
+
+Ethereum and Awaji clients accept a `journal` adapter instead of `journalDir`.
+The Sui client accepts a matching operator `signer` plus a `journal`, using the
+Sui SDK rather than the CLI. Signed bytes are saved before broadcast, and retries
+reuse those bytes. These adapters do not by themselves serialize wallet nonces or
+authorize requests: the hosted request coordinator must enforce those controls.
+
+The local server still uses its existing storage and signer configuration. The
+mobile URL must remain local until hosted routes, device authentication, World ID
+session persistence, and receipt recovery are connected and verified. The public
+dashboard demo session must not grant payout or ledger-reset access.
+
+For database integration testing, provide a dedicated `TEST_DATABASE_URL` and run
+`node --test test/postgres.test.cjs`. The test uses uniquely scoped records and
+removes them afterward. Never put database passwords in client-prefixed environment
+variables or tracked files.
