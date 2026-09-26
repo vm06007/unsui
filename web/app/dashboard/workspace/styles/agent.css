@@ -1,0 +1,178 @@
+.ops .dashboard-agent[hidden] {
+  display: none;
+}
+.ops .dashboard-agent {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 380px;
+  z-index: 65;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: -12px 0 40px #0000000d;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 14px;
+}
+.ops .dashboard-agent header,
+.ops .dashboard-agent header > div,
+.ops .agent-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ops .dashboard-agent header > div {
+  justify-content: flex-start;
+}
+.ops .agent-caption,
+.ops .agent-welcome p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ops .agent-conversation {
+  flex: 1;
+  min-height: 100px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.ops .agent-welcome {
+  padding: 22px 0;
+}
+.ops .agent-welcome h2 {
+  margin-bottom: 12px;
+}
+.ops .agent-message {
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--soft);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.ops .agent-message p {
+  white-space: pre-wrap;
+}
+.ops .agent-message.user {
+  background: var(--green);
+  color: white;
+  margin-left: 22px;
+}
+.ops .agent-message.user small {
+  color: #d1eca2;
+}
+.ops .agent-thinking {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+.ops .agent-examples {
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+}
+.ops .agent-examples button {
+  text-align: left;
+  padding: 10px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ops .dashboard-agent textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 180px;
+  resize: vertical;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+  font-size: 14px;
+}
+.ops .agent-input-label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.ops .agent-composer-actions {
+  margin-top: 8px;
+}
+.ops .agent-footnote {
+  line-height: 1.5;
+  font-size: 11px;
+}
+.ops .agent-error {
+  color: #bc4535;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ops .hide-description .page-heading > div > p:not(.eyebrow),
+.ops .hide-card-details .metric > small {
+  display: none;
+}
+.ops .width-focused main {
+  max-width: 1400px;
+  margin-inline: auto;
+}
+@media (min-width: 1250px) {
+  .ops .agent-open .main-shell {
+    margin-right: 380px;
+  }
+}
+@media (max-width: 600px) {
+  .ops .dashboard-agent {
+    width: 100%;
+  }
+  .ops .agent-examples {
+    max-height: 125px;
+  }
+}
+.ops .dashboard-agent {
+  width: min(var(--agent-width, 380px), 50vw);
+}
+.ops .agent-resize {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.ops .agent-resize:hover,
+.ops .agent-resize:focus {
+  background: var(--lime);
+}
+@media (min-width: 1250px) {
+  .ops .agent-open .main-shell {
+    margin-right: min(var(--agent-width, 380px), 50vw);
+  }
+}
+@media (min-width: 1250px) and (max-width: 1800px) {
+  .ops .agent-open .custom-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ops .agent-open .topbar {
+    height: auto;
+    min-height: 76px;
+    padding-block: 12px;
+  }
+}
+@media (max-width: 600px) {
+  .ops .dashboard-agent {
+    width: 100%;
+  }
+  .ops .agent-resize {
+    display: none;
+  }
+}

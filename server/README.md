@@ -115,3 +115,18 @@ Mobile success and history show the transaction hash and Etherscan link. Local r
 `GET /multibaas-feed` reads Awaji status, linked contract balance, and indexed refund events through the official SDK. Responses are cached for five seconds. Set `MULTIBAAS_DEPLOYMENT_URL`, `MULTIBAAS_API_KEY`, and, after deployment, `AWAJI_PAYOUT_CONTRACT`. Until a contract is linked, the endpoint reports `awaiting-contract` instead of inventing transactions. Cloud Wallets are optional; our deployment scripts sign locally.
 
 Sui market quotes: `POST /quotes/sui` accepts `cardId`, `scannedBalanceJpy`, `amountJpy` and `recipient`. It fetches CoinGecko SUI/JPY with a 30-second cache, rejects prices older than three minutes, and signs a five-minute quote using the existing server-only card commitment secret. Optional `COINGECKO_API_KEY` supplies a CoinGecko Demo API key. The complete quote must accompany `/refunds`. A new request is checked for expiry and treasury funding before its payout reservation is saved. Confirmed on-chain retries remain recoverable after quote expiry.
+
+### Dashboard assistant
+
+The authenticated `POST /operations/agent` endpoint uses OpenRouter's `openrouter/free`
+router, as in Margit. Set `OPENROUTER_API_KEY` in the ignored server environment.
+There is no paid-model fallback. The dashboard sends conversation text and display
+preferences, not ledger records, recipient lists, signing keys, or session tokens in
+model context. Free-provider availability and rate limits may delay requests.
+
+The assistant returns one validated `update_dashboard` tool call. The browser applies
+only allowlisted layout, overview-card, page-filter, and per-page table preferences.
+It does not execute arbitrary code or perform payouts. Preferences persist in the
+browser; Undo restores the last changeset unless those settings were edited again.
+The local Vite `/api/operations` proxy also serves this route. Hosted deployments need
+the same authenticated backend routing; the API key must never be a VITE_* variable.

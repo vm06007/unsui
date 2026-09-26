@@ -19,6 +19,7 @@ function createServer({
   multibaasFeed = null,
   allowLiveReset = false,
   marketQuotes = null,
+  dashboardAgent = require("./dashboard-agent.cjs").createDashboardAgent(),
 } = {}) {
   const baseFile = file;
   let round = null,
@@ -77,6 +78,8 @@ function createServer({
   }
   let ledger = makeLedger();
   const operationsAuth = createOperationsAuth();
+  const agentChat = dashboardAgent;
+  let agentBusy = false;
   return http.createServer(async (
     req,
     res
@@ -161,6 +164,22 @@ function createServer({
             error: error.message || 'Please sign in again.',
           });
         }
+      }
+      if (req.method === 'POST' && pathname === '/operations/agent') {
+        if (!operationsAuth.session(String(req.headers.authorization || '').replace(/^Bearer /, '')))
+          return reply(401, { error: 'Please sign in again.' });
+        if (agentBusy) return reply(429, { error: 'An assistant request is already running. Please wait.' });
+        agentBusy = true;
+        try {
+          let raw = '';
+          for await (const chunk of req) {
+            raw += chunk;
+            if (Buffer.byteLength(raw) > 24000) throw Error('Assistant request too large.');
+          }
+          return reply(200, await agentChat(JSON.parse(raw || '{}')));
+        } catch (error) {
+          return reply(400, { error: error.name === 'TimeoutError' ? 'The free model timed out. Please retry.' : error.message });
+        } finally { agentBusy = false; }
       }
       if (req.method === 'GET' && pathname === '/operations') {
         if (!operationsAuth.session(

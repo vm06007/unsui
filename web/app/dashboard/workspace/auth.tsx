@@ -16,7 +16,7 @@ export async function authRequest(action: string, body?: object) {
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    const result = await response.json();
+    const result = await response.json() as { error?: string; token: string; user: Admin; message: string; nonce: string };
     if (!response.ok) throw Error(result.error || 'Please sign in again.');
     return result;
 }

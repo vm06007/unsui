@@ -46,17 +46,46 @@ export default defineConfig(async () => {
   process.env.WRANGLER_LOG_PATH ??= '.wrangler/logs';
   process.env.MINIFLARE_REGISTRY_PATH ??= '.wrangler/registry';
 
-  // Wrangler snapshots its log path while the Cloudflare plugin is imported.
-  const { cloudflare } = await import('@cloudflare/vite-plugin');
+  // Vercel serves the Nitro build output. Local dev keeps the Cloudflare plugin.
+  const onVercel = process.env.VERCEL === '1';
+  const serverPlugin = onVercel
+    ? (await import('nitro/vite')).nitro()
+    : (
+        await import('@cloudflare/vite-plugin')
+      ).cloudflare({
+        viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
+        config: localBindingConfig,
+      });
+
+  const tailwind = tailwindcss();
 
   return {
     resolve: {
       alias: [
         { find: /^pino$/, replacement: pinoShim },
         { find: /^pino\/browser(\.js)?$/, replacement: pinoShim },
+        ...(onVercel
+          ? [
+              {
+                find: 'tailwindcss',
+                replacement: path.join(webRoot, 'node_modules/tailwindcss/index.css'),
+              },
+              {
+                find: 'tw-animate-css',
+                replacement: path.join(
+                  webRoot,
+                  'node_modules/tw-animate-css/dist/tw-animate.css',
+                ),
+              },
+              {
+                find: 'shadcn/tailwind.css',
+                replacement: path.join(webRoot, 'node_modules/shadcn/dist/tailwind.css'),
+              },
+            ]
+          : []),
       ],
     },
-    css: { postcss: { plugins: [tailwindcss()] } },
+    css: { postcss: { plugins: [tailwind] } },
     server: {
       ...(isCodexSeatbeltSandbox
         ? { watch: { useFsEvents: false, usePolling: true } }
@@ -64,21 +93,28 @@ export default defineConfig(async () => {
       proxy: {
         '/api/auth': {
           target: 'http://127.0.0.1:4100',
-          rewrite: (path) => path.replace(/^\/api\/auth/, '/auth'),
+          rewrite: (path: string) => path.replace(/^\/api\/auth/, '/auth'),
         },
         '/api/operations': {
           target: 'http://127.0.0.1:4100',
-          rewrite: (path) => path.replace(/^\/api\/operations/, '/operations'),
+          rewrite: (path: string) => path.replace(/^\/api\/operations/, '/operations'),
         },
       },
     },
     plugins: [
       vinext(),
       sites(),
-      cloudflare({
-        viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
-        config: localBindingConfig,
-      }),
+      serverPlugin,
+      ...(onVercel
+        ? [
+            {
+              name: 'unsui-tailwind',
+              configEnvironment() {
+                return { css: { postcss: { plugins: [tailwind] } } };
+              },
+            },
+          ]
+        : []),
     ],
   };
 });

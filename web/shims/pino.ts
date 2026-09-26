@@ -1,4 +1,5 @@
 type Logger = {
+    levels: typeof levels;
     level: string;
     info: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
