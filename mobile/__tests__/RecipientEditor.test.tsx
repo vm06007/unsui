@@ -212,3 +212,23 @@ test('optional signing failure uses a toast and keeps the connected recipient us
   expect(props().value.signed).toBeUndefined();
   toast.mockRestore();
 });
+
+
+test.each<PayoutNetwork>(['ethereum', 'mizuhiki'])(
+  'quick ENS prefill on %s stays independent of dGen1 and allows manual replacement',
+  async network => {
+    const address = `0x${'4'.repeat(40)}`;
+    (resolveEnsName as jest.Mock).mockResolvedValue({ name: 'vitally.eth', address, network: 'mainnet' });
+    await mount(network);
+    await act(async () => button('Use vitally.eth').props.onPress());
+    expect(resolveEnsName).toHaveBeenCalledWith('vitally.eth', expect.anything());
+    expect(props().value.address).toBe(address);
+    expect(props().value.blocked).toBe(false);
+    expect(connectDeviceWallet).not.toHaveBeenCalled();
+    const manual = `0x${'5'.repeat(40)}`;
+    await act(async () => view.root.findByProps({testID: 'refund-recipient'}).props.onChangeText(manual));
+    expect(props().value.address).toBe(manual);
+    expect(props().value.resolved).toBeUndefined();
+    expect(props().value.signed).toBeUndefined();
+  },
+);

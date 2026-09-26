@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { PAYOUT_NETWORKS, PayoutNetwork } from '../lib/refundQuote';
+import { PayoutNetwork } from '../lib/refundQuote';
 import {
   cancelDeviceWallet,
   connectDeviceWallet,
@@ -183,7 +183,7 @@ export default function RecipientEditor({
       <Text style={styles.label}>
         {network === 'sui'
           ? 'Send to'
-          : `${PAYOUT_NETWORKS[network].name} wallet address`}
+          : 'Wallet address or ENS name'}
       </Text>
       <View style={styles.inputContainer}>
         <TextInput
@@ -267,10 +267,19 @@ export default function RecipientEditor({
         </>
       ) : (
         <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Use vitally.eth"
+            disabled={busy || disabled}
+            onPress={() => run('resolve', 'vitally.eth')}
+            style={styles.prefill}
+          >
+            <Text style={styles.prefillText}>Use vitally.eth</Text>
+          </Pressable>
           <Text style={styles.note}>
             {available
-              ? 'Connect the dGen1 system wallet, or enter an address manually.'
-              : 'dGen1 is unavailable on this device. Manual address entry is available.'}
+              ? 'Or use your dGen1 wallet address.'
+              : 'Enter a full address or resolve any .eth name above.'}
           </Text>
           <Action
             label={
