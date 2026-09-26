@@ -77,10 +77,24 @@ Receipt **GM-000003** paid **5.967690706 SUI** to `kartik.sui` on
 **¥22.24** fee.
 
 [View the confirmed payout and recipient balance change on Suivision](https://suivision.xyz/txblock/7MnCfhtWLMi4yLvWzR7Td6uF4QNaCWEq5dp79a2VRYRQ?tab=Changes).
-The recipient’s balance increased by **5,967,690,706 MIST**. For this contract
-payout, Suivision’s Overview displays an amount of zero; the **Changes** tab shows
-the SUI actually received. Find the corresponding receipt in the
-[UnSui dashboard](https://unsui.ca/dashboard).
+### Watching the video: check the Changes tab
+
+In the presentation video, opening the Sui transaction may appear to show no refund
+because Suivision’s **Overview → Amount** displays **0 SUI** for this transaction.
+Switch to **[Changes — view the issued SUI](https://suivision.xyz/txblock/7MnCfhtWLMi4yLvWzR7Td6uF4QNaCWEq5dp79a2VRYRQ?tab=Changes)**
+to see the recipient’s balance increase of **5,967,690,706 MIST = 5.967690706 SUI**.
+
+Transaction hash: `7MnCfhtWLMi4yLvWzR7Td6uF4QNaCWEq5dp79a2VRYRQ`.
+
+UnSui issues this payout through the Move package’s `refunds::refund_market`
+function. The function takes the quoted amount from the shared Ledger’s `pool`,
+creates a SUI coin and transfers it to the recipient with `transfer::public_transfer`.
+It also emits a `Refunded` event and freezes the receipt object. The payout comes
+from the contract treasury; the operator signs the call and pays gas. For this
+transaction, the Overview amount does not reflect that treasury payout—the
+recipient’s balance change shows the funds actually received. See the
+[Move implementation](contracts/unsui/sources/unsui.move) and the corresponding
+receipt in the [UnSui dashboard](https://unsui.ca/dashboard).
 
 ## Project structure
 
